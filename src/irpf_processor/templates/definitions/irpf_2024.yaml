@@ -1,0 +1,175 @@
+metadata:
+  version: "2024"
+  exercise_year: "2024"
+  calendar_year: "2023"
+  description: "Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023)"
+
+detection:
+  patterns:
+    - "EXERCÍCIO 2024"
+    - "ANO-CALENDÁRIO 2023"
+    - "DECLARAÇÃO DE AJUSTE ANUAL"
+  exercise_year_regex: "EXERCÍCIO\\s+(2024)"
+  calendar_year_regex: "ANO[- ]?CALENDÁRIO\\s+(2023)"
+
+sections:
+  taxpayer_identification:
+    name: "Identificação do Contribuinte"
+    required: true
+    fields:
+      - name: cpf
+        type: cpf
+        required: true
+      - name: name
+        type: string
+        required: true
+        pattern: "Nome:\\s*(.+?)(?:\\n|$)"
+      - name: exercise_year
+        type: string
+        required: true
+        pattern: "EXERCÍCIO\\s+(\\d{4})"
+      - name: calendar_year
+        type: string
+        required: true
+        pattern: "ANO[- ]?CALENDÁRIO\\s+(\\d{4})"
+      - name: occupation_nature
+        type: string
+        pattern: "Natureza da Ocupação:\\s*(.+?)(?:\\n|$)"
+      - name: main_occupation
+        type: string
+        pattern: "Ocupação Principal:\\s*(.+?)(?:\\n|$)"
+
+  assets_declaration:
+    name: "Declaração de Bens e Direitos"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: asset_group_code
+        type: string
+      - name: asset_code
+        type: string
+      - name: asset_description
+        type: string
+      - name: before_year_asset_value
+        type: currency
+      - name: current_year_asset_value
+        type: currency
+      - name: country_code
+        type: string
+      - name: country_name
+        type: string
+
+  income_from_legal_person_to_holder:
+    name: "Rendimentos Tributáveis Recebidos de PJ pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+      - name: cpf_cnpj
+        type: cnpj
+      - name: income_from_legal_person
+        type: currency
+      - name: official_social_security_contribution
+        type: currency
+      - name: tax_withheld_at_source
+        type: currency
+      - name: thirteenth_salary
+        type: currency
+      - name: irrf_on_thirteenth_salary
+        type: currency
+
+  exempt_income:
+    name: "Rendimentos Isentos e Não Tributáveis"
+    required: false
+    has_subsections: true
+    has_totals: true
+    fields:
+      - name: total_value
+        type: currency
+
+  exclusive_taxation_income:
+    name: "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva"
+    required: false
+    has_subsections: true
+    has_totals: true
+    fields:
+      - name: total_value
+        type: currency
+
+  exploited_rural_properties_in_brazil:
+    name: "Dados e Identificação do Imóvel Explorado - Brasil"
+    required: false
+    repeatable: true
+    fields:
+      - name: code
+        type: integer
+      - name: participation
+        type: float
+      - name: exploration_condition
+        type: integer
+      - name: name_and_location
+        type: string
+      - name: area
+        type: float
+      - name: cib
+        type: string
+
+  rural_income_and_expenditure_in_brazil:
+    name: "Receitas e Despesas - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: month
+        type: string
+      - name: gross_revenue
+        type: currency
+      - name: funding_expenses
+        type: currency
+
+  calculation_of_rural_results_in_brazil:
+    name: "Apuração do Resultado - Brasil"
+    required: false
+    has_subsections: true
+
+  rural_activity_assets_in_brazil:
+    name: "Bens da Atividade Rural - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: code
+        type: string
+      - name: description
+        type: string
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+
+  rural_activity_debts_in_brazil:
+    name: "Dívidas Vinculadas à Atividade Rural - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: item
+        type: integer
+      - name: description
+        type: string
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+      - name: paid_value_in_last_year
+        type: currency
+
+validations:
+  - type: pattern_match
+    section: taxpayer_identification
+    field: cpf
+    pattern: "^\\d{11}$"
+    error_message: "CPF deve conter 11 dígitos"

@@ -1,0 +1,334 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: irpf-processor-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: irpf_processor
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - irpf-processor-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: irpf-processor-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - irpf-processor-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: irpf-processor-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - irpf-processor-network
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: irpf-processor-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/documents --ignore-existing;
+      mc anonymous set download myminio/documents;
+      exit 0;
+      "
+    networks:
+      - irpf-processor-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: irpf-processor-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - irpf-processor-network
+    volumes:
+      - ./src:/app/src:ro
+
+  worker-router:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    container_name: irpf-processor-worker-router
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - PUSHGATEWAY_URL=pushgateway:9091
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+    command: dramatiq irpf_processor.presentation.workers --queues extraction-router --processes 1 --threads 2
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    networks:
+      - irpf-processor-network
+    volumes:
+      - ./src:/app/src:ro
+
+  worker-digital:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    container_name: irpf-processor-worker-digital
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - PUSHGATEWAY_URL=pushgateway:9091
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+    command: dramatiq irpf_processor.presentation.workers --queues default --processes 2 --threads 4
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    networks:
+      - irpf-processor-network
+    volumes:
+      - ./src:/app/src:ro
+
+  worker-ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker-ocr
+    container_name: irpf-processor-worker-ocr
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - PUSHGATEWAY_URL=pushgateway:9091
+      - OCR_TIMEOUT_SECONDS=300
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+    command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 1 --threads 1
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    networks:
+      - irpf-processor-network
+    volumes:
+      - ./src:/app/src:ro
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: irpf-processor-prometheus
+    restart: unless-stopped
+    ports:
+      - "9095:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - irpf-processor-network
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: irpf-processor-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - irpf-processor-network
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: irpf-processor-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - irpf-processor-network
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: irpf-processor-mongodb-exporter
+    restart: unless-stopped
+    ports:
+      - "9216:9216"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+    command:
+      - '--collect-all'
+      - '--compatible-mode'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - irpf-processor-network
+
+  pushgateway:
+    image: prom/pushgateway:v1.6.2
+    container_name: irpf-processor-pushgateway
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    networks:
+      - irpf-processor-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: irpf-processor-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - irpf-processor-network
+
+volumes:
+  mongo-data:
+    name: irpf-processor-mongo-data
+  redis-data:
+    name: irpf-processor-redis-data
+  minio-data:
+    name: irpf-processor-minio-data
+  prometheus-data:
+    name: irpf-processor-prometheus-data
+  grafana-data:
+    name: irpf-processor-grafana-data
+
+networks:
+  irpf-processor-network:
+    name: irpf-processor-network
+    driver: bridge
