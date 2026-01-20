@@ -101,7 +101,10 @@ class AssetsExtractor(ISectionExtractor):
                 j += 1
                 continue
             
-            if "Página" in next_line or "TOTAL" in next_line.upper():
+            if "Página" in next_line and "de" in next_line:
+                break
+            
+            if next_line.upper().startswith("TOTAL") or next_line.upper().startswith("TOTAL DE BENS"):
                 break
             
             raw_lines.append(next_line)
@@ -177,58 +180,84 @@ class AssetsExtractor(ISectionExtractor):
             "state": None,
             "acquisition_date": None,
             "registry_office_name": None,
-            "zipcode": None
+            "zipcode": None,
+            "cei_cno": None
         }
         
         for line in lines:
-            if line.startswith("Inscrição Municipal"):
-                m = re.search(r"Inscrição Municipal[:\s]+(\d[\d.-]+)", line)
+            if "Inscrição Municipal" in line:
+                m = re.search(r"Inscrição Municipal[^:]*[:\s]+([\d.-]+)", line)
                 if m:
                     info["municipal_registration"] = m.group(1).strip() or None
             
-            elif line.startswith("Logradouro"):
-                m = re.search(r"Logradouro[:\s]*([^N]+?)(?:\s+Nº|$)", line)
+            if "Logradouro" in line:
+                m = re.search(r"Logradouro[:\s]*(.+?)(?:\s+Nº[:\s]|$)", line)
                 if m:
                     info["street_address"] = m.group(1).strip() or None
-                n = re.search(r"Nº[:\s]*(\S+)", line)
-                if n:
-                    info["number"] = n.group(1).strip()
             
-            elif line.startswith("Nº"):
+            if "Nº" in line:
                 m = re.search(r"Nº[:\s]*(\S+)", line)
                 if m:
                     info["number"] = m.group(1).strip() or None
             
-            elif line.startswith("Complemento"):
-                m = re.search(r"Complemento[:\s]*(.+)", line)
+            if "Comp" in line and ":" in line:
+                m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
                 if m:
-                    info["complement"] = m.group(1).strip() or None
+                    val = m.group(1).strip()
+                    if val:
+                        info["complement"] = val
             
-            elif line.startswith("Município"):
-                m = re.search(r"Município[:\s]*([^U]+?)(?:\s+UF:|$)", line)
+            if "Bairro" in line:
+                m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
                 if m:
-                    info["city"] = m.group(1).strip() or None
-                uf = re.search(r"UF[:\s]*([A-Z]{2})", line)
-                if uf:
-                    info["state"] = uf.group(1)
+                    val = m.group(1).strip()
+                    if val:
+                        info["neighborhood"] = val
             
-            elif line.startswith("Área"):
-                m = re.search(r"Área[:\s]*([\d.,]+\s*m²?)", line)
+            if "Município" in line:
+                m = re.search(r"Município[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val:
+                        info["city"] = val
+            
+            if "UF" in line:
+                m = re.search(r"UF[:\s]*([A-Z]{2})", line)
+                if m:
+                    info["state"] = m.group(1)
+            
+            if "CEP" in line:
+                m = re.search(r"CEP[:\s]*([\d-]+)", line)
+                if m:
+                    info["zipcode"] = m.group(1).strip()
+            
+            if "Área" in line:
+                m = re.search(r"Área[^:]*[:\s]*([\d.,]+\s*m²?)", line)
                 if m:
                     info["area"] = m.group(1).strip()
             
-            elif line.startswith("Registrado em Cartório"):
+            if "Data de Aquisição" in line:
+                m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
+                if m:
+                    info["acquisition_date"] = m.group(1)
+            
+            if "Registrado" in line and "Cartório" in line:
                 info["registered_at_registy_office"] = "Sim" in line
             
-            elif line.startswith("Nome Cartório"):
-                m = re.search(r"Nome Cartório[:\s]*(.+)", line)
+            if "Nome Cartório" in line:
+                m = re.search(r"Nome Cartório[:\s]*(.+?)(?:\s+Matrícula|$)", line)
                 if m:
                     info["registry_office_name"] = m.group(1).strip() or None
             
-            elif line.startswith("Matrícula"):
-                m = re.search(r"Matrícula[:\s]*(\d+)", line)
+            if "Matrícula" in line:
+                m = re.search(r"Matrícula[:\s]*([\d.]+)", line)
                 if m:
                     info["matriculation"] = m.group(1)
+            
+            if "CEI" in line or "CNO" in line:
+                m = re.search(r"(?:CEI/?CNO|CEI|CNO)[:\s]*([\d./-]+)", line)
+                if m:
+                    info["cei_cno"] = m.group(1).strip()
         
         city_desc = re.search(r"(?:RIBEIR[AÃ]O\s+PRETO|[A-Z][A-Za-zÀ-ÿ\s]+)\s*/\s*([A-Z]{2})", description)
         if city_desc:
@@ -259,6 +288,10 @@ class AssetsExtractor(ISectionExtractor):
         area_desc = re.search(r"(\d+[,.]?\d*)\s*m[²2]", description, re.IGNORECASE)
         if area_desc and not info["area"]:
             info["area"] = f"{area_desc.group(1)} m²"
+        
+        cei_desc = re.search(r"(?:CEI|CNO)[:\s]*([\d./-]+)", description, re.IGNORECASE)
+        if cei_desc and not info["cei_cno"]:
+            info["cei_cno"] = cei_desc.group(1).strip()
         
         return info
     
@@ -296,6 +329,31 @@ class AssetsExtractor(ISectionExtractor):
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
             info["cpf"] = cpf.group(1)
+        
+        for line in lines:
+            if "Negociadas em Bolsa" in line:
+                info["traded_on_stock_market"] = "Sim" in line
+            
+            if line.startswith("Código de Negociação"):
+                m = re.search(r"Código de Negociação[:\s]*(\S+)", line)
+                if m:
+                    info["trading_code"] = m.group(1).strip()
+        
+        trading_code_desc = re.search(r"(?:TICKER|CÓDIGO)[:\s]*([A-Z]{4}\d+)", raw_text, re.IGNORECASE)
+        if trading_code_desc and "trading_code" not in info:
+            info["trading_code"] = trading_code_desc.group(1)
+        
+        bank = re.search(r"Banco[:\s]*(\d+)", raw_text)
+        if bank:
+            info["bank"] = bank.group(1)
+        
+        agency = re.search(r"Ag[êe]ncia[:\s]*(\d+[-\d]*)", raw_text)
+        if agency:
+            info["agency"] = agency.group(1)
+        
+        account = re.search(r"Conta[:\s]*([\d-]+)", raw_text)
+        if account:
+            info["account"] = account.group(1)
         
         return info
     
@@ -343,6 +401,20 @@ class AssetsExtractor(ISectionExtractor):
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
             info["cpf"] = cpf.group(1)
+        
+        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if cnpj:
+            info["cnpj"] = cnpj.group(1)
+        else:
+            cnpj_raw = re.search(r"CNPJ[:\s]*(\d{14})", raw_text)
+            if cnpj_raw:
+                info["cnpj"] = cnpj_raw.group(1)
+        
+        custodian_cnpj = re.search(r"CNPJ do Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if custodian_cnpj:
+            info["custodian_cnpj"] = custodian_cnpj.group(1)
+        
+        info["self_custodian"] = "Próprio Custodiante" in raw_text and "Sim" in raw_text.split("Próprio Custodiante")[1][:20] if "Próprio Custodiante" in raw_text else False
         
         info["traded_on_stock_market"] = "Negociados em Bolsa" in raw_text and "Sim" in raw_text
         
@@ -428,7 +500,10 @@ class AssetsExtractor(ISectionExtractor):
         if not line or len(line) <= 3:
             return False
         
-        if re.match(r"^\d", line):
+        if re.match(r"^\d{2}\s+\d{2}\s+", line):
+            return False
+        
+        if re.match(r"^\d+$", line):
             return False
         
         if any(line.startswith(p) for p in skip_prefixes):
