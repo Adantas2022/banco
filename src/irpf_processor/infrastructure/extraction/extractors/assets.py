@@ -312,7 +312,10 @@ class AssetsExtractor(ISectionExtractor):
         return info
     
     def _extract_participation_info(self, lines: list[str], raw_text: str) -> dict:
-        info = {}
+        info = {
+            "beneficiary": None,
+            "cpf": None
+        }
         
         beneficiary = self._find_beneficiary(lines)
         if beneficiary:
