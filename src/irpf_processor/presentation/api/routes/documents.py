@@ -12,7 +12,7 @@ from irpf_processor.infrastructure.storage import get_storage_service
 from irpf_processor.presentation.api.dependencies import CurrentTenant, require_scope
 from irpf_processor.presentation.workers.router_worker import route_document
 from irpf_processor.shared.logging import get_logger
-from irpf_processor.shared.metrics import record_document_upload
+from irpf_processor.shared.metrics import record_document_upload, record_queue_send_failure
 
 logger = get_logger(__name__)
 
@@ -114,7 +114,21 @@ async def upload_document(
         size_bytes=len(content),
     )
 
-    route_document.send(document.document_id, tenant_id)
+    try:
+        route_document.send(document.document_id, tenant_id)
+    except Exception as e:
+        logger.error(
+            "Failed to queue document for processing",
+            document_id=document.document_id,
+            tenant_id=tenant_id,
+            error=str(e),
+        )
+        record_queue_send_failure(tenant_id, "extraction-router")
+        await doc_repo.delete(document.document_id, tenant_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to queue document for processing. The message broker may be temporarily unavailable. Please try again later.",
+        )
 
     return UploadResponse(
         document_id=document.document_id,

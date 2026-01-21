@@ -220,6 +220,13 @@ EVENTS_PUBLISHED_TOTAL = Counter(
 )
 
 
+QUEUE_SEND_FAILURES_TOTAL = Counter(
+    "irpf_queue_send_failures_total",
+    "Total failures when sending messages to processing queue",
+    ["tenant_id", "queue_name"],
+)
+
+
 STORAGE_OPERATIONS_TOTAL = Counter(
     "irpf_storage_operations_total",
     "Total storage operations (MinIO)",
@@ -512,6 +519,13 @@ def record_taxpayer_profile(profile_type: str) -> None:
 
 def record_event_published(event_type: str) -> None:
     EVENTS_PUBLISHED_TOTAL.labels(event_type=event_type).inc()
+
+
+def record_queue_send_failure(tenant_id: str, queue_name: str) -> None:
+    QUEUE_SEND_FAILURES_TOTAL.labels(
+        tenant_id=tenant_id,
+        queue_name=queue_name,
+    ).inc()
 
 
 def set_worker_jobs_in_queue(queue_name: str, count: int) -> None:
