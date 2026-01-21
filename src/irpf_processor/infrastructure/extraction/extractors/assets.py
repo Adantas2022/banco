@@ -168,37 +168,37 @@ class AssetsExtractor(ISectionExtractor):
         description: str
     ) -> dict:
         info = {
-            "municipal_registration": None,
-            "street_address": None,
-            "complement": None,
-            "city": None,
-            "area": None,
+            "municipal_registration": "N/A",
+            "street_address": "N/A",
+            "complement": "N/A",
+            "city": "N/A",
+            "area": "N/A",
             "registered_at_registy_office": False,
-            "matriculation": None,
-            "number": None,
-            "neighborhood": None,
-            "state": None,
-            "acquisition_date": None,
-            "registry_office_name": None,
-            "zipcode": None,
-            "cei_cno": None
+            "matriculation": "N/A",
+            "number": "N/A",
+            "neighborhood": "N/A",
+            "state": "N/A",
+            "acquisition_date": "N/A",
+            "registry_office_name": "N/A",
+            "zipcode": "N/A",
+            "cei_cno": "N/A"
         }
         
         for line in lines:
             if "Inscrição Municipal" in line:
                 m = re.search(r"Inscrição Municipal[^:]*[:\s]+([\d.-]+)", line)
                 if m:
-                    info["municipal_registration"] = m.group(1).strip() or None
+                    info["municipal_registration"] = m.group(1).strip() or "N/A"
             
             if "Logradouro" in line:
                 m = re.search(r"Logradouro[:\s]*(.+?)(?:\s+Nº[:\s]|$)", line)
                 if m:
-                    info["street_address"] = m.group(1).strip() or None
+                    info["street_address"] = m.group(1).strip() or "N/A"
             
             if "Nº" in line:
                 m = re.search(r"Nº[:\s]*(\S+)", line)
                 if m:
-                    info["number"] = m.group(1).strip() or None
+                    info["number"] = m.group(1).strip() or "N/A"
             
             if "Comp" in line and ":" in line:
                 m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
@@ -247,7 +247,7 @@ class AssetsExtractor(ISectionExtractor):
             if "Nome Cartório" in line:
                 m = re.search(r"Nome Cartório[:\s]*(.+?)(?:\s+Matrícula|$)", line)
                 if m:
-                    info["registry_office_name"] = m.group(1).strip() or None
+                    info["registry_office_name"] = m.group(1).strip() or "N/A"
             
             if "Matrícula" in line:
                 m = re.search(r"Matrícula[:\s]*([\d.]+)", line)
@@ -261,36 +261,36 @@ class AssetsExtractor(ISectionExtractor):
         
         city_desc = re.search(r"(?:RIBEIR[AÃ]O\s+PRETO|[A-Z][A-Za-zÀ-ÿ\s]+)\s*/\s*([A-Z]{2})", description)
         if city_desc:
-            if not info["state"]:
+            if info["state"] == "N/A":
                 info["state"] = city_desc.group(1)
             city_match = re.search(r"([A-Z][A-Za-zÀ-ÿ\s]+)\s*/\s*[A-Z]{2}", description)
-            if city_match and not info["city"]:
+            if city_match and info["city"] == "N/A":
                 info["city"] = city_match.group(1).strip()
         
         number_desc = re.search(r"NR\.?\s*(\d+)", description)
-        if number_desc and not info["number"]:
+        if number_desc and info["number"] == "N/A":
             info["number"] = number_desc.group(1)
         
         street_desc = re.search(r"(?:SITO\s+A\s+)?(?:RUA|AV\.?|AVENIDA)\s+([A-Z][A-Za-zÀ-ÿ\s]+?)(?:\s+NR|,|\s+\d)", description, re.IGNORECASE)
-        if street_desc and not info["street_address"]:
+        if street_desc and info["street_address"] == "N/A":
             info["street_address"] = street_desc.group(1).strip()
         
         mat_desc = re.search(r"MATR[IÍ]CULA\s*(\d+)", description, re.IGNORECASE)
-        if mat_desc and not info["matriculation"]:
+        if mat_desc and info["matriculation"] == "N/A":
             info["matriculation"] = mat_desc.group(1)
             info["registered_at_registy_office"] = True
         
         cri_desc = re.search(r"(\d+[ºOo]?\s*C[RI]{2}[IO]?\s+DE\s+\w+(?:\s+\w+)?)", description, re.IGNORECASE)
-        if cri_desc and not info["registry_office_name"]:
+        if cri_desc and info["registry_office_name"] == "N/A":
             info["registry_office_name"] = cri_desc.group(1).upper()
             info["registered_at_registy_office"] = True
         
         area_desc = re.search(r"(\d+[,.]?\d*)\s*m[²2]", description, re.IGNORECASE)
-        if area_desc and not info["area"]:
+        if area_desc and info["area"] == "N/A":
             info["area"] = f"{area_desc.group(1)} m²"
         
         cei_desc = re.search(r"(?:CEI|CNO)[:\s]*([\d./-]+)", description, re.IGNORECASE)
-        if cei_desc and not info["cei_cno"]:
+        if cei_desc and info["cei_cno"] == "N/A":
             info["cei_cno"] = cei_desc.group(1).strip()
         
         return info
@@ -358,8 +358,8 @@ class AssetsExtractor(ISectionExtractor):
     
     def _extract_deposit_info(self, lines: list[str], raw_text: str) -> dict:
         info = {
-            "beneficiary": None,
-            "cpf": None
+            "beneficiary": "N/A",
+            "cpf": "N/A"
         }
         
         beneficiary = self._find_beneficiary(lines)
@@ -465,7 +465,7 @@ class AssetsExtractor(ISectionExtractor):
             info["beneficiary"] = beneficiary
         
         cnpj = re.search(r"(?<!Custodiante[:\s])CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
-        info["cnpj"] = cnpj.group(1) if cnpj else None
+        info["cnpj"] = cnpj.group(1) if cnpj else "N/A"
         
         custodian = re.search(r"CNPJ Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
         if custodian:
