@@ -82,9 +82,9 @@ class TestProcessOcrDocument:
         assert hasattr(process_ocr_document, "options")
 
     @patch("irpf_processor.presentation.workers.ocr_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.ocr_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.WORKER_JOBS_TOTAL")
-    def test_handles_missing_document(self, mock_jobs_total, mock_storage, mock_get_db):
+    def test_handles_missing_document(self, mock_jobs_total, mock_storage_factory, mock_get_db):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
         mock_db = MagicMock()
@@ -98,7 +98,7 @@ class TestProcessOcrDocument:
         mock_jobs_total.labels.assert_called_with(worker_name="ocr_worker", status="not_found")
 
     @patch("irpf_processor.presentation.workers.ocr_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.ocr_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.create_ocr_orchestrator")
     @patch("irpf_processor.presentation.workers.ocr_worker.PostProcessor")
     @patch("irpf_processor.presentation.workers.ocr_worker.IRPFParser")
@@ -117,7 +117,7 @@ class TestProcessOcrDocument:
         self, mock_jobs_total, mock_record_section, mock_record_processed,
         mock_record_status, mock_record_category, mock_record_duration,
         mock_record_conf, mock_record_dur, mock_record_usage, mock_push,
-        mock_is_receipt, mock_parser, mock_postproc, mock_orchestrator, mock_storage, mock_get_db
+        mock_is_receipt, mock_parser, mock_postproc, mock_orchestrator, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
@@ -140,7 +140,7 @@ class TestProcessOcrDocument:
 
         mock_storage_instance = MagicMock()
         mock_storage_instance.download_sync.return_value = b"PDF content"
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
         mock_ocr_result = MagicMock()
         mock_ocr_result.text = "DECLARACAO DE AJUSTE ANUAL"
@@ -178,7 +178,7 @@ class TestProcessOcrDocument:
         mock_collection.update_one.assert_called()
 
     @patch("irpf_processor.presentation.workers.ocr_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.ocr_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.create_ocr_orchestrator")
     @patch("irpf_processor.presentation.workers.ocr_worker.PostProcessor")
     @patch("irpf_processor.presentation.workers.ocr_worker.ReceiptParser")
@@ -199,7 +199,7 @@ class TestProcessOcrDocument:
         mock_record_status, mock_record_category, mock_record_duration,
         mock_record_conf, mock_record_dur, mock_record_usage, mock_push,
         mock_is_receipt, mock_irpf_parser, mock_receipt_parser, mock_postproc,
-        mock_orchestrator, mock_storage, mock_get_db
+        mock_orchestrator, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
@@ -222,7 +222,7 @@ class TestProcessOcrDocument:
 
         mock_storage_instance = MagicMock()
         mock_storage_instance.download_sync.return_value = b"PDF content"
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
         mock_ocr_result = MagicMock()
         mock_ocr_result.text = "RECIBO DE ENTREGA"
@@ -258,7 +258,7 @@ class TestProcessOcrDocument:
         mock_receipt_parser_instance.parse_from_text.assert_called_once()
 
     @patch("irpf_processor.presentation.workers.ocr_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.ocr_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.create_ocr_orchestrator")
     @patch("irpf_processor.presentation.workers.ocr_worker.push_metrics_to_gateway")
     @patch("irpf_processor.presentation.workers.ocr_worker.record_failure")
@@ -266,7 +266,7 @@ class TestProcessOcrDocument:
     @patch("irpf_processor.presentation.workers.ocr_worker.WORKER_JOBS_TOTAL")
     def test_handles_ocr_error(
         self, mock_jobs_total, mock_record_status, mock_record_failure,
-        mock_push, mock_orchestrator, mock_storage, mock_get_db
+        mock_push, mock_orchestrator, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
@@ -285,7 +285,7 @@ class TestProcessOcrDocument:
 
         mock_storage_instance = MagicMock()
         mock_storage_instance.download_sync.return_value = b"PDF content"
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
         mock_orchestrator.side_effect = RuntimeError("No OCR engines available")
 

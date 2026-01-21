@@ -113,12 +113,12 @@ class TestRouteDocument:
         assert hasattr(route_document, "options")
 
     @patch("irpf_processor.presentation.workers.router_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.router_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.router_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.router_worker.PdfTypeDetector")
     @patch("irpf_processor.presentation.workers.router_worker.push_metrics_to_gateway")
     @patch("irpf_processor.presentation.workers.router_worker.WORKER_JOBS_TOTAL")
     def test_handles_missing_document(
-        self, mock_jobs_total, mock_push, mock_detector, mock_storage, mock_get_db
+        self, mock_jobs_total, mock_push, mock_detector, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.router_worker import route_document
 
@@ -134,11 +134,11 @@ class TestRouteDocument:
 
 
     @patch("irpf_processor.presentation.workers.router_worker.get_sync_db")
-    @patch("irpf_processor.presentation.workers.router_worker.MinioStorageService")
+    @patch("irpf_processor.presentation.workers.router_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.router_worker.push_metrics_to_gateway")
     @patch("irpf_processor.presentation.workers.router_worker.WORKER_JOBS_TOTAL")
     def test_handles_routing_error(
-        self, mock_jobs_total, mock_push, mock_storage, mock_get_db
+        self, mock_jobs_total, mock_push, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.router_worker import route_document
 
@@ -155,7 +155,7 @@ class TestRouteDocument:
 
         mock_storage_instance = MagicMock()
         mock_storage_instance.download_sync.side_effect = Exception("Storage error")
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
         with pytest.raises(Exception, match="Storage error"):
             route_document.fn("doc-123", "tenant-456")

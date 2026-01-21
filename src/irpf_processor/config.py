@@ -28,12 +28,20 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
+    # Storage
+    storage_type: Literal["minio", "gcs"] = "minio"
+
     # MinIO (S3)
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "documents"
     minio_secure: bool = False
+
+    # GCS (Google Cloud Storage)
+    gcp_bucket: str = ""
+    gcp_credentials_path: str = ""
+    gcp_auth_type: Literal["adc", "service_account"] = "adc"
 
     # OCR
     ocr_engine: Literal["tesseract", "docling"] = "tesseract"

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from irpf_processor.presentation.api.routes.documents import (
     get_document_repository,
-    get_storage_service,
+    get_storage_service_dependency,
     upload_document,
     get_document_status,
     get_document_result,
@@ -81,17 +81,17 @@ class TestGetDocumentRepository:
         assert result == mock_repo_instance
 
 
-class TestGetStorageService:
+class TestGetStorageServiceDependency:
 
     @pytest.mark.asyncio
-    @patch("irpf_processor.presentation.api.routes.documents.MinioStorageService")
-    async def test_creates_storage_service(self, mock_storage):
+    @patch("irpf_processor.presentation.api.routes.documents.get_storage_service")
+    async def test_creates_storage_service(self, mock_storage_factory):
         mock_storage_instance = MagicMock()
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
-        result = await get_storage_service()
+        result = await get_storage_service_dependency()
 
-        mock_storage.assert_called_once()
+        mock_storage_factory.assert_called_once()
 
 
 class TestUploadDocument:
