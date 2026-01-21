@@ -299,6 +299,54 @@ class TestGetDocumentResult:
         assert "Extraction result not found" in exc_info.value.detail
 
 
+class TestUploadDocumentStorageFailure:
+
+    @pytest.mark.asyncio
+    @patch("irpf_processor.presentation.api.routes.documents.route_document")
+    @patch("irpf_processor.presentation.api.routes.documents.record_document_upload")
+    @patch("irpf_processor.presentation.api.routes.documents.record_failure")
+    @patch("irpf_processor.presentation.api.routes.documents.Document")
+    async def test_returns_warning_when_storage_fails(
+        self, mock_document_class, mock_record_failure, mock_record_upload, mock_route
+    ):
+        mock_file = MagicMock()
+        mock_file.filename = "document.pdf"
+        mock_file.content_type = "application/pdf"
+        mock_file.read = AsyncMock(return_value=b"PDF content")
+
+        mock_document_class.calculate_sha256.return_value = "unique-sha256"
+        mock_doc_instance = MagicMock()
+        mock_doc_instance.document_id = "doc-123"
+        mock_doc_instance.status.value = "RECEIVED"
+        mock_doc_instance.storage_uri = ""
+        mock_document_class.return_value = mock_doc_instance
+
+        mock_repo = MagicMock()
+        mock_repo.find_by_sha256 = AsyncMock(return_value=None)
+        mock_repo.create = AsyncMock()
+
+        mock_storage = MagicMock()
+        mock_storage.upload = AsyncMock(side_effect=Exception("Connection refused"))
+
+        mock_route.send.return_value = None
+
+        result = await upload_document(
+            tenant_id="tenant-456",
+            file=mock_file,
+            doc_repo=mock_repo,
+            storage=mock_storage
+        )
+
+        assert result.document_id == "doc-123"
+        assert result.status == "RECEIVED"
+        assert result.warnings is not None
+        assert len(result.warnings) == 1
+        assert "not saved to storage" in result.warnings[0]
+        mock_record_failure.assert_called_once_with("tenant-456", "upload", "storage_unavailable")
+        mock_repo.create.assert_called_once()
+        mock_route.send.assert_called_once()
+
+
 class TestUploadDocumentQueueFailure:
 
     @pytest.mark.asyncio

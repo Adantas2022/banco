@@ -12,7 +12,7 @@ from irpf_processor.infrastructure.storage import get_storage_service
 from irpf_processor.presentation.api.dependencies import CurrentTenant, require_scope
 from irpf_processor.presentation.workers.router_worker import route_document
 from irpf_processor.shared.logging import get_logger
-from irpf_processor.shared.metrics import record_document_upload, record_queue_send_failure
+from irpf_processor.shared.metrics import record_document_upload, record_queue_send_failure, record_failure
 
 logger = get_logger(__name__)
 
@@ -23,6 +23,7 @@ class UploadResponse(BaseModel):
     document_id: str
     status: str
     message: str
+    warnings: Optional[list[str]] = None
 
 
 class DocumentStatusResponse(BaseModel):
@@ -95,12 +96,24 @@ async def upload_document(
     )
 
     storage_key = f"{tenant_id}/{document.document_id}/{file.filename}"
-    storage_uri = await storage.upload(
-        content=content,
-        key=storage_key,
-        content_type=document.content_type,
-    )
-    document.storage_uri = storage_uri
+    warnings: list[str] = []
+
+    try:
+        storage_uri = await storage.upload(
+            content=content,
+            key=storage_key,
+            content_type=document.content_type,
+        )
+        document.storage_uri = storage_uri
+    except Exception as e:
+        logger.error(
+            "Failed to upload document to storage",
+            document_id=document.document_id,
+            tenant_id=tenant_id,
+            error=str(e),
+        )
+        record_failure(tenant_id, "upload", "storage_unavailable")
+        warnings.append("Document was not saved to storage. Storage service may be unavailable.")
 
     await doc_repo.create(document)
 
@@ -112,6 +125,7 @@ async def upload_document(
         tenant_id=tenant_id,
         filename=file.filename,
         size_bytes=len(content),
+        storage_warning=len(warnings) > 0,
     )
 
     try:
@@ -134,6 +148,7 @@ async def upload_document(
         document_id=document.document_id,
         status=document.status.value,
         message="Document received and queued for routing",
+        warnings=warnings if warnings else None,
     )
 
 
