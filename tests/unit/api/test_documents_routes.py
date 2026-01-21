@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from irpf_processor.presentation.api.routes.documents import (
     get_document_repository,
-    get_storage_service,
+    get_storage_service_dependency,
     upload_document,
     get_document_status,
     get_document_result,
@@ -81,17 +81,17 @@ class TestGetDocumentRepository:
         assert result == mock_repo_instance
 
 
-class TestGetStorageService:
+class TestGetStorageServiceDependency:
 
     @pytest.mark.asyncio
-    @patch("irpf_processor.presentation.api.routes.documents.MinioStorageService")
-    async def test_creates_storage_service(self, mock_storage):
+    @patch("irpf_processor.presentation.api.routes.documents.get_storage_service")
+    async def test_creates_storage_service(self, mock_storage_factory):
         mock_storage_instance = MagicMock()
-        mock_storage.return_value = mock_storage_instance
+        mock_storage_factory.return_value = mock_storage_instance
 
-        result = await get_storage_service()
+        result = await get_storage_service_dependency()
 
-        mock_storage.assert_called_once()
+        mock_storage_factory.assert_called_once()
 
 
 class TestUploadDocument:
@@ -297,6 +297,138 @@ class TestGetDocumentResult:
 
         assert exc_info.value.status_code == 404
         assert "Extraction result not found" in exc_info.value.detail
+
+
+class TestUploadDocumentStorageFailure:
+
+    @pytest.mark.asyncio
+    @patch("irpf_processor.presentation.api.routes.documents.route_document")
+    @patch("irpf_processor.presentation.api.routes.documents.record_document_upload")
+    @patch("irpf_processor.presentation.api.routes.documents.record_failure")
+    @patch("irpf_processor.presentation.api.routes.documents.Document")
+    async def test_returns_warning_when_storage_fails(
+        self, mock_document_class, mock_record_failure, mock_record_upload, mock_route
+    ):
+        mock_file = MagicMock()
+        mock_file.filename = "document.pdf"
+        mock_file.content_type = "application/pdf"
+        mock_file.read = AsyncMock(return_value=b"PDF content")
+
+        mock_document_class.calculate_sha256.return_value = "unique-sha256"
+        mock_doc_instance = MagicMock()
+        mock_doc_instance.document_id = "doc-123"
+        mock_doc_instance.status.value = "RECEIVED"
+        mock_doc_instance.storage_uri = ""
+        mock_document_class.return_value = mock_doc_instance
+
+        mock_repo = MagicMock()
+        mock_repo.find_by_sha256 = AsyncMock(return_value=None)
+        mock_repo.create = AsyncMock()
+
+        mock_storage = MagicMock()
+        mock_storage.upload = AsyncMock(side_effect=Exception("Connection refused"))
+
+        mock_route.send.return_value = None
+
+        result = await upload_document(
+            tenant_id="tenant-456",
+            file=mock_file,
+            doc_repo=mock_repo,
+            storage=mock_storage
+        )
+
+        assert result.document_id == "doc-123"
+        assert result.status == "RECEIVED"
+        assert result.warnings is not None
+        assert len(result.warnings) == 1
+        assert "not saved to storage" in result.warnings[0]
+        mock_record_failure.assert_called_once_with("tenant-456", "upload", "storage_unavailable")
+        mock_repo.create.assert_called_once()
+        mock_route.send.assert_called_once()
+
+
+class TestUploadDocumentQueueFailure:
+
+    @pytest.mark.asyncio
+    @patch("irpf_processor.presentation.api.routes.documents.route_document")
+    @patch("irpf_processor.presentation.api.routes.documents.record_document_upload")
+    @patch("irpf_processor.presentation.api.routes.documents.record_queue_send_failure")
+    @patch("irpf_processor.presentation.api.routes.documents.Document")
+    async def test_returns_503_when_queue_send_fails(
+        self, mock_document_class, mock_record_queue_failure, mock_record_upload, mock_route
+    ):
+        mock_file = MagicMock()
+        mock_file.filename = "document.pdf"
+        mock_file.content_type = "application/pdf"
+        mock_file.read = AsyncMock(return_value=b"PDF content")
+
+        mock_document_class.calculate_sha256.return_value = "unique-sha256"
+        mock_doc_instance = MagicMock()
+        mock_doc_instance.document_id = "doc-123"
+        mock_doc_instance.status.value = "RECEIVED"
+        mock_document_class.return_value = mock_doc_instance
+
+        mock_repo = MagicMock()
+        mock_repo.find_by_sha256 = AsyncMock(return_value=None)
+        mock_repo.create = AsyncMock()
+        mock_repo.delete = AsyncMock()
+
+        mock_storage = MagicMock()
+        mock_storage.upload = AsyncMock(return_value="gs://bucket/key")
+
+        mock_route.send.side_effect = Exception("Redis connection refused")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await upload_document(
+                tenant_id="tenant-456",
+                file=mock_file,
+                doc_repo=mock_repo,
+                storage=mock_storage
+            )
+
+        assert exc_info.value.status_code == 503
+        assert "Failed to queue document" in exc_info.value.detail
+        assert "temporarily unavailable" in exc_info.value.detail
+        mock_repo.delete.assert_called_once_with("doc-123", "tenant-456")
+        mock_record_queue_failure.assert_called_once_with("tenant-456", "extraction-router")
+
+    @pytest.mark.asyncio
+    @patch("irpf_processor.presentation.api.routes.documents.route_document")
+    @patch("irpf_processor.presentation.api.routes.documents.record_document_upload")
+    @patch("irpf_processor.presentation.api.routes.documents.Document")
+    async def test_success_when_queue_send_works(
+        self, mock_document_class, mock_record_upload, mock_route
+    ):
+        mock_file = MagicMock()
+        mock_file.filename = "document.pdf"
+        mock_file.content_type = "application/pdf"
+        mock_file.read = AsyncMock(return_value=b"PDF content")
+
+        mock_document_class.calculate_sha256.return_value = "unique-sha256"
+        mock_doc_instance = MagicMock()
+        mock_doc_instance.document_id = "doc-123"
+        mock_doc_instance.status.value = "RECEIVED"
+        mock_document_class.return_value = mock_doc_instance
+
+        mock_repo = MagicMock()
+        mock_repo.find_by_sha256 = AsyncMock(return_value=None)
+        mock_repo.create = AsyncMock()
+
+        mock_storage = MagicMock()
+        mock_storage.upload = AsyncMock(return_value="gs://bucket/key")
+
+        mock_route.send.return_value = None
+
+        result = await upload_document(
+            tenant_id="tenant-456",
+            file=mock_file,
+            doc_repo=mock_repo,
+            storage=mock_storage
+        )
+
+        assert result.document_id == "doc-123"
+        assert result.status == "RECEIVED"
+        mock_route.send.assert_called_once_with("doc-123", "tenant-456")
 
 
 class TestRouter:

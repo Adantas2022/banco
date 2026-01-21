@@ -15,7 +15,7 @@ from irpf_processor.infrastructure.extraction.ocr import (
     PostProcessor,
     TesseractEngine,
 )
-from irpf_processor.infrastructure.storage.minio_storage import MinioStorageService
+from irpf_processor.infrastructure.storage import get_storage_service, extract_storage_key
 from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
     WORKER_JOBS_TOTAL,
@@ -86,7 +86,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
     )
 
     db = get_sync_db()
-    storage = MinioStorageService()
+    storage = get_storage_service()
 
     document = db["documents"].find_one({
         "document_id": document_id,
@@ -103,7 +103,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
         post_processor = PostProcessor(lang="pt-BR")
         parser = IRPFParser()
 
-        storage_key = document["storage_uri"].replace("s3://documents/", "")
+        storage_key = extract_storage_key(document["storage_uri"])
         pdf_content = storage.download_sync(storage_key)
 
         logger.info(

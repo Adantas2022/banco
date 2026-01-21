@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from irpf_processor.config import get_settings
 from irpf_processor.infrastructure.extraction import IRPFParser, ReceiptParser, is_receipt_document
 from irpf_processor.infrastructure.extraction.text_extractor import PdfTextExtractor
-from irpf_processor.infrastructure.storage.minio_storage import MinioStorageService
+from irpf_processor.infrastructure.storage import get_storage_service, extract_storage_key
 from irpf_processor.domain.enums import DocumentStatus, DocumentCategory, PdfType
 from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
@@ -105,7 +105,7 @@ def process_document(document_id: str, tenant_id: str) -> None:
     )
 
     db = get_sync_db()
-    storage = MinioStorageService()
+    storage = get_storage_service()
 
     document = get_document_sync(db, document_id, tenant_id)
     if not document:
@@ -123,7 +123,7 @@ def process_document(document_id: str, tenant_id: str) -> None:
             pdf_type=PdfType.DIGITAL.value,
         )
 
-        storage_key = document["storage_uri"].replace("s3://documents/", "")
+        storage_key = extract_storage_key(document["storage_uri"])
         pdf_content = storage.download_sync(storage_key)
 
         logger.info(
