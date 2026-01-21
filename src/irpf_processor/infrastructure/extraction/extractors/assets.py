@@ -330,14 +330,13 @@ class AssetsExtractor(ISectionExtractor):
         if cpf:
             info["cpf"] = cpf.group(1)
         
-        for line in lines:
-            if "Negociadas em Bolsa" in line:
-                info["traded_on_stock_market"] = "Sim" in line
-            
-            if line.startswith("Código de Negociação"):
-                m = re.search(r"Código de Negociação[:\s]*(\S+)", line)
-                if m:
-                    info["trading_code"] = m.group(1).strip()
+        traded_match = re.search(r"Negociad[oa]s em Bolsa[:\s]*(Sim|Não)", raw_text)
+        if traded_match:
+            info["traded_on_stock_market"] = traded_match.group(1) == "Sim"
+        
+        trading_code_match = re.search(r"Código de Negociação[:\s]*([A-Z0-9]+)", raw_text)
+        if trading_code_match:
+            info["trading_code"] = trading_code_match.group(1)
         
         trading_code_desc = re.search(r"(?:TICKER|CÓDIGO)[:\s]*([A-Z]{4}\d+)", raw_text, re.IGNORECASE)
         if trading_code_desc and "trading_code" not in info:
@@ -358,7 +357,10 @@ class AssetsExtractor(ISectionExtractor):
         return info
     
     def _extract_deposit_info(self, lines: list[str], raw_text: str) -> dict:
-        info = {}
+        info = {
+            "beneficiary": None,
+            "cpf": None
+        }
         
         beneficiary = self._find_beneficiary(lines)
         if beneficiary:
@@ -402,19 +404,28 @@ class AssetsExtractor(ISectionExtractor):
         if cpf:
             info["cpf"] = cpf.group(1)
         
-        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
-        if cnpj:
-            info["cnpj"] = cnpj.group(1)
+        cnpj_fund = re.search(r"CNPJ do Fundo[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if cnpj_fund:
+            info["cnpj"] = cnpj_fund.group(1)
         else:
-            cnpj_raw = re.search(r"CNPJ[:\s]*(\d{14})", raw_text)
-            if cnpj_raw:
-                info["cnpj"] = cnpj_raw.group(1)
+            cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+            if cnpj:
+                info["cnpj"] = cnpj.group(1)
+            else:
+                cnpj_raw = re.search(r"CNPJ[:\s]*(\d{14})", raw_text)
+                if cnpj_raw:
+                    info["cnpj"] = cnpj_raw.group(1)
         
-        custodian_cnpj = re.search(r"CNPJ do Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        custodian_cnpj = re.search(r"CNPJ (?:do )?Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
         if custodian_cnpj:
             info["custodian_cnpj"] = custodian_cnpj.group(1)
         
-        info["self_custodian"] = "Próprio Custodiante" in raw_text and "Sim" in raw_text.split("Próprio Custodiante")[1][:20] if "Próprio Custodiante" in raw_text else False
+        if "Autocustodiante" in raw_text:
+            info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:20]
+        elif "Próprio Custodiante" in raw_text:
+            info["self_custodian"] = "Sim" in raw_text.split("Próprio Custodiante")[1][:20]
+        else:
+            info["self_custodian"] = False
         
         info["traded_on_stock_market"] = "Negociados em Bolsa" in raw_text and "Sim" in raw_text
         

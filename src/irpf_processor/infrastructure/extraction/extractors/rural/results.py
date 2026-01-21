@@ -75,7 +75,7 @@ class RuralResultsExtractor(ISectionExtractor):
         return subsections
     
     def _parse_result_line(self, line: str) -> Optional[dict]:
-        pattern = re.match(r"^(.+?)\s+([\d.,-]+|Pelo resultado)\s*$", line.strip())
+        pattern = re.match(r"^(.+?)\s+(-?[\d.,-]+|Pelo resultado)\s*$", line.strip())
         
         if not pattern:
             return None
@@ -90,6 +90,8 @@ class RuralResultsExtractor(ISectionExtractor):
             value = value_str
         else:
             value = parse_currency(value_str)
+            if description == "Resultado":
+                value = abs(value)
         
         return {
             "description": description,

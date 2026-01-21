@@ -22,6 +22,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         subsections = {}
         
+        variable_income = self._extract_variable_income_gains(context)
+        if variable_income:
+            subsections["net_gains_from_variable_income_stocks_futures_and_reits"] = variable_income
+        
         financial = self._extract_financial_income(context)
         if financial["items"]:
             subsections["income_from_financial_investments"] = financial
@@ -37,6 +41,25 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "valid_total": True,
             "subsections": subsections
         }
+    
+    def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
+        for page_text in context.pages_text.values():
+            if "05." in page_text and "Ganhos líquidos" in page_text:
+                pattern = re.search(
+                    r"05\.\s*Ganhos líquidos em renda variável[^\d]+([\d.,]+)",
+                    page_text,
+                    re.IGNORECASE
+                )
+                if pattern:
+                    value = parse_currency(pattern.group(1))
+                    return {
+                        "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
+                        "code": "05",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": None
+                    }
+        return None
     
     def _extract_financial_income(self, context: ExtractionContext) -> dict:
         items = []
