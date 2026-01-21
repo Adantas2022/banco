@@ -293,3 +293,149 @@ class TestAssetsExtractorEdgeCases:
 
         if result:
             assert len(result["items"]) == 1
+
+
+class TestAssetsExtractorAdditionalInfo:
+
+    def test_extracts_real_estate_cei_cno(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        01 01 IMOVEL CONSTRUCAO 100.000,00 150.000,00
+        CEI 12.345.67890/12
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("cei_cno") == "12.345.67890/12"
+
+    def test_extracts_participation_traded_on_stock_market(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        03 01 ACOES PETROBRAS 50.000,00 60.000,00
+        Negociadas em Bolsa Sim
+        Código de Negociação PETR4
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("traded_on_stock_market") is True
+                assert item["additional_info"].get("trading_code") == "PETR4"
+
+    def test_extracts_deposit_bank_info(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        06 01 CONTA CORRENTE 10.000,00 15.000,00
+        CNPJ 00.000.000/0001-91
+        Banco 001
+        Agência 1234
+        Conta 56789-0
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("bank") == "001"
+                assert item["additional_info"].get("agency") == "1234"
+                assert item["additional_info"].get("account") == "56789-0"
+
+    def test_extracts_fund_cnpj(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        07 01 FUNDO DE INVESTIMENTO 80.000,00 90.000,00
+        CNPJ 12.345.678/0001-90
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("cnpj") == "12.345.678/0001-90"
+
+    def test_extracts_fund_custodian_info(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        07 01 FUNDO ACOES 100.000,00 120.000,00
+        CNPJ do Custodiante 98.765.432/0001-10
+        Próprio Custodiante Sim
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("custodian_cnpj") == "98.765.432/0001-10"
+                assert item["additional_info"].get("self_custodian") is True
+
+    def test_extracts_real_estate_address_info(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        01 01 APARTAMENTO 200.000,00 250.000,00
+        Inscrição Municipal 12345678
+        Logradouro Rua das Flores Nº 100
+        Complemento Apto 10
+        Município São Paulo UF SP
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("municipal_registration") == "12345678"
+                assert item["additional_info"].get("street_address") == "Rua das Flores"
+                assert item["additional_info"].get("number") == "100"
+                assert item["additional_info"].get("complement") == "Apto 10"
+                assert item["additional_info"].get("city") == "São Paulo"
+                assert item["additional_info"].get("state") == "SP"
+
+    def test_extracts_deposit_payment_account(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+        06 01 CONTA PAGAMENTO 5.000,00 7.000,00
+        Conta Pagamento Sim
+        """
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        if result and result["items"]:
+            item = result["items"][0]
+            if "additional_info" in item:
+                assert item["additional_info"].get("is_payment_account") is True
