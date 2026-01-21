@@ -505,7 +505,7 @@ class AssetsExtractor(ISectionExtractor):
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
             "Registro de Embarcação", "Matrícula", "Banco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
-            "CNPJ Custodiante", "Lucro ou", "Valor Recebido", "Imposto"
+            "CNPJ", "CPF", "Lucro ou", "Valor Recebido", "Imposto"
         )
         
         if not line or len(line) <= 3:
