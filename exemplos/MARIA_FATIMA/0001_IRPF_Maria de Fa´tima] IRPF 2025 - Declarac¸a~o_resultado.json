@@ -1,0 +1,216 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": null,
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "278.097.575-04",
+                    "normalized_cpf": "27809757504",
+                    "name": "MARIA DE FATIMA LAVIGNE SANTOS",
+                    "exercise_year": "2025",
+                    "calendar_year": "2024",
+                    "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                    "main_occupation": "000 - OUTRAS OCUPAÇÕES NÃO ESPECIFICADAS ANTERIORMENTE",
+                    "contact_and_address": {
+                        "street_address": "RUA DO FOGO",
+                        "number": "19",
+                        "complement": "ANDAR 1",
+                        "neighborhood": "RIBEIRA",
+                        "city": "SALVADOR",
+                        "uf": "BA",
+                        "zip_code": "40421-560",
+                        "phone": "",
+                        "email": "",
+                        "cell_phone": ""
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL ORIGINAL"
+                },
+                "total_value": 250000,
+                "valid_total": true,
+                "equity_evolution": 0,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "a53398d8dfce77ee710e6b1badc15886",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "PARTICIPACAO DE 100 % NO CAPITAL SOCIAL DA EMPRESA POSTO BRASIL CITROS LTDA",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "13.255.598/0001-01",
+                                "cpf": "278.097.575-04"
+                            },
+                            "country_valid": true,
+                            "page": 3
+                        },
+                        {
+                            "id": "1db66c06b2ee7b10abc83331dae31b6d",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "PARTICIPACAO DE 100 % NO CAPITAL SOCIAL DA EMPRESA PAGUE MENOS LTDA",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "16.964.365/0001-76",
+                                "cpf": "278.097.575-04"
+                            },
+                            "country_valid": true,
+                            "page": 3
+                        },
+                        {
+                            "id": "48c36c5db4b13a18206bc018e9154b48",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "PARTICIPACAO DE 100 % DO CAPITAL DA EMPRESA DERIVADOS DE PETROLEO FERNANDES LTDA",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "08.337.337/0001-09",
+                                "cpf": "278.097.575-04"
+                            },
+                            "country_valid": true,
+                            "page": 3
+                        }
+                    ],
+                    "last_year_total_value": 250000.0,
+                    "current_year_total_value": 250000.0,
+                    "pages_with_problems": []
+                },
+                "debts_and_encumbrances": {},
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 80001.0,
+                    "valid_total": true,
+                    "subsections": {
+                        "profits_and_dividends": {
+                            "name": "09. Lucros e dividendos recebidos",
+                            "code": "09",
+                            "total_value": 80001.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "278.097.575-04",
+                                    "payer_cnpj": "13.255.598/0001-01",
+                                    "payer_name": "POSTO BRASIL CITROS LTDA",
+                                    "value": 80000.0,
+                                    "id": "cabfd8a38bed3439edd0b0f954b7e0f2",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "278.097.575-04",
+                                    "payer_cnpj": "16.964.365/0001-76",
+                                    "payer_name": "POSTO PAGUE MENOS LTDA",
+                                    "value": 1.0,
+                                    "id": "09e8531293c77fe6019ad19cdb348743",
+                                    "page": 2
+                                }
+                            ]
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 1963.08,
+                    "valid_total": true,
+                    "subsections": {
+                        "thirteenth_salary": {
+                            "name": "01. 13º salário",
+                            "code": "01",
+                            "total_value": 1963.08,
+                            "valid_total": true,
+                            "items": null
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": null,
+                "income_from_individual_to_dependents": null,
+                "income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "POSTO BRASIL CITROS LTDA",
+                            "income_from_legal_person": 16944.0,
+                            "official_social_security_contribution": 1863.84,
+                            "tax_withheld_at_source": 0.0,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "13.255.598/0001-01",
+                            "id": "94b1486d951844ef97409d41f7fd274f",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "POSTO PAGUE MENOS LTDA",
+                            "income_from_legal_person": 27022.51,
+                            "official_social_security_contribution": 2188.83,
+                            "tax_withheld_at_source": 0.0,
+                            "thirteenth_salary": 1963.08,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "16.964.365/0001-76",
+                            "id": "8e7760d21f79df4e005149c04b46f56b",
+                            "page": 1
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 43966.51,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 4052.67,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 1963.08,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents": null,
+                "income_from_legal_person_to_holder_with_suspended_requirements": null,
+                "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+                "accumulated_income_from_legal_person_to_holder": null,
+                "accumulated_income_from_legal_person_to_dependents": null,
+                "exploited_rural_properties_in_brazil": null,
+                "rural_income_and_expenditure_in_brazil": null,
+                "calculation_of_rural_results_in_brazil": null,
+                "livestock_movement_in_brazil": null,
+                "rural_activity_assets_in_brazil": null,
+                "rural_activity_debts_in_brazil": null,
+                "exploited_rural_properties_abroad": null,
+                "rural_income_and_expenditure_abroad": null,
+                "calculation_of_rural_results_abroad": null,
+                "rural_activity_assets_abroad": null,
+                "rural_activity_debts_abroad": null,
+                "livestock_movement_abroad": null,
+                "total_pages": 8
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": "https://rpg-ir-analyzer-staging.s3.sa-east-1.amazonaws.com/temp/ad85acf65cf160a17669197504ed52.csv",
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}

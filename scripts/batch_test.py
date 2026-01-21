@@ -109,7 +109,9 @@ class ResultValidator:
             errors.append(f"confidence_below_threshold: {confidence} < {self.min_confidence}")
 
         data = result.get("data", {})
-        taxpayer = data.get("taxpayer_identification", {})
+        ir_response = data.get("ir_response", {})
+        declaration = ir_response.get("declaration", {}) or {}
+        taxpayer = declaration.get("taxpayer_identification", {})
 
         cpf = taxpayer.get("cpf")
         if not cpf:
@@ -164,7 +166,9 @@ class TestRunner:
             if result.status == "READY":
                 extraction_result = self.api_client.get_result(result.document_id)
                 data = extraction_result.get("data", {})
-                taxpayer_data = data.get("taxpayer_identification", {})
+                ir_response = data.get("ir_response", {})
+                declaration = ir_response.get("declaration", {}) or {}
+                taxpayer_data = declaration.get("taxpayer_identification", {})
 
                 result.taxpayer = TaxpayerInfo(
                     cpf=taxpayer_data.get("cpf"),
