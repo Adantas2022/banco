@@ -202,6 +202,22 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 )
 
             extraction_collection = db["extraction_results"]
+            
+            if document_category == DocumentCategory.RECIBO:
+                ir_response_data = {
+                    "ir_response": {
+                        "receipt": result_dict,
+                        "declaration": None,
+                    }
+                }
+            else:
+                ir_response_data = {
+                    "ir_response": {
+                        "receipt": None,
+                        "declaration": result_dict,
+                    }
+                }
+            
             extraction_doc = {
                 "document_id": document_id,
                 "tenant_id": tenant_id,
@@ -211,7 +227,7 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 "confidence_details": confidence_details.to_dict() if confidence_details else None,
                 "total_pages": result.total_pages,
                 "warnings": result.warnings,
-                "data": result_dict,
+                "data": ir_response_data,
                 "updated_at": datetime.now(timezone.utc),
             }
             extraction_collection.update_one(

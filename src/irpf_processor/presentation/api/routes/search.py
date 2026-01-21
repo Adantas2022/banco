@@ -108,13 +108,16 @@ def build_search_query(tenant_id: str, filters: SearchFilters) -> dict:
 
 def extract_result_item(doc: dict) -> SearchResultItem:
     data = doc.get("data", {})
-    taxpayer = data.get("taxpayer_identification", {})
-    assets = data.get("assets_declaration", {})
+    ir_response = data.get("ir_response", {})
+    declaration = ir_response.get("declaration", {}) or {}
+    
+    taxpayer = declaration.get("taxpayer_identification", {})
+    assets = declaration.get("assets_declaration", {})
     contact = taxpayer.get("contact_and_address", {})
     
-    income_pj = data.get("income_from_legal_person_to_holder", {})
-    exempt = data.get("exempt_income", {})
-    exclusive = data.get("exclusive_taxation_income", {})
+    income_pj = declaration.get("income_from_legal_person_to_holder", {})
+    exempt = declaration.get("exempt_income", {})
+    exclusive = declaration.get("exclusive_taxation_income", {})
     
     total_pj = 0.0
     if income_pj and income_pj.get("total_values"):
