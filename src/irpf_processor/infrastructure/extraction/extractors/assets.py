@@ -321,13 +321,26 @@ class AssetsExtractor(ISectionExtractor):
         if beneficiary:
             info["beneficiary"] = beneficiary
         
-        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
-        if cnpj:
-            info["cnpj"] = cnpj.group(1)
-        else:
-            cnpj_raw = re.search(r"CNPJ[:\s]*(\d{11,14})", raw_text)
-            if cnpj_raw:
-                info["cnpj"] = cnpj_raw.group(1)
+        # Prioriza CNPJ em linhas específicas (metadata) sobre CNPJ no texto
+        cnpj_found = None
+        for line in lines:
+            if line.strip().upper().startswith("CNPJ"):
+                m = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", line)
+                if m:
+                    cnpj_found = m.group(1)
+                    break
+        
+        if not cnpj_found:
+            cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+            if cnpj:
+                cnpj_found = cnpj.group(1)
+            else:
+                cnpj_raw = re.search(r"CNPJ[:\s]*(\d{11,14})", raw_text)
+                if cnpj_raw:
+                    cnpj_found = cnpj_raw.group(1)
+        
+        if cnpj_found:
+            info["cnpj"] = cnpj_found
         
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
@@ -524,5 +537,10 @@ class AssetsExtractor(ISectionExtractor):
         
         if re.match(r"^CEI/?CNO[:\s]", line, re.IGNORECASE):
             return False
+        
+        # Linhas que começam com número seguido de hífen são continuação de descrição
+        # Ex: "250 - MOTOR 1812CC - CHASSI F3X"
+        if re.match(r"^\d+\s*-\s*[A-Z]", line):
+            return True
         
         return True
