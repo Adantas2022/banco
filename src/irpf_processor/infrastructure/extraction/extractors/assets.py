@@ -22,9 +22,16 @@ class AssetsExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         
-        for page_num, page_text in context.pages_text.items():
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        for page_num, page_text in sorted_pages:
             if self.SECTION_MARKER not in page_text.upper():
                 continue
+            
+            if items:
+                orphan_lines = self._extract_orphan_address_lines(page_text)
+                if orphan_lines and items[-1].get("additional_info"):
+                    self._update_item_with_orphan_lines(items[-1], orphan_lines)
             
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
@@ -552,3 +559,84 @@ class AssetsExtractor(ISectionExtractor):
             return True
         
         return True
+    
+    def _extract_orphan_address_lines(self, page_text: str) -> list[str]:
+        lines = page_text.split("\n")
+        orphan_lines = []
+        started = False
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            if "GRUPO" in line and "CÓDIGO" in line:
+                started = True
+                continue
+            
+            if not started:
+                continue
+            
+            if re.match(r"^\d{2}\s+\d{2}\s+", line):
+                break
+            
+            if any(prefix in line for prefix in ["Logradouro", "Comp", "Município", "Área", "Bairro", "UF", "CEP", "Data de Aquisição"]):
+                orphan_lines.append(line)
+        
+        return orphan_lines
+    
+    def _update_item_with_orphan_lines(self, item: dict, orphan_lines: list[str]) -> None:
+        info = item.get("additional_info", {})
+        if not info:
+            return
+        
+        for line in orphan_lines:
+            if "Logradouro" in line:
+                m = re.search(r"Logradouro[:\s]*(.+?)(?:\s+Nº[:\s]|$)", line)
+                if m:
+                    info["street_address"] = m.group(1).strip() or "N/A"
+                
+                m = re.search(r"Nº[:\s]*(\S+)", line)
+                if m:
+                    info["number"] = m.group(1).strip() or "N/A"
+            
+            if "Comp" in line:
+                m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
+                        info["complement"] = val
+            
+            if "Bairro" in line:
+                m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val != ":":
+                        info["neighborhood"] = val
+            
+            if "Município" in line:
+                m = re.search(r"Município[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val:
+                        info["city"] = val
+            
+            if "UF" in line:
+                m = re.search(r"UF[:\s]*([A-Z]{2})", line)
+                if m:
+                    info["state"] = m.group(1)
+            
+            if "CEP" in line:
+                m = re.search(r"CEP[:\s]*([\d-]+)", line)
+                if m:
+                    info["zipcode"] = m.group(1).strip()
+            
+            if "Área" in line:
+                m = re.search(r"Área[^:]*[:\s]*([\d.,]+\s*m²?)", line)
+                if m:
+                    info["area"] = m.group(1).strip()
+            
+            if "Data de Aquisição" in line:
+                m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
+                if m:
+                    info["acquisition_date"] = m.group(1)
