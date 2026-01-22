@@ -427,10 +427,9 @@ class AssetsExtractor(ISectionExtractor):
             info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:20]
         elif "Próprio Custodiante" in raw_text:
             info["self_custodian"] = "Sim" in raw_text.split("Próprio Custodiante")[1][:20]
-        else:
-            info["self_custodian"] = False
         
-        info["traded_on_stock_market"] = "Negociados em Bolsa" in raw_text and "Sim" in raw_text
+        if "Negociados em Bolsa" in raw_text:
+            info["traded_on_stock_market"] = "Sim" in raw_text
         
         trading_code = re.search(r"Código de Negociação[:\s]*([A-Z0-9]+)", raw_text)
         if trading_code:
@@ -476,8 +475,6 @@ class AssetsExtractor(ISectionExtractor):
         
         if "Autocustodiante" in raw_text:
             info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:10]
-        else:
-            info["self_custodian"] = False
         
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
@@ -508,7 +505,9 @@ class AssetsExtractor(ISectionExtractor):
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
             "Registro de Embarcação", "Matrícula", "Banco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
-            "CNPJ", "CPF", "Lucro ou", "Valor Recebido", "Imposto"
+            "CNPJ", "CPF", "Lucro ou", "Valor Recebido", "Imposto",
+            "CEI", "CNO", "CEI/CNO", "Aplicação Financeira", "UF",
+            "Bairro", "Data de Aquisição", "CNPJ do Fundo", "CNPJ Custodiante"
         )
         
         if not line or len(line) <= 3:
@@ -521,6 +520,9 @@ class AssetsExtractor(ISectionExtractor):
             return False
         
         if any(line.startswith(p) for p in skip_prefixes):
+            return False
+        
+        if re.match(r"^CEI/?CNO[:\s]", line, re.IGNORECASE):
             return False
         
         return True
