@@ -94,12 +94,20 @@ class AssetsExtractor(ISectionExtractor):
             if re.match(r"^\d{2}\s+\d{2}\s+", next_line):
                 break
             
-            country_match = re.match(r"^(\d+)\s*[-–]\s*(.+)$", next_line)
+            # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
+            # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
+            # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
+            country_match = re.match(r"^(\d{3})\s*[-–]\s*(.+)$", next_line)
             if country_match:
-                country_code = country_match.group(1)
-                country_name = country_match.group(2).strip()
-                j += 1
-                continue
+                potential_name = country_match.group(2).strip()
+                # País: nome curto, sem números, sem múltiplos hífens
+                if (len(potential_name.split()) <= 3 and 
+                    not re.search(r'\d', potential_name) and
+                    potential_name.count('-') == 0):
+                    country_code = country_match.group(1)
+                    country_name = potential_name
+                    j += 1
+                    continue
             
             if "Página" in next_line and "de" in next_line:
                 break
