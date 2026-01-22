@@ -22,15 +22,12 @@ class AssetsExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         
-        # Ordenar páginas para processamento sequencial
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         for page_num, page_text in sorted_pages:
             if self.SECTION_MARKER not in page_text.upper():
                 continue
             
-            # Antes de processar itens, busca linhas órfãs de endereço no início da página
-            # (podem pertencer ao último item da página anterior devido a quebra de página)
             if items:
                 orphan_lines = self._extract_orphan_address_lines(page_text)
                 if orphan_lines and items[-1].get("additional_info"):
@@ -564,18 +561,15 @@ class AssetsExtractor(ISectionExtractor):
         return True
     
     def _extract_orphan_address_lines(self, page_text: str) -> list[str]:
-        """Extrai linhas de endereço órfãs no início de uma página (após quebra de página)."""
         lines = page_text.split("\n")
         orphan_lines = []
-        
-        # Pula o cabeçalho da página (NOME, CPF, DECLARAÇÃO DE BENS...)
         started = False
+        
         for line in lines:
             line = line.strip()
             if not line:
                 continue
             
-            # Detecta fim do cabeçalho
             if "GRUPO" in line and "CÓDIGO" in line:
                 started = True
                 continue
@@ -583,18 +577,15 @@ class AssetsExtractor(ISectionExtractor):
             if not started:
                 continue
             
-            # Se encontrou um novo item, para de coletar
             if re.match(r"^\d{2}\s+\d{2}\s+", line):
                 break
             
-            # Linhas de endereço típicas
             if any(prefix in line for prefix in ["Logradouro", "Comp", "Município", "Área", "Bairro", "UF", "CEP", "Data de Aquisição"]):
                 orphan_lines.append(line)
         
         return orphan_lines
     
     def _update_item_with_orphan_lines(self, item: dict, orphan_lines: list[str]) -> None:
-        """Atualiza um item com linhas de endereço órfãs da próxima página."""
         info = item.get("additional_info", {})
         if not info:
             return
