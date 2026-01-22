@@ -1,0 +1,229 @@
+{
+  "tenant_id": "meu-tenant",
+  "document_id": "b82d23c9-e03d-4b5c-b5c9-84eb17117751",
+  "confidence": 1,
+  "confidence_details": {
+    "overall": 1,
+    "level": "excellent",
+    "level_pt": "excelente",
+    "extraction_method": "digital",
+    "field_scores": {
+      "taxpayer_identification.normalized_cpf": 1,
+      "taxpayer_identification.name": 1,
+      "taxpayer_identification.exercise_year": 1,
+      "taxpayer_identification.calendar_year": 1,
+      "assets_declaration": 1,
+      "income_from_legal_person_to_holder": 1,
+      "exempt_income": 1,
+      "exclusive_taxation_income": 0,
+      "debts_and_encumbrances": 0
+    },
+    "penalties": {},
+    "bonuses": {},
+    "details": {
+      "weighted_sum": 6.1000000000000005,
+      "weight_total": 6.1000000000000005,
+      "fields_found": 7,
+      "fields_total": 9
+    }
+  },
+  "created_at": "2026-01-20T16:39:29.206000",
+  "data": {
+    "taxpayer_identification": {
+      "cpf": "278.097.575-04",
+      "normalized_cpf": "27809757504",
+      "name": "MARIA DE FATIMA LAVIGNE SANTOS",
+      "exercise_year": "2025",
+      "calendar_year": "2024",
+      "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR-TITULAR",
+      "main_occupation": "000 - OUTRAS OCUPAÇÕES NÃO ESPECIFICADAS ANTERIORMENTE",
+      "contact_and_address": {
+        "street_address": "RUA DO FOGO",
+        "number": "19",
+        "complement": "ANDAR 1",
+        "neighborhood": "RIBEIRA",
+        "city": "SALVADOR",
+        "uf": "BA",
+        "zip_code": "40421-560",
+        "phone": "",
+        "email": "",
+        "cell_phone": ""
+      },
+      "type_ir": "DECLARAÇÃO DE AJUSTE ANUAL ORIGINAL"
+    },
+    "total_value": 250000,
+    "valid_total": true,
+    "equity_evolution": 0,
+    "assets_declaration": {
+      "section_name": "Declaração de Bens e Direitos",
+      "items": [
+        {
+          "id": "8069b99c98a5ca559634a1557b1d2293",
+          "asset_group_code": "03",
+          "asset_code": "02",
+          "asset_description": "PARTICIPACAO DE 100% NO CAPITAL SOCIAL DA EMPRESA POSTO BRASIL CITROS LTDA CNPJ: 13.255.598/0001-01",
+          "before_year_asset_value": 100000,
+          "current_year_asset_value": 100000,
+          "country_code": "105",
+          "country_name": "BRASIL",
+          "additional_info": {
+            "beneficiary": "Titular",
+            "cnpj": "13.255.598/0001-01",
+            "cpf": "278.097.575-04"
+          },
+          "country_valid": true,
+          "page": 3
+        },
+        {
+          "id": "8069b99c98a5ca559634a1557b1d2293",
+          "asset_group_code": "03",
+          "asset_code": "02",
+          "asset_description": "PARTICIPACAO DE 100% NO CAPITAL SOCIAL DA EMPRESA PAGUE MENOS LTDA CNPJ: 16.964.365/0001-76",
+          "before_year_asset_value": 100000,
+          "current_year_asset_value": 100000,
+          "country_code": "105",
+          "country_name": "BRASIL",
+          "additional_info": {
+            "beneficiary": "Titular",
+            "cnpj": "16.964.365/0001-76",
+            "cpf": "278.097.575-04"
+          },
+          "country_valid": true,
+          "page": 3
+        },
+        {
+          "id": "c321c4bfba9ff4c2b82957c346a95473",
+          "asset_group_code": "03",
+          "asset_code": "02",
+          "asset_description": "PARTICIPACAO DE 100% DO CAPITAL DA EMPRESA DERIVADOS DE PETROLEO FERNANDES LTDA CNPJ: 08.337.337/0001-09",
+          "before_year_asset_value": 50000,
+          "current_year_asset_value": 50000,
+          "country_code": "105",
+          "country_name": "BRASIL",
+          "additional_info": {
+            "beneficiary": "Titular",
+            "cnpj": "08.337.337/0001-09",
+            "cpf": "278.097.575-04"
+          },
+          "country_valid": true,
+          "page": 3
+        }
+      ],
+      "last_year_total_value": 250000,
+      "current_year_total_value": 250000,
+      "pages_with_problems": []
+    },
+    "debts_and_encumbrances": {},
+    "exempt_income": {
+      "section_name": "Rendimentos Isentos e Não Tributáveis",
+      "total_value": 80001,
+      "valid_total": true,
+      "subsections": {
+        "profits_and_dividends": {
+          "name": "09. Lucros e dividendos recebidos",
+          "code": "09",
+          "total_value": 80001,
+          "valid_total": true,
+          "items": [
+            {
+              "beneficiary": "Titular",
+              "cpf": "278.097.575-04",
+              "payer_cnpj": "13.255.598/0001-01",
+              "payer_name": "POSTO BRASIL CITROS LTDA",
+              "value": 80000,
+              "id": "198c16846acf1f4278e0fc84110a8892",
+              "page": 2
+            },
+            {
+              "beneficiary": "Titular",
+              "cpf": "278.097.575-04",
+              "payer_cnpj": "16.964.365/0001-76",
+              "payer_name": "POSTO PAGUE MENOS LTDA",
+              "value": 1,
+              "id": "1854441862695e3237ef425be7504a16",
+              "page": 2
+            }
+          ]
+        }
+      }
+    },
+    "exclusive_taxation_income": null,
+    "income_from_individual_to_holder": null,
+    "income_from_individual_to_dependents": null,
+    "income_from_legal_person_to_holder": {
+      "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+      "items": [
+        {
+          "payer_name": "POSTO BRASIL CITROS LTDA",
+          "income_from_legal_person": 16944,
+          "official_social_security_contribution": 1863.84,
+          "tax_withheld_at_source": 0,
+          "thirteenth_salary": 0,
+          "irrf_on_thirteenth_salary": 0,
+          "cpf_cnpj": "13.255.598/0001-01",
+          "id": "f2e2e006b30fbea124b1f72423aebf00",
+          "page": 1
+        },
+        {
+          "payer_name": "POSTO PAGUE MENOS LTDA",
+          "income_from_legal_person": 27022.51,
+          "official_social_security_contribution": 2188.83,
+          "tax_withheld_at_source": 0,
+          "thirteenth_salary": 1963.08,
+          "irrf_on_thirteenth_salary": 0,
+          "cpf_cnpj": "16.964.365/0001-76",
+          "id": "7454d538c936cd166775bde3c6da98f2",
+          "page": 1
+        }
+      ],
+      "total_values": {
+        "income_from_legal_person": {
+          "amount": 43966.51,
+          "valid": true
+        },
+        "official_social_security_contribution": {
+          "amount": 4052.67,
+          "valid": true
+        },
+        "tax_withheld_at_source": {
+          "amount": 0,
+          "valid": true
+        },
+        "thirteenth_salary": {
+          "amount": 1963.08,
+          "valid": true
+        },
+        "irrf_on_thirteenth_salary": {
+          "amount": 0,
+          "valid": true
+        }
+      }
+    },
+    "income_from_legal_person_to_dependents": null,
+    "income_from_legal_person_to_holder_with_suspended_requirements": null,
+    "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+    "accumulated_income_from_legal_person_to_holder": null,
+    "accumulated_income_from_legal_person_to_dependents": null,
+    "exploited_rural_properties_in_brazil": null,
+    "rural_income_and_expenditure_in_brazil": null,
+    "calculation_of_rural_results_in_brazil": null,
+    "livestock_movement_in_brazil": null,
+    "rural_activity_assets_in_brazil": null,
+    "rural_activity_debts_in_brazil": null,
+    "exploited_rural_properties_abroad": null,
+    "rural_income_and_expenditure_abroad": null,
+    "calculation_of_rural_results_abroad": null,
+    "rural_activity_assets_abroad": null,
+    "rural_activity_debts_abroad": null,
+    "livestock_movement_abroad": null,
+    "total_pages": 8
+  },
+  "document_category": "DECLARACAO",
+  "template_version": "2025",
+  "total_pages": 8,
+  "updated_at": "2026-01-20T16:39:29.206000",
+  "warnings": [
+    "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+    "Documento detectado: IRPF 2025 (15 seções encontradas)"
+  ]
+}

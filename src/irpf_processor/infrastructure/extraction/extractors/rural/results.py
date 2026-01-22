@@ -52,13 +52,17 @@ class RuralResultsExtractor(ISectionExtractor):
         current_section = None
         
         for line in lines:
-            upper = line.upper()
+            upper = line.strip().upper()
             
+            # Check if line is a section marker (must start with the marker, not just contain it)
+            is_marker = False
             for key, marker in self.SUBSECTION_MARKERS.items():
-                if marker in upper:
+                if upper.startswith(marker) or upper == marker:
                     current_section = key
+                    is_marker = True
                     break
-            else:
+            
+            if not is_marker:
                 if current_section and not line.strip().startswith("Página"):
                     item = self._parse_result_line(line)
                     if item:
@@ -75,7 +79,19 @@ class RuralResultsExtractor(ISectionExtractor):
         return subsections
     
     def _parse_result_line(self, line: str) -> Optional[dict]:
-        pattern = re.match(r"^(.+?)\s+(-?[\d.,-]+|Pelo resultado)\s*$", line.strip())
+        line_stripped = line.strip()
+        
+        # Fallback específico para "Pelo resultado" (case-insensitive)
+        if re.search(r"pelo\s+resultado", line_stripped, re.IGNORECASE):
+            description = re.sub(r"\s*pelo\s+resultado\s*$", "", line_stripped, flags=re.IGNORECASE).strip()
+            if description and len(description) >= 5:
+                return {
+                    "description": description,
+                    "value": "Pelo resultado",
+                    "id": generate_item_id(description)
+                }
+        
+        pattern = re.match(r"^(.+?)\s+(-?[\d.,-]+)\s*$", line_stripped)
         
         if not pattern:
             return None
@@ -86,12 +102,9 @@ class RuralResultsExtractor(ISectionExtractor):
         if not description or len(description) < 5:
             return None
         
-        if value_str == "Pelo resultado":
-            value = value_str
-        else:
-            value = parse_currency(value_str)
-            if description == "Resultado":
-                value = abs(value)
+        value = parse_currency(value_str)
+        if description == "Resultado":
+            value = abs(value)
         
         return {
             "description": description,
