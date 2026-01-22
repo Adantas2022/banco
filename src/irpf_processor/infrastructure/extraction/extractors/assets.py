@@ -22,9 +22,19 @@ class AssetsExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         
-        for page_num, page_text in context.pages_text.items():
+        # Ordenar páginas para processamento sequencial
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        for page_num, page_text in sorted_pages:
             if self.SECTION_MARKER not in page_text.upper():
                 continue
+            
+            # Antes de processar itens, busca linhas órfãs de endereço no início da página
+            # (podem pertencer ao último item da página anterior devido a quebra de página)
+            if items:
+                orphan_lines = self._extract_orphan_address_lines(page_text)
+                if orphan_lines and items[-1].get("additional_info"):
+                    self._update_item_with_orphan_lines(items[-1], orphan_lines)
             
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
@@ -94,12 +104,20 @@ class AssetsExtractor(ISectionExtractor):
             if re.match(r"^\d{2}\s+\d{2}\s+", next_line):
                 break
             
-            country_match = re.match(r"^(\d+)\s*[-–]\s*(.+)$", next_line)
+            # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
+            # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
+            # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
+            country_match = re.match(r"^(\d{3})\s*[-–]\s*(.+)$", next_line)
             if country_match:
-                country_code = country_match.group(1)
-                country_name = country_match.group(2).strip()
-                j += 1
-                continue
+                potential_name = country_match.group(2).strip()
+                # País: nome curto, sem números, sem múltiplos hífens
+                if (len(potential_name.split()) <= 3 and 
+                    not re.search(r'\d', potential_name) and
+                    potential_name.count('-') == 0):
+                    country_code = country_match.group(1)
+                    country_name = potential_name
+                    j += 1
+                    continue
             
             if "Página" in next_line and "de" in next_line:
                 break
@@ -204,14 +222,14 @@ class AssetsExtractor(ISectionExtractor):
                 m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
                 if m:
                     val = m.group(1).strip()
-                    if val:
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
                         info["complement"] = val
             
             if "Bairro" in line:
                 m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
                 if m:
                     val = m.group(1).strip()
-                    if val:
+                    if val and len(val) > 2 and val != ":":
                         info["neighborhood"] = val
             
             if "Município" in line:
@@ -321,13 +339,26 @@ class AssetsExtractor(ISectionExtractor):
         if beneficiary:
             info["beneficiary"] = beneficiary
         
-        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
-        if cnpj:
-            info["cnpj"] = cnpj.group(1)
-        else:
-            cnpj_raw = re.search(r"CNPJ[:\s]*(\d{11,14})", raw_text)
-            if cnpj_raw:
-                info["cnpj"] = cnpj_raw.group(1)
+        # Prioriza CNPJ em linhas específicas (metadata) sobre CNPJ no texto
+        cnpj_found = None
+        for line in lines:
+            if line.strip().upper().startswith("CNPJ"):
+                m = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", line)
+                if m:
+                    cnpj_found = m.group(1)
+                    break
+        
+        if not cnpj_found:
+            cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+            if cnpj:
+                cnpj_found = cnpj.group(1)
+            else:
+                cnpj_raw = re.search(r"CNPJ[:\s]*(\d{11,14})", raw_text)
+                if cnpj_raw:
+                    cnpj_found = cnpj_raw.group(1)
+        
+        if cnpj_found:
+            info["cnpj"] = cnpj_found
         
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
@@ -427,10 +458,9 @@ class AssetsExtractor(ISectionExtractor):
             info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:20]
         elif "Próprio Custodiante" in raw_text:
             info["self_custodian"] = "Sim" in raw_text.split("Próprio Custodiante")[1][:20]
-        else:
-            info["self_custodian"] = False
         
-        info["traded_on_stock_market"] = "Negociados em Bolsa" in raw_text and "Sim" in raw_text
+        if "Negociados em Bolsa" in raw_text:
+            info["traded_on_stock_market"] = "Sim" in raw_text
         
         trading_code = re.search(r"Código de Negociação[:\s]*([A-Z0-9]+)", raw_text)
         if trading_code:
@@ -476,8 +506,6 @@ class AssetsExtractor(ISectionExtractor):
         
         if "Autocustodiante" in raw_text:
             info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:10]
-        else:
-            info["self_custodian"] = False
         
         cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
         if cpf:
@@ -508,7 +536,9 @@ class AssetsExtractor(ISectionExtractor):
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
             "Registro de Embarcação", "Matrícula", "Banco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
-            "CNPJ", "CPF", "Lucro ou", "Valor Recebido", "Imposto"
+            "CNPJ", "CPF", "Lucro ou", "Valor Recebido", "Imposto",
+            "CEI", "CNO", "CEI/CNO", "Aplicação Financeira", "UF",
+            "Bairro", "Data de Aquisição", "CNPJ do Fundo", "CNPJ Custodiante"
         )
         
         if not line or len(line) <= 3:
@@ -523,4 +553,99 @@ class AssetsExtractor(ISectionExtractor):
         if any(line.startswith(p) for p in skip_prefixes):
             return False
         
+        if re.match(r"^CEI/?CNO[:\s]", line, re.IGNORECASE):
+            return False
+        
+        # Linhas que começam com número seguido de hífen são continuação de descrição
+        # Ex: "250 - MOTOR 1812CC - CHASSI F3X"
+        if re.match(r"^\d+\s*-\s*[A-Z]", line):
+            return True
+        
         return True
+    
+    def _extract_orphan_address_lines(self, page_text: str) -> list[str]:
+        """Extrai linhas de endereço órfãs no início de uma página (após quebra de página)."""
+        lines = page_text.split("\n")
+        orphan_lines = []
+        
+        # Pula o cabeçalho da página (NOME, CPF, DECLARAÇÃO DE BENS...)
+        started = False
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Detecta fim do cabeçalho
+            if "GRUPO" in line and "CÓDIGO" in line:
+                started = True
+                continue
+            
+            if not started:
+                continue
+            
+            # Se encontrou um novo item, para de coletar
+            if re.match(r"^\d{2}\s+\d{2}\s+", line):
+                break
+            
+            # Linhas de endereço típicas
+            if any(prefix in line for prefix in ["Logradouro", "Comp", "Município", "Área", "Bairro", "UF", "CEP", "Data de Aquisição"]):
+                orphan_lines.append(line)
+        
+        return orphan_lines
+    
+    def _update_item_with_orphan_lines(self, item: dict, orphan_lines: list[str]) -> None:
+        """Atualiza um item com linhas de endereço órfãs da próxima página."""
+        info = item.get("additional_info", {})
+        if not info:
+            return
+        
+        for line in orphan_lines:
+            if "Logradouro" in line:
+                m = re.search(r"Logradouro[:\s]*(.+?)(?:\s+Nº[:\s]|$)", line)
+                if m:
+                    info["street_address"] = m.group(1).strip() or "N/A"
+                
+                m = re.search(r"Nº[:\s]*(\S+)", line)
+                if m:
+                    info["number"] = m.group(1).strip() or "N/A"
+            
+            if "Comp" in line:
+                m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
+                        info["complement"] = val
+            
+            if "Bairro" in line:
+                m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val != ":":
+                        info["neighborhood"] = val
+            
+            if "Município" in line:
+                m = re.search(r"Município[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val:
+                        info["city"] = val
+            
+            if "UF" in line:
+                m = re.search(r"UF[:\s]*([A-Z]{2})", line)
+                if m:
+                    info["state"] = m.group(1)
+            
+            if "CEP" in line:
+                m = re.search(r"CEP[:\s]*([\d-]+)", line)
+                if m:
+                    info["zipcode"] = m.group(1).strip()
+            
+            if "Área" in line:
+                m = re.search(r"Área[^:]*[:\s]*([\d.,]+\s*m²?)", line)
+                if m:
+                    info["area"] = m.group(1).strip()
+            
+            if "Data de Aquisição" in line:
+                m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
+                if m:
+                    info["acquisition_date"] = m.group(1)
