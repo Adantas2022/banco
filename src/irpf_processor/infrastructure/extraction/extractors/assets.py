@@ -204,14 +204,14 @@ class AssetsExtractor(ISectionExtractor):
                 m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
                 if m:
                     val = m.group(1).strip()
-                    if val:
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
                         info["complement"] = val
             
             if "Bairro" in line:
                 m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
                 if m:
                     val = m.group(1).strip()
-                    if val:
+                    if val and len(val) > 2 and val != ":":
                         info["neighborhood"] = val
             
             if "Município" in line:
