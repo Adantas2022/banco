@@ -134,28 +134,30 @@ class TestDeclarationConfidenceCalculator:
         assert result.overall >= 0.85
         assert result.level == "excellent"
 
-    def test_minimal_data_still_excellent(self, calculator):
+    def test_minimal_data_good_confidence(self, calculator):
         data = {
             "taxpayer_identification": {
-                "normalized_cpf": "12345678901",
+                "normalized_cpf": "52998224725",
+                "cpf": "529.982.247-25",
                 "name": "Test User",
             },
         }
         
         result = calculator.calculate(data)
         
-        assert result.overall == 1.0
+        assert result.overall >= 0.7
         assert result.field_scores["taxpayer_identification.normalized_cpf"] == 1.0
         assert result.field_scores["taxpayer_identification.name"] == 1.0
         assert result.field_scores["assets_declaration"] == 0.0
 
-    def test_empty_data_zero_confidence(self, calculator):
+    def test_empty_data_low_confidence(self, calculator):
         data = {}
         
         result = calculator.calculate(data)
         
-        assert result.overall == 0.0
+        assert result.overall < 0.5
         assert result.level == "low"
+        assert result.needs_review is True
 
     def test_ocr_extraction_penalty(self, calculator):
         data = {

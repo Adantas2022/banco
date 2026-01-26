@@ -1,0 +1,499 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": null,
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "706.882.222-34",
+                    "normalized_cpf": "70688222234",
+                    "name": "ROZANY DE CASSIA FIEL CARDOSO",
+                    "exercise_year": "2025",
+                    "calendar_year": "2024",
+                    "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                    "main_occupation": "140 - PRESIDENTE, DIRETOR, GERENTE E SUPERVISOR DE ORGANISMO INTERNACIONAL E DE",
+                    "contact_and_address": {
+                        "street_address": "AVENIDA EDGAR PROENCA",
+                        "number": "121",
+                        "complement": "",
+                        "neighborhood": "COQUEIRO",
+                        "city": "ANANINDEUA",
+                        "uf": "PA",
+                        "zip_code": "67015-720",
+                        "phone": "(91) 3083-0282",
+                        "email": "",
+                        "cell_phone": ""
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL RETIFICADORA"
+                },
+                "total_value": 6078910,
+                "valid_total": true,
+                "equity_evolution": 4169600,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "dfc3908a516c9599262a3aca11849d2a",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "ED INFINITY CORPORATE CENTER , AP 312",
+                            "before_year_asset_value": 158083.66,
+                            "current_year_asset_value": 158083.66,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "TRAV BARAO DO TRIUNFO",
+                                "complement": null,
+                                "city": "BELÉM",
+                                "area": "30,7 m²",
+                                "registered_at_registy_office": null,
+                                "number": "3540",
+                                "neighborhood": "MARCO",
+                                "state": "PA",
+                                "acquisition_date": null,
+                                "zipcode": "66093-020"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "6796a479cb7a42f8fedc2a55286ae42f",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APARTAMENTO 502 NO QUINTO ANDAR , NA AVENIDA ALCINDO CACELA 1177 , ED JOAQUIM AMARAL , ADQUIRIDO DE HENRIQUE CLEBER LOPES DE OLIVEIRA , CPF 00521052297 , PELO VALOR DE 580.000,00 , SENDO DADO DE ENTRADA R $ 100.300,00 E O RESTANTE FINANCIADO PELO BANCO DO ESTADO DO PARA - BANPARA NO VALOR DE R $ 479.700,00",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 580000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "AV ALCINDO CACELA/ED JOAQUIM AMARAL",
+                                "complement": "APTO 502 ANDAR 5",
+                                "city": "BELÉM",
+                                "area": "123,4 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "309506",
+                                "number": "1177",
+                                "neighborhood": "UMARIZAL",
+                                "state": "PA",
+                                "acquisition_date": "24/01/2024",
+                                "registry_office_name": "2 REGISTRO DE IMOVEIS DE",
+                                "zipcode": "66065-267"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "2fa3487671a6de8ae23c3bcc658842cb",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APARTAMENTO NO ED JOAQUIM AMARAL , 10 ANDAR , APT 1002 , ADQUIRIDO DE PATRIZIA CARDOSO MENDES E ALBERTO ELIAS ALBUQUERQUE DA SILVA ( CONJUGES ) NO VALOR DE R $ 1.004.000,00 DA SEGUINTE FORMA UMA ENTRADA DE R $ 200.800,00 REAIS E R $ 803.200,00 FINANCIADO PELA CAIXA ECONOMICA FEDERAL CONFORME CONTRATO N 1.4444.2420978-3",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 1004000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "AV ALCINDO CACELA/ED JOAQUIM AMARAL",
+                                "complement": "11 ANDAR APTO 1002",
+                                "city": "BELÉM",
+                                "area": "211,1 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "314046",
+                                "number": "1177",
+                                "neighborhood": "UMARIZAL",
+                                "state": "PA",
+                                "acquisition_date": "08/11/2024",
+                                "registry_office_name": "2 REGISTRO DE IMOVEIS DE",
+                                "zipcode": null
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "231d7cf55ad71ff9b9406b9b8321c492",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "CASA NO CONDOMINIO LAGO AZUL , COM VARANDA E GARAGEM , 3 SUITES , SALA DE VISITA , SALA DE ESTAR , SALA DE BANHO , SALA DE JANTAR , CIRCULACAO COM LAVABO E OUTRAS BEM FEITORIAS . ADQUIRIDA DE ELI SILVA MENDES E MARGARETH SILVA MENDES ( CONJUGES ) EM MOEDA CORRENTE EM ESPECIE DO PAIS , ATRAVES DE RECIBO DE QUITACAO NO VALOR DE R $ 500.000,00 E ESCRITURA DE REGISTRO DE IMOVEIS DE ANANNIDEUA , COM BEM FEITORIAS DIVERSAS EM REFORMA ED AMPLIACAO NO VALOR DE 1.500,000,00",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 2000000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "BR 316/CONDOMINIO LAGO AZUL",
+                                "complement": "AV EDGAR PROENCA",
+                                "city": "ANANINDEUA",
+                                "area": "870,1 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "88260 LIVRO 2 FOLHA 1",
+                                "number": "121",
+                                "neighborhood": "LEVILANDIA",
+                                "state": "PA",
+                                "acquisition_date": "06/11/2024",
+                                "registry_office_name": "CARTORIO DE REGISTRO DE",
+                                "zipcode": "67000-000"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "61a142fb39c5a9ba858f76964385d6de",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "100 % DAS COTAS DE CAPITAL DA EMPRESA FALCON GESTAO E SERVICOS LTDA",
+                            "before_year_asset_value": 250000.0,
+                            "current_year_asset_value": 250000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "41.925.293/0001-03",
+                                "cpf": "706.882.222-34"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "676831cf898c1a2530afecfe056f37d6",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "100 % DAS COTAS DE CAPITAL DA EMPRESA BANDEIRANTE SERVICOS E SOLUCOES LTDA",
+                            "before_year_asset_value": 500000.0,
+                            "current_year_asset_value": 500000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "51.680.967/0001-00",
+                                "cpf": "706.882.222-34"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "def6fb5f0212819bf0a7e1764ba4e269",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "100 % DAS COTAS DE CAPITAL DA EMPRESA UIRAPURU LAVANDERIA HOSPITALAR E DE HOTELARIA LTDA",
+                            "before_year_asset_value": 1000000.0,
+                            "current_year_asset_value": 1000000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "39.283.579/0001-82",
+                                "cpf": "706.882.222-34"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "2510f3bff322ed36b5ffcc1579699f62",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "INFORMADO POR CNPJ 90.400.888 / 0001-42",
+                            "before_year_asset_value": 760.57,
+                            "current_year_asset_value": 814.12,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "90.400.888/0001-42",
+                                "bank": "033",
+                                "cpf": "706.882.222-34",
+                                "agency": "1577",
+                                "account": "60023114-7"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "901a87f34460afd8e7b15fde7788aa37",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "INFORMADO POR CNPJ 58.160.789 / 0001-28",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 4388.41,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "58.160.789/0001-28",
+                                "bank": "422",
+                                "cpf": "706.882.222-34",
+                                "agency": "0550",
+                                "account": "060395-6"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "d98e9fda95485941b7b1343e103c06f8",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "INFORMADO POR CNPJ 60.746.948 / 0001-12",
+                            "before_year_asset_value": 465.9,
+                            "current_year_asset_value": 465.9,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "60.746.948/0001-12",
+                                "bank": "237",
+                                "cpf": "706.882.222-34",
+                                "agency": "2144",
+                                "account": "209021 - P"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "e79d507f66d888fc90757b190aeedad1",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "INFORMADO POR CNPJ 00.360.305 / 0001-04",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 1158.85,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "bank": "104",
+                                "cpf": "706.882.222-34",
+                                "agency": "0820",
+                                "account": "000579782949-1",
+                                "is_payment_account": false
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "88829d22cd3afd9e8e53bc0fd0c54d77",
+                            "asset_group_code": "06",
+                            "asset_code": "10",
+                            "asset_description": "VALORES EM PODER DO DECLARANTE",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 580000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "706.882.222-34"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        }
+                    ],
+                    "last_year_total_value": 1909310.13,
+                    "current_year_total_value": 6078910.94,
+                    "pages_with_problems": []
+                },
+                "debts_and_encumbrances": {
+                    "section_name": "Dívidas e Ônus Reais",
+                    "items": [
+                        {
+                            "id": "16dff283050a03f00d8ff9452c1c6e8b",
+                            "debt_code": "11",
+                            "debt_description": "FINANCIAMENTO JUNTO AO BANPARA DE UM APARTAMENTO NO ED JOAQUIM AMARAL NO QUINTO ANDAR APT 502",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 479700.0,
+                            "current_year_value": 0.0,
+                            "page": 7
+                        }
+                    ],
+                    "amount_of_codes_equal_to_amount_of_values": true,
+                    "year_before_last_total_value": 0.0,
+                    "last_year_total_value": 479700.0,
+                    "current_year_total_value": 0.0,
+                    "pages_with_problems": []
+                },
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 3500000.0,
+                    "valid_total": true,
+                    "subsections": {
+                        "income_of_small_business_partner_or_owner": {
+                            "name": "13. Rendimento de sócio ou titular de microempresa ou empresa de pequeno porte optante pelo Simples Nacional, exceto pro labore, aluguéis e serviços prestados",
+                            "code": "13",
+                            "total_value": 3500000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "39.283.579/0001-82",
+                                    "payer_name": "LAVANDERIA HOSPITALAR DE HOTELARIA LTDA",
+                                    "value": 3500000.0,
+                                    "id": "afa3aa8a83815e80c220cbfd9157eac2",
+                                    "page": 2
+                                }
+                            ]
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 338.27,
+                    "valid_total": true,
+                    "subsections": {
+                        "income_from_financial_investments": {
+                            "name": "06. Rendimentos de aplicações financeiras",
+                            "code": "06",
+                            "total_value": 156.83,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "07.667.259/0001-30",
+                                    "payer_name": "BRADESCO FIC DE FI REFERENCIADO DI ONIX",
+                                    "value": 7.47,
+                                    "id": "ff8e2c6d7cbe136c5590cd5cf9fb8f89",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "00.000.000/0001-91",
+                                    "payer_name": "BANCO DO BRASIL SA",
+                                    "value": 4.25,
+                                    "id": "de7a4384e569d440d6cd524b463b9644",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "60.701.190/0001-04",
+                                    "payer_name": "ITAU UNIBANCO S.A.",
+                                    "value": 19.6,
+                                    "id": "34fdc240645da83393407cb54452fa61",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "60.746.948/0001-12",
+                                    "payer_name": "BANCO BRADESCO S A",
+                                    "value": 122.43,
+                                    "id": "bbda9757a7f38eea4286d471a4e35f38",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "30.680.829/0001-43",
+                                    "payer_name": "NU FINANCEIRA S.A. - SOCIEDADE DE CREDITO, FINANCIAMENTO E I",
+                                    "value": 0.79,
+                                    "id": "c2437e20166e9da40cae03df8506cf1d",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "90.400.888/0001-42",
+                                    "payer_name": "BANCO SANTANDER (BRASIL) SA",
+                                    "value": 1.47,
+                                    "id": "adbdfe4cc92b25feb59c923a7ba64a2e",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cnpj": "04.913.711/0001-08",
+                                    "payer_name": "BANCO DO ESTADO DO PARA",
+                                    "value": 0.82,
+                                    "id": "3be4944927b97dd339fd2a170580781f",
+                                    "page": 2
+                                }
+                            ]
+                        },
+                        "others_13": {
+                            "name": "13. Outros",
+                            "code": "13",
+                            "total_value": 181.44,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "706.882.222-34",
+                                    "payer_cpf_cnpj": "33.010.851/0001-74",
+                                    "payer_name": "BRADESCO CAPITALIZACAO S /",
+                                    "description": "PREMIOS OBTIDOS EM CONCURSOS E SORTEIOS",
+                                    "value": 181.44,
+                                    "id": "f3bcc9d1612ab4d30c9b59ecae7d224d",
+                                    "page": 2
+                                }
+                            ]
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": null,
+                "income_from_individual_to_dependents": null,
+                "income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "BRADESCO VIDA E PREVIDENCIA S.A.",
+                            "income_from_legal_person": 3784.4,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 567.65,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "51.990.695/0001-37",
+                            "id": "e15883c195ac041b36ca79ebb1cdda52",
+                            "page": 1
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 3784.4,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 567.65,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents": null,
+                "income_from_legal_person_to_holder_with_suspended_requirements": null,
+                "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+                "accumulated_income_from_legal_person_to_holder": null,
+                "accumulated_income_from_legal_person_to_dependents": null,
+                "exploited_rural_properties_in_brazil": null,
+                "rural_income_and_expenditure_in_brazil": null,
+                "calculation_of_rural_results_in_brazil": null,
+                "livestock_movement_in_brazil": null,
+                "rural_activity_assets_in_brazil": null,
+                "rural_activity_debts_in_brazil": null,
+                "exploited_rural_properties_abroad": null,
+                "rural_income_and_expenditure_abroad": null,
+                "calculation_of_rural_results_abroad": null,
+                "rural_activity_assets_abroad": null,
+                "rural_activity_debts_abroad": null,
+                "livestock_movement_abroad": null,
+                "total_pages": 12
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": "https://rpg-ir-analyzer-staging.s3.sa-east-1.amazonaws.com/temp/d835f03eaef7fd71092b2312148d2f.csv",
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}

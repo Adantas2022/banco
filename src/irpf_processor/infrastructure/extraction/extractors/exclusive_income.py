@@ -22,6 +22,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         subsections = {}
         
+        thirteenth = self._extract_thirteenth_salary(context)
+        if thirteenth:
+            subsections["thirteenth_salary"] = thirteenth
+        
         variable_income = self._extract_variable_income_gains(context)
         if variable_income:
             subsections["net_gains_from_variable_income_stocks_futures_and_reits"] = variable_income
@@ -41,6 +45,25 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "valid_total": True,
             "subsections": subsections
         }
+    
+    def _extract_thirteenth_salary(self, context: ExtractionContext) -> Optional[dict]:
+        for page_text in context.pages_text.values():
+            if "01." in page_text and "13" in page_text and "salário" in page_text.lower():
+                pattern = re.search(
+                    r"01\.\s*13[º°]?\s*salário\s+([\d.,]+)",
+                    page_text,
+                    re.IGNORECASE
+                )
+                if pattern:
+                    value = parse_currency(pattern.group(1))
+                    return {
+                        "name": "01. 13º salário",
+                        "code": "01",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": None
+                    }
+        return None
     
     def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
         for page_text in context.pages_text.values():
@@ -84,6 +107,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     item = self._parse_item(line, lines, i, page_num)
                     if item:
                         items.append(item)
+                    
+                    multiline_item = self._parse_multiline_item(lines, i, page_num)
+                    if multiline_item and not any(
+                        existing.get("payer_cnpj") == multiline_item.get("payer_cnpj") and
+                        existing.get("value") == multiline_item.get("value")
+                        for existing in items
+                    ):
+                        items.append(multiline_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -131,3 +162,57 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "id": item_id,
             "page": page_num
         }
+    
+    def _parse_multiline_item(
+        self,
+        lines: list[str],
+        start_idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        cnpj_pattern = r"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$"
+        current_line = lines[start_idx].strip()
+        
+        if not re.match(cnpj_pattern, current_line):
+            return None
+        
+        cnpj = current_line
+        payer_name = None
+        beneficiary = None
+        value = None
+        cpf = None
+        
+        for offset in range(1, 6):
+            if start_idx + offset >= len(lines):
+                break
+            
+            next_line = lines[start_idx + offset].strip()
+            
+            if not next_line:
+                continue
+            
+            if next_line in ("Titular", "Dependente"):
+                beneficiary = next_line
+            elif re.match(r"^\d{3}\.\d{3}\.\d{3}-\d{2}$", next_line):
+                cpf = next_line
+            elif re.match(r"^[\d.,]+$", next_line) and "." in next_line:
+                parsed_value = parse_currency(next_line)
+                if parsed_value > 0:
+                    value = parsed_value
+            elif re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line) and not re.match(cnpj_pattern, next_line):
+                if not re.match(r"^\d{2}\.", next_line) and "TOTAL" not in next_line.upper():
+                    if payer_name is None:
+                        payer_name = next_line
+        
+        if cnpj and value is not None and value > 0:
+            item_id = generate_item_id(f"{cnpj}{cpf or ''}{value}")
+            return {
+                "beneficiary": beneficiary or "Titular",
+                "cpf": cpf or "",
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name or "",
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        return None

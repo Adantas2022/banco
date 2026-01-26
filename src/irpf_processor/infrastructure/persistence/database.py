@@ -69,16 +69,16 @@ async def _create_indexes(db: AsyncIOMotorDatabase) -> None:
         name="idx_tenant_document",
     )
     await extraction.create_index(
-        [("tenant_id", ASCENDING), ("data.taxpayer_identification.normalized_cpf", ASCENDING)],
-        name="idx_tenant_cpf",
+        [("tenant_id", ASCENDING), ("data.ir_response.declaration.taxpayer_identification.normalized_cpf", ASCENDING)],
+        name="idx_tenant_cpf_v2",
     )
     await extraction.create_index(
-        [("tenant_id", ASCENDING), ("data.taxpayer_identification.exercise_year", DESCENDING)],
-        name="idx_tenant_year",
+        [("tenant_id", ASCENDING), ("data.ir_response.declaration.taxpayer_identification.exercise_year", DESCENDING)],
+        name="idx_tenant_year_v2",
     )
     await extraction.create_index(
-        [("tenant_id", ASCENDING), ("data.taxpayer_identification.name", ASCENDING)],
-        name="idx_tenant_name",
+        [("tenant_id", ASCENDING), ("data.ir_response.declaration.taxpayer_identification.name", ASCENDING)],
+        name="idx_tenant_name_v2",
     )
     await extraction.create_index(
         [("tenant_id", ASCENDING), ("confidence", DESCENDING)],

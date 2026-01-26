@@ -101,7 +101,6 @@ class TableExtractor:
 
 
 def parse_currency(value: str) -> float:
-    """Converte string de moeda brasileira para float."""
     if not value:
         return 0.0
     
@@ -112,6 +111,18 @@ def parse_currency(value: str) -> float:
         return float(cleaned)
     except ValueError:
         return 0.0
+
+
+def sum_currency_values(values: list[float], as_int: bool = False) -> Union[float, int]:
+    from irpf_processor.domain.value_objects.money import Money
+    
+    total = Money.zero()
+    for val in values:
+        total = total + Money.from_number(val)
+    
+    if as_int:
+        return total.to_int()
+    return round(total.to_float(), 2)
 
 
 def generate_item_id(content: str) -> str:

@@ -28,7 +28,9 @@ from irpf_processor.shared.metrics import (
     record_failure,
     record_ocr_confidence,
     record_ocr_duration,
+    record_ocr_professional_confidence,
     record_ocr_usage,
+    record_professional_confidence,
     record_section_extraction,
     record_status_transition,
 )
@@ -79,6 +81,8 @@ def create_ocr_orchestrator() -> OcrOrchestrator:
 @dramatiq.actor(queue_name="extraction-ocr", max_retries=2, min_backoff=5000, max_backoff=120000)
 def process_ocr_document(document_id: str, tenant_id: str) -> None:
     start_time = time.perf_counter()
+    document_category = DocumentCategory.UNKNOWN
+    
     logger.info(
         "Starting OCR document processing",
         document_id=document_id,
@@ -155,10 +159,18 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
             
             if document_category == DocumentCategory.RECIBO:
                 receipt_parser = ReceiptParser()
-                irpf_result = receipt_parser.parse_from_text(processed_text, ocr_result.total_pages)
+                irpf_result = receipt_parser.parse_from_text(
+                    processed_text, 
+                    ocr_result.total_pages,
+                    ocr_confidence=ocr_result.confidence,
+                )
                 template_version = "recibo-ocr"
             else:
-                irpf_result = parser.parse_from_text(processed_text, ocr_result.total_pages)
+                irpf_result = parser.parse_from_text(
+                    processed_text, 
+                    ocr_result.total_pages,
+                    ocr_confidence=ocr_result.confidence,
+                )
                 template_version = parser.detected_version or "ocr"
             
             extraction_duration = time.perf_counter() - extraction_start
@@ -193,6 +205,32 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                     fields_found=confidence_details.details.get("fields_found", 0),
                     penalties=confidence_details.penalties,
                     bonuses=confidence_details.bonuses,
+                )
+                
+                fallback_used = len(ocr_result.metadata.get("attempts", [])) > 1
+                record_ocr_professional_confidence(
+                    tenant_id=tenant_id,
+                    ocr_engine=ocr_result.engine_used,
+                    overall=confidence_details.overall,
+                    ocr_confidence=ocr_result.confidence,
+                    coverage_score=confidence_details.coverage_score,
+                    validation_score=confidence_details.validation_score,
+                    needs_review=confidence_details.needs_review,
+                    review_flags=confidence_details.review_flags,
+                    fallback_used=fallback_used,
+                )
+                
+                record_professional_confidence(
+                    tenant_id=tenant_id,
+                    template_version=template_version,
+                    overall=confidence_details.overall,
+                    coverage_score=confidence_details.coverage_score,
+                    validation_score=confidence_details.validation_score,
+                    field_score=confidence_details.details.get("field_score", 0.0),
+                    needs_review=confidence_details.needs_review,
+                    review_flags=confidence_details.review_flags,
+                    validation_results=confidence_details.validation_results,
+                    section_scores=confidence_details.section_scores,
                 )
 
             extraction_collection = db["extraction_results"]
@@ -239,6 +277,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                 confidence=final_confidence,
                 processing_time_seconds=total_duration,
                 total_pages=ocr_result.total_pages,
+                document_category=document_category.value,
             )
 
             WORKER_JOBS_TOTAL.labels(worker_name="ocr_worker", status="success").inc()
@@ -264,7 +303,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
             error=str(e),
         )
 
-        record_failure(tenant_id, "ocr_extraction", "OCR_ERROR")
+        record_failure(tenant_id, "ocr_extraction", "OCR_ERROR", document_category.value)
         record_status_transition(tenant_id, "ROUTED", "FAILED")
         WORKER_JOBS_TOTAL.labels(worker_name="ocr_worker", status="failed").inc()
 

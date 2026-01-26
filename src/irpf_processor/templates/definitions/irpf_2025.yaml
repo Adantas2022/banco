@@ -425,6 +425,98 @@ sections:
       - name: paid_value_in_last_year
         type: currency
 
+  livestock_movement_in_brazil:
+    name: "Movimentação do Rebanho - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: code
+        type: string
+      - name: species
+        type: string
+        description: "Espécie do animal"
+      - name: initial_quantity
+        type: integer
+        description: "Quantidade em 01/01"
+      - name: births
+        type: integer
+        description: "Nascimentos"
+      - name: purchases
+        type: integer
+        description: "Compras"
+      - name: deaths
+        type: integer
+        description: "Mortes"
+      - name: sales
+        type: integer
+        description: "Vendas"
+      - name: final_quantity
+        type: integer
+        description: "Quantidade em 31/12"
+
+  # ============================================
+  # RENDIMENTOS DE PESSOA FÍSICA E EXTERIOR
+  # ============================================
+  income_from_individual_to_holder:
+    name: "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+        required: true
+      - name: cpf
+        type: cpf
+        description: "CPF do pagador"
+      - name: income_from_individual
+        type: currency
+        description: "Rendimentos recebidos"
+      - name: deductible_expenses
+        type: currency
+        description: "Despesas dedutíveis"
+      - name: tax_withheld_at_source
+        type: currency
+        description: "Imposto retido na fonte"
+      - name: alimony_paid
+        type: currency
+        description: "Pensão alimentícia paga"
+      - name: carnet_leao_tax
+        type: currency
+        description: "Imposto pago no carnê-leão"
+
+  # ============================================
+  # RENDIMENTOS PJ RECEBIDOS ACUMULADAMENTE
+  # ============================================
+  accumulated_income_from_legal_person_to_holder:
+    name: "Rendimentos Tributáveis de Pessoa Jurídica Recebidos Acumuladamente pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+        required: true
+      - name: cpf_cnpj
+        type: string
+        description: "CNPJ da fonte pagadora"
+      - name: accumulated_income
+        type: currency
+        description: "Rendimentos acumulados"
+      - name: social_security_contribution
+        type: currency
+        description: "Contribuição previdenciária"
+      - name: tax_withheld_at_source
+        type: currency
+        description: "Imposto retido na fonte"
+      - name: judicial_expenses
+        type: currency
+        description: "Despesas judiciais"
+      - name: months_count
+        type: integer
+        description: "Quantidade de meses"
+
   # ============================================
   # CRIPTOATIVOS (Novo em 2019+)
   # ============================================

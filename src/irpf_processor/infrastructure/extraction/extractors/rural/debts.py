@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
-from ...table_extractor import parse_currency, generate_item_id
+from ...table_extractor import parse_currency, generate_item_id, sum_currency_values
 
 
 class RuralDebtsExtractor(ISectionExtractor):
@@ -34,15 +34,15 @@ class RuralDebtsExtractor(ISectionExtractor):
         
         totals = {
             "year_before_last_value": {
-                "amount": round(sum(i["year_before_last_value"] for i in items), 2),
+                "amount": sum_currency_values([i["year_before_last_value"] for i in items], as_int=False),
                 "valid": True
             },
             "last_year_value": {
-                "amount": round(sum(i["last_year_value"] for i in items), 2),
+                "amount": sum_currency_values([i["last_year_value"] for i in items], as_int=False),
                 "valid": True
             },
             "paid_value_in_last_year": {
-                "amount": round(sum(i["paid_value_in_last_year"] for i in items), 2),
+                "amount": sum_currency_values([i["paid_value_in_last_year"] for i in items], as_int=False),
                 "valid": True
             }
         }
@@ -90,7 +90,8 @@ class RuralDebtsExtractor(ISectionExtractor):
         current_val = parse_currency(match.group(4))
         paid_val = parse_currency(match.group(5))
         
-        desc_parts = [desc_start]
+        prefix_parts = self._get_prefix_lines(lines, idx)
+        desc_parts = prefix_parts + [desc_start]
         j = idx + 1
         
         while j < len(lines):
@@ -119,3 +120,47 @@ class RuralDebtsExtractor(ISectionExtractor):
             "page": page_num,
             "_next_index": j
         }
+    
+    def _get_prefix_lines(self, lines: list[str], idx: int) -> list[str]:
+        prefix_parts = []
+        k = idx - 1
+        while k >= 0:
+            prev_line = lines[k].strip()
+            
+            if not prev_line:
+                break
+            
+            if re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", prev_line):
+                break
+            
+            if re.match(r"^[\d.,]+\s+[\d.,]+\s*$", prev_line):
+                break
+            
+            if "TOTAL" in prev_line.upper() or "ITEM" in prev_line.upper():
+                break
+            
+            if re.match(r"^Página\s+\d+\s+de", prev_line, re.IGNORECASE):
+                break
+            
+            if "DÍVIDAS VINCULADAS" in prev_line.upper():
+                break
+            
+            if self._is_description_fragment(prev_line):
+                prefix_parts.insert(0, prev_line)
+                k -= 1
+            else:
+                break
+        
+        return prefix_parts
+    
+    def _is_description_fragment(self, line: str) -> bool:
+        if re.match(r"^\d+$", line):
+            return False
+        
+        if re.match(r"^[\d.,]+$", line):
+            return False
+        
+        if len(line) < 3:
+            return False
+        
+        return True

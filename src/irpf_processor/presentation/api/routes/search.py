@@ -74,34 +74,35 @@ def normalize_cpf(cpf: str) -> str:
 
 def build_search_query(tenant_id: str, filters: SearchFilters) -> dict:
     query = {"tenant_id": tenant_id}
+    base_path = "data.ir_response.declaration.taxpayer_identification"
     
     if filters.cpf:
         normalized = normalize_cpf(filters.cpf)
-        query["data.taxpayer_identification.normalized_cpf"] = normalized
+        query[f"{base_path}.normalized_cpf"] = normalized
     
     if filters.name:
-        query["data.taxpayer_identification.name"] = {
+        query[f"{base_path}.name"] = {
             "$regex": filters.name,
             "$options": "i"
         }
     
     if filters.exercise_year:
-        query["data.taxpayer_identification.exercise_year"] = filters.exercise_year
+        query[f"{base_path}.exercise_year"] = filters.exercise_year
     
     if filters.calendar_year:
-        query["data.taxpayer_identification.calendar_year"] = filters.calendar_year
+        query[f"{base_path}.calendar_year"] = filters.calendar_year
     
     if filters.min_confidence:
         query["confidence"] = {"$gte": filters.min_confidence}
     
     if filters.city:
-        query["data.taxpayer_identification.contact_and_address.city"] = {
+        query[f"{base_path}.contact_and_address.city"] = {
             "$regex": filters.city,
             "$options": "i"
         }
     
     if filters.state:
-        query["data.taxpayer_identification.contact_and_address.uf"] = filters.state.upper()
+        query[f"{base_path}.contact_and_address.uf"] = filters.state.upper()
     
     return query
 
@@ -147,7 +148,7 @@ def extract_result_item(doc: dict) -> SearchResultItem:
             total_exempt_income=exempt.get("total_value", 0.0) if exempt else 0.0,
             total_exclusive_income=exclusive.get("total_value", 0.0) if exclusive else 0.0,
         ),
-        created_at=doc.get("created_at"),
+        created_at=doc.get("created_at").isoformat() if doc.get("created_at") else None,
     )
 
 
@@ -243,10 +244,10 @@ async def search_by_cpf(
     
     query = {
         "tenant_id": tenant_id,
-        "data.taxpayer_identification.normalized_cpf": normalized,
+        "data.ir_response.declaration.taxpayer_identification.normalized_cpf": normalized,
     }
     
-    cursor = collection.find(query).sort("data.taxpayer_identification.exercise_year", -1)
+    cursor = collection.find(query).sort("data.ir_response.declaration.taxpayer_identification.exercise_year", -1)
     
     results = []
     async for doc in cursor:
@@ -282,9 +283,9 @@ async def get_stats(
                 "_id": None,
                 "total_declarations": {"$sum": 1},
                 "avg_confidence": {"$avg": "$confidence"},
-                "exercise_years": {"$addToSet": "$data.taxpayer_identification.exercise_year"},
-                "total_assets_value": {"$sum": "$data.assets_declaration.current_year_total_value"},
-                "unique_cpfs": {"$addToSet": "$data.taxpayer_identification.normalized_cpf"},
+                "exercise_years": {"$addToSet": "$data.ir_response.declaration.taxpayer_identification.exercise_year"},
+                "total_assets_value": {"$sum": "$data.ir_response.declaration.assets_declaration.current_year_total_value"},
+                "unique_cpfs": {"$addToSet": "$data.ir_response.declaration.taxpayer_identification.normalized_cpf"},
             }
         },
     ]

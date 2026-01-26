@@ -74,6 +74,39 @@ services:
     networks:
       - irpf-processor-network
 
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    container_name: irpf-processor-fake-gcs
+    restart: unless-stopped
+    ports:
+      - "4443:4443"
+    volumes:
+      - gcs-data:/data
+    command: -scheme http -public-host localhost:4443 -backend memory
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4443/storage/v1/b"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - irpf-processor-network
+
+  fake-gcs-setup:
+    image: curlimages/curl:latest
+    container_name: irpf-processor-fake-gcs-setup
+    depends_on:
+      fake-gcs:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        curl -X POST 'http://fake-gcs:4443/storage/v1/b?project=local-project' \
+          -H 'Content-Type: application/json' \
+          -d '{"name": "irpf-documents"}' || true
+    networks:
+      - irpf-processor-network
+
   api:
     build:
       context: .
@@ -88,7 +121,10 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
+      - STORAGE_TYPE=gcs
+      - GCP_BUCKET=irpf-documents
+      - GCP_AUTH_TYPE=anonymous
+      - GCP_EMULATOR_ENDPOINT=http://fake-gcs:4443
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
     depends_on:
@@ -96,7 +132,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      fake-gcs:
         condition: service_healthy
       jaeger:
         condition: service_healthy
@@ -123,7 +159,10 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
+      - STORAGE_TYPE=gcs
+      - GCP_BUCKET=irpf-documents
+      - GCP_AUTH_TYPE=anonymous
+      - GCP_EMULATOR_ENDPOINT=http://fake-gcs:4443
       - PUSHGATEWAY_URL=pushgateway:9091
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
@@ -133,7 +172,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      fake-gcs:
         condition: service_healthy
       jaeger:
         condition: service_healthy
@@ -154,7 +193,10 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
+      - STORAGE_TYPE=gcs
+      - GCP_BUCKET=irpf-documents
+      - GCP_AUTH_TYPE=anonymous
+      - GCP_EMULATOR_ENDPOINT=http://fake-gcs:4443
       - PUSHGATEWAY_URL=pushgateway:9091
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
@@ -164,7 +206,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      fake-gcs:
         condition: service_healthy
       jaeger:
         condition: service_healthy
@@ -185,7 +227,10 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_URL=redis://redis:6379/0
-      - MINIO_ENDPOINT=minio:9000
+      - STORAGE_TYPE=gcs
+      - GCP_BUCKET=irpf-documents
+      - GCP_AUTH_TYPE=anonymous
+      - GCP_EMULATOR_ENDPOINT=http://fake-gcs:4443
       - PUSHGATEWAY_URL=pushgateway:9091
       - OCR_TIMEOUT_SECONDS=300
       - OTEL_ENABLED=true
@@ -196,7 +241,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      fake-gcs:
         condition: service_healthy
       jaeger:
         condition: service_healthy
@@ -323,6 +368,8 @@ volumes:
     name: irpf-processor-redis-data
   minio-data:
     name: irpf-processor-minio-data
+  gcs-data:
+    name: irpf-processor-gcs-data
   prometheus-data:
     name: irpf-processor-prometheus-data
   grafana-data:

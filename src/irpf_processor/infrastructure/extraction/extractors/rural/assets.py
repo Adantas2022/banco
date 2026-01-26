@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
-from ...table_extractor import parse_currency, generate_item_id
+from ...table_extractor import parse_currency, generate_item_id, sum_currency_values
 
 
 class RuralAssetsExtractor(ISectionExtractor):
@@ -19,26 +19,45 @@ class RuralAssetsExtractor(ISectionExtractor):
     def can_extract(self, context: ExtractionContext) -> bool:
         return self.SECTION_MARKER in context.full_text.upper()
     
+    SECTION_END_MARKERS = [
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL",
+        "BENS DA ATIVIDADE RURAL - EXTERIOR",
+        "DEMONSTRATIVO DE ATIVIDADE RURAL - EXTERIOR"
+    ]
+    
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
-        for page_num, page_text in context.pages_text.items():
-            if self.SECTION_MARKER not in page_text.upper():
-                continue
+        in_section = False
+        for page_num, page_text in sorted_pages:
+            upper_text = page_text.upper()
             
-            page_items = self._extract_from_page(page_text, page_num)
-            items.extend(page_items)
+            if self.SECTION_MARKER in upper_text and "BRASIL" in upper_text and "EXTERIOR" not in upper_text:
+                in_section = True
+            
+            if in_section:
+                # Encontrar posição do marcador de fim (se existir nesta página)
+                end_line_index = self._find_end_marker_line(page_text)
+                
+                # Processar itens até o marcador de fim (ou toda a página se não houver)
+                page_items = self._extract_from_page(page_text, page_num, end_line_index)
+                items.extend(page_items)
+                
+                # Se encontrou marcador de fim, parar após processar esta página
+                if end_line_index is not None:
+                    break
         
         if not items:
             return None
         
         totals = {
             "year_before_last_value": {
-                "amount": round(sum(i["year_before_last_value"] for i in items), 2),
+                "amount": sum_currency_values([i["year_before_last_value"] for i in items], as_int=False),
                 "valid": True
             },
             "last_year_value": {
-                "amount": round(sum(i["last_year_value"] for i in items), 2),
+                "amount": sum_currency_values([i["last_year_value"] for i in items], as_int=False),
                 "valid": True
             }
         }
@@ -49,12 +68,41 @@ class RuralAssetsExtractor(ISectionExtractor):
             "total_values": totals
         }
     
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _find_end_marker_line(self, page_text: str) -> Optional[int]:
+        """Encontra o índice da linha onde aparece um marcador de fim de seção.
+        
+        Returns:
+            Índice da linha do marcador, ou None se não houver marcador na página.
+        """
+        lines = page_text.split("\n")
+        for i, line in enumerate(lines):
+            for marker in self.SECTION_END_MARKERS:
+                if marker in line:
+                    return i
+        return None
+    
+    def _extract_from_page(
+        self, 
+        page_text: str, 
+        page_num: int, 
+        end_line_index: Optional[int] = None
+    ) -> list[dict]:
+        """Extrai itens de uma página.
+        
+        Args:
+            page_text: Texto da página.
+            page_num: Número da página.
+            end_line_index: Índice da linha onde parar a extração (opcional).
+                           Se fornecido, extrai apenas até esta linha.
+        """
         items = []
         lines = page_text.split("\n")
         
+        # Limitar extração até o marcador de fim, se especificado
+        max_line = end_line_index if end_line_index is not None else len(lines)
+        
         i = 0
-        while i < len(lines):
+        while i < max_line:
             line = lines[i].strip()
             
             pattern = re.match(
@@ -63,7 +111,7 @@ class RuralAssetsExtractor(ISectionExtractor):
             )
             
             if pattern and "CÓDIGO" not in line.upper() and "TOTAL" not in line.upper():
-                item = self._parse_asset(pattern, lines, i, page_num)
+                item = self._parse_asset(pattern, lines, i, page_num, max_line)
                 if item:
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
@@ -78,20 +126,41 @@ class RuralAssetsExtractor(ISectionExtractor):
         match: re.Match, 
         lines: list[str], 
         idx: int,
-        page_num: int
+        page_num: int,
+        max_line: Optional[int] = None
     ) -> dict:
+        """Parse um item de bem da atividade rural.
+        
+        Args:
+            match: Match do regex com os grupos capturados.
+            lines: Lista de linhas da página.
+            idx: Índice da linha atual.
+            page_num: Número da página.
+            max_line: Linha máxima para coletar descrição (boundary).
+        """
         code = match.group(1)
         desc_start = match.group(2).strip()
         before_val = parse_currency(match.group(3))
         current_val = parse_currency(match.group(4))
         
+        # NOTA: Removido uso de _get_prefix_lines() pois linhas anteriores
+        # pertencem ao item anterior, não ao atual. A descrição sempre
+        # começa na linha principal do item e continua nas linhas seguintes.
+        # O método foi mantido para possível uso futuro em casos especiais.
         desc_parts = [desc_start]
         j = idx + 1
         
-        while j < len(lines):
+        # Respeitar limite de linha se especificado
+        line_limit = max_line if max_line is not None else len(lines)
+        
+        while j < line_limit:
             next_line = lines[j].strip()
             
-            if re.match(r"^\d+\s+", next_line) or "TOTAL" in next_line.upper():
+            if "TOTAL" in next_line.upper():
+                break
+            
+            is_new_item = re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
+            if is_new_item and "CÓDIGO" not in next_line.upper():
                 break
             
             if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+$", next_line):
@@ -100,9 +169,16 @@ class RuralAssetsExtractor(ISectionExtractor):
             j += 1
         
         full_desc = " ".join(desc_parts)
+        full_desc = re.sub(r"\s*Página\s+\d+\s+de\s*\d+\s*$", "", full_desc, flags=re.IGNORECASE)
+        full_desc = re.sub(r"^\d{2}/\d{2}/\d{4}\s+\d{2}/\d{2}/\d{4}\s*", "", full_desc)
+        full_desc = re.sub(r"^\d{2}/\d{2}/\d{4}\s*", "", full_desc)
+        full_desc = re.sub(r"^\d{4}/\d{4}\s+", "", full_desc)
+        full_desc = re.sub(r"^CHASSI\s+[A-Z0-9]+\s*", "", full_desc, flags=re.IGNORECASE)
+        full_desc = re.sub(r"^[A-Z0-9]{15,}\s+", "", full_desc)
         full_desc = re.sub(r"\s+", " ", full_desc).strip()
         
-        item_id = generate_item_id(f"{code}{full_desc[:30]}")
+        normalized_desc = self._normalize_description(full_desc)
+        item_id = generate_item_id(f"{code}{normalized_desc[:30]}")
         
         return {
             "code": code,
@@ -113,3 +189,78 @@ class RuralAssetsExtractor(ISectionExtractor):
             "page": page_num,
             "_next_index": j
         }
+    
+    def _get_prefix_lines(self, lines: list[str], idx: int) -> list[str]:
+        prefix_parts = []
+        k = idx - 1
+        while k >= 0:
+            prev_line = lines[k].strip()
+            
+            if not prev_line:
+                break
+            
+            if re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", prev_line):
+                break
+            
+            if re.match(r"^[\d.,]+\s+[\d.,]+\s*$", prev_line):
+                break
+            
+            if "TOTAL" in prev_line.upper() or "CÓDIGO" in prev_line.upper():
+                break
+            
+            if re.match(r"^Página\s+\d+\s+de", prev_line, re.IGNORECASE):
+                break
+            
+            if re.match(r"^BENS DA ATIVIDADE RURAL", prev_line.upper()):
+                break
+            
+            if self._is_description_fragment(prev_line):
+                prefix_parts.insert(0, prev_line)
+                k -= 1
+            else:
+                break
+        
+        return prefix_parts
+    
+    def _is_description_fragment(self, line: str) -> bool:
+        if re.match(r"^\d+$", line):
+            return False
+        
+        if re.match(r"^[\d.,]+$", line):
+            return False
+        
+        if len(line) < 3:
+            return False
+        
+        if re.match(r"^\d{2}/\d{2}/\d{4}", line):
+            return False
+        
+        if re.match(r"^\d{4}/\d{4}\s", line):
+            return False
+        
+        if re.match(r"^[A-Z0-9]{10,}\s", line):
+            return False
+        
+        if re.match(r"^CHASSI\s+", line.upper()):
+            return False
+        
+        if re.match(r"^ADQ\.\s+EM", line.upper()):
+            return False
+        
+        header_patterns = [
+            r"^NOME\s*:",
+            r"^CPF\s*:",
+            r"IMPOSTO\s+SOBRE",
+            r"DECLARAÇÃO\s+DE",
+            r"EXERCÍCIO\s+\d{4}",
+            r"ANO-CALENDÁRIO",
+        ]
+        for pattern in header_patterns:
+            if re.search(pattern, line.upper()):
+                return False
+        
+        return True
+    
+    def _normalize_description(self, desc: str) -> str:
+        normalized = re.sub(r"\s+", " ", desc)
+        return normalized.strip()

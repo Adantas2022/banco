@@ -99,6 +99,23 @@ sections:
       - name: total_value
         type: currency
 
+  debts_and_encumbrances:
+    name: "Dívidas e Ônus Reais"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: debt_code
+        type: string
+      - name: debt_description
+        type: string
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+      - name: current_year_value
+        type: currency
+
   exploited_rural_properties_in_brazil:
     name: "Dados e Identificação do Imóvel Explorado - Brasil"
     required: false
@@ -166,6 +183,82 @@ sections:
         type: currency
       - name: paid_value_in_last_year
         type: currency
+
+  livestock_movement_in_brazil:
+    name: "Movimentação do Rebanho - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: code
+        type: string
+      - name: species
+        type: string
+      - name: initial_quantity
+        type: integer
+      - name: births
+        type: integer
+      - name: purchases
+        type: integer
+      - name: deaths
+        type: integer
+      - name: sales
+        type: integer
+      - name: final_quantity
+        type: integer
+
+  income_from_legal_person_to_dependents:
+    name: "Rendimentos Tributáveis Recebidos de PJ pelos Dependentes"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+      - name: cpf_cnpj
+        type: string
+      - name: income_from_legal_person
+        type: currency
+      - name: official_social_security_contribution
+        type: currency
+      - name: tax_withheld_at_source
+        type: currency
+
+  income_from_individual_to_holder:
+    name: "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+      - name: cpf
+        type: cpf
+      - name: income_from_individual
+        type: currency
+      - name: tax_withheld_at_source
+        type: currency
+      - name: carnet_leao_tax
+        type: currency
+
+  accumulated_income_from_legal_person_to_holder:
+    name: "Rendimentos Tributáveis de PJ Recebidos Acumuladamente pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+      - name: cpf_cnpj
+        type: string
+      - name: accumulated_income
+        type: currency
+      - name: tax_withheld_at_source
+        type: currency
+      - name: judicial_expenses
+        type: currency
+      - name: months_count
+        type: integer
 
 validations:
   - type: pattern_match

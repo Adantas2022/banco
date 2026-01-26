@@ -89,7 +89,7 @@ class IncomePJExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -149,7 +149,7 @@ class IncomePJExtractor(ISectionExtractor):
         if "TOTAL" in line.upper():
             return False
         
-        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+$", line):
+        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):
             return True
         
         return False

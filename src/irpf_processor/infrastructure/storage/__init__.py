@@ -3,16 +3,16 @@
 from irpf_processor.application.interfaces import IStorageService
 from irpf_processor.config import get_settings
 
-from .gcs_storage import GCSStorageService
 from .minio_storage import MinioStorageService
 
-__all__ = ["MinioStorageService", "GCSStorageService", "get_storage_service", "extract_storage_key"]
+__all__ = ["MinioStorageService", "get_storage_service", "extract_storage_key"]
 
 
 def get_storage_service() -> IStorageService:
     settings = get_settings()
 
     if settings.storage_type == "gcs":
+        from .gcs_storage import GCSStorageService
         return GCSStorageService()
 
     return MinioStorageService()

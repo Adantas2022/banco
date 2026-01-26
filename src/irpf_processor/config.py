@@ -39,9 +39,10 @@ class Settings(BaseSettings):
     minio_secure: bool = False
 
     # GCS (Google Cloud Storage)
-    gcp_bucket: str = ""
+    gcp_bucket: str = "irpf-documents"
     gcp_credentials_path: str = ""
-    gcp_auth_type: Literal["adc", "service_account"] = "adc"
+    gcp_auth_type: Literal["adc", "service_account", "anonymous"] = "adc"
+    gcp_emulator_endpoint: str = ""
 
     # OCR
     ocr_engine: Literal["tesseract", "docling"] = "tesseract"

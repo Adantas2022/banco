@@ -17,6 +17,7 @@ import httpx
 class BatchTestConfig:
     api_url: str = "http://localhost:8000"
     tenant_id: str = "batch-test"
+    api_key: str = ""
     pdf_dir: Path = field(default_factory=lambda: Path("./pdfs"))
     output: Path = field(default_factory=lambda: Path("./batch_results.json"))
     timeout: int = 300
@@ -64,9 +65,15 @@ class APIClient:
     def _get_client(self) -> httpx.Client:
         return httpx.Client(timeout=httpx.Timeout(60.0, connect=10.0))
 
+    def _get_headers(self) -> dict:
+        headers = {"X-Tenant-ID": self.config.tenant_id}
+        if self.config.api_key:
+            headers["Authorization"] = f"Bearer {self.config.api_key}"
+        return headers
+
     def upload(self, pdf_path: Path) -> dict:
         url = f"{self.config.api_url}/v1/documents"
-        headers = {"X-Tenant-ID": self.config.tenant_id}
+        headers = self._get_headers()
 
         with self._get_client() as client:
             with open(pdf_path, "rb") as f:
@@ -78,7 +85,7 @@ class APIClient:
 
     def get_status(self, document_id: str) -> dict:
         url = f"{self.config.api_url}/v1/documents/{document_id}/status"
-        headers = {"X-Tenant-ID": self.config.tenant_id}
+        headers = self._get_headers()
 
         with self._get_client() as client:
             response = client.get(url, headers=headers)
@@ -87,7 +94,7 @@ class APIClient:
 
     def get_result(self, document_id: str) -> dict:
         url = f"{self.config.api_url}/v1/documents/{document_id}"
-        headers = {"X-Tenant-ID": self.config.tenant_id}
+        headers = self._get_headers()
 
         with self._get_client() as client:
             response = client.get(url, headers=headers)
@@ -102,16 +109,22 @@ class ResultValidator:
     def __init__(self, min_confidence: float):
         self.min_confidence = min_confidence
 
+    def _get_taxpayer(self, result: dict) -> dict:
+        data = result.get("data", {})
+        taxpayer = data.get("taxpayer_identification")
+        if taxpayer:
+            return taxpayer
+        ir_response = data.get("ir_response", {})
+        declaration = ir_response.get("declaration", {}) or {}
+        return declaration.get("taxpayer_identification", {}) or {}
+
     def validate(self, result: dict, confidence: Optional[float]) -> list[str]:
         errors = []
 
         if confidence is not None and confidence < self.min_confidence:
             errors.append(f"confidence_below_threshold: {confidence} < {self.min_confidence}")
 
-        data = result.get("data", {})
-        ir_response = data.get("ir_response", {})
-        declaration = ir_response.get("declaration", {}) or {}
-        taxpayer = declaration.get("taxpayer_identification", {})
+        taxpayer = self._get_taxpayer(result)
 
         cpf = taxpayer.get("cpf")
         if not cpf:
@@ -165,15 +178,12 @@ class TestRunner:
 
             if result.status == "READY":
                 extraction_result = self.api_client.get_result(result.document_id)
-                data = extraction_result.get("data", {})
-                ir_response = data.get("ir_response", {})
-                declaration = ir_response.get("declaration", {}) or {}
-                taxpayer_data = declaration.get("taxpayer_identification", {})
+                taxpayer_data = self.validator._get_taxpayer(extraction_result)
 
                 result.taxpayer = TaxpayerInfo(
                     cpf=taxpayer_data.get("cpf"),
                     name=taxpayer_data.get("name"),
-                    exercise_year=taxpayer_data.get("exercise_year"),
+                    exercise_year=str(taxpayer_data.get("exercise_year", "")) or None,
                 )
                 result.warnings = extraction_result.get("warnings", [])
                 result.validation_errors = self.validator.validate(
@@ -398,6 +408,11 @@ def parse_args() -> BatchTestConfig:
         help="Tenant ID (default: batch-test)",
     )
     parser.add_argument(
+        "--api-key",
+        default="",
+        help="API Key for authentication (Bearer token)",
+    )
+    parser.add_argument(
         "--pdf-dir",
         default="./pdfs",
         help="Directory containing PDF files (default: ./pdfs)",
@@ -437,6 +452,7 @@ def parse_args() -> BatchTestConfig:
     return BatchTestConfig(
         api_url=args.api_url,
         tenant_id=args.tenant_id,
+        api_key=args.api_key,
         pdf_dir=Path(args.pdf_dir),
         output=Path(args.output),
         timeout=args.timeout,

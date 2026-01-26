@@ -149,6 +149,62 @@ class TestAssetsExtractorMultiplePages:
         if result:
             assert len(result["items"]) >= 1
 
+    def test_extracts_from_multipage_without_header_on_subsequent_pages(self, extractor):
+        page1 = "DECLARAÇÃO DE BENS E DIREITOS\n01 01 IMOVEL PRIMEIRO 100.000,00 110.000,00"
+        page2 = "01 02 IMOVEL SEGUNDO 200.000,00 220.000,00"
+        page3 = "01 03 IMOVEL TERCEIRO 300.000,00 330.000,00"
+
+        context = ExtractionContext(
+            full_text=page1 + "\n" + page2 + "\n" + page3,
+            pages_text={1: page1, 2: page2, 3: page3},
+            total_pages=3
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 3
+        assert result["items"][0]["asset_description"] == "IMOVEL PRIMEIRO"
+        assert result["items"][1]["asset_description"] == "IMOVEL SEGUNDO"
+        assert result["items"][2]["asset_description"] == "IMOVEL TERCEIRO"
+
+    def test_stops_at_end_marker(self, extractor):
+        page1 = "DECLARAÇÃO DE BENS E DIREITOS\n01 01 IMOVEL UM 100.000,00 110.000,00"
+        page2 = "01 02 IMOVEL DOIS 200.000,00 220.000,00"
+        page3 = "DÍVIDAS E ÔNUS REAIS\nOutro conteudo"
+
+        context = ExtractionContext(
+            full_text=page1 + "\n" + page2 + "\n" + page3,
+            pages_text={1: page1, 2: page2, 3: page3},
+            total_pages=3
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 2
+
+    def test_extracts_large_multipage_section(self, extractor):
+        page1 = "DECLARAÇÃO DE BENS E DIREITOS\n01 01 BEM A 10.000,00 11.000,00"
+        pages = {1: page1}
+        full_text = page1
+
+        for i in range(2, 11):
+            page_content = f"01 0{i % 10} BEM {chr(64 + i)} {i * 10000},00 {i * 11000},00"
+            pages[i] = page_content
+            full_text += "\n" + page_content
+
+        context = ExtractionContext(
+            full_text=full_text,
+            pages_text=pages,
+            total_pages=10
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 10
+
 
 class TestParseCurrency:
 

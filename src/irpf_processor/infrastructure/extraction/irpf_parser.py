@@ -8,6 +8,8 @@ Este módulo implementa:
 - Multi-Version Support: templates YAML para diferentes anos
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -21,7 +23,11 @@ from .extractors import (
     ISectionExtractor,
     TaxpayerExtractor,
     AssetsExtractor,
+    DebtsExtractor,
     IncomePJExtractor,
+    IncomePJDependentsExtractor,
+    IncomePFExtractor,
+    AccumulatedIncomePJExtractor,
     ExemptIncomeExtractor,
     ExclusiveIncomeExtractor,
     RuralPropertiesExtractor,
@@ -29,6 +35,9 @@ from .extractors import (
     RuralResultsExtractor,
     RuralAssetsExtractor,
     RuralDebtsExtractor,
+    LivestockMovementExtractor,
+    PaymentsExtractor,
+    DonationsExtractor,
 )
 from .version_detector import VersionDetector, DocumentProfile
 from irpf_processor.templates import IRPFTemplate
@@ -62,9 +71,9 @@ class IRPFDeclarationResult:
     """Resultado da extração de uma declaração IRPF."""
     
     taxpayer_identification: dict = field(default_factory=dict)
-    total_value: float = 0.0
+    total_value: int = 0
     valid_total: bool = True
-    equity_evolution: float = 0.0
+    equity_evolution: int = 0
     assets_declaration: Optional[dict] = None
     debts_and_encumbrances: Optional[dict] = None
     exempt_income: Optional[dict] = None
@@ -89,6 +98,8 @@ class IRPFDeclarationResult:
     rural_activity_assets_abroad: Optional[Any] = None
     rural_activity_debts_abroad: Optional[Any] = None
     livestock_movement_abroad: Optional[Any] = None
+    payments_made: Optional[dict] = None
+    donations_made: Optional[dict] = None
     total_pages: int = 0
     warnings: list[str] = field(default_factory=list)
     confidence: float = 0.0
@@ -123,6 +134,8 @@ class IRPFDeclarationResult:
             "rural_activity_assets_abroad": self.rural_activity_assets_abroad,
             "rural_activity_debts_abroad": self.rural_activity_debts_abroad,
             "livestock_movement_abroad": self.livestock_movement_abroad,
+            "payments_made": self.payments_made,
+            "donations_made": self.donations_made,
             "total_pages": self.total_pages,
         }
 
@@ -147,7 +160,11 @@ class IRPFParser:
     EXTRACTOR_MAPPING: dict[str, type[ISectionExtractor]] = {
         "taxpayer_identification": TaxpayerExtractor,
         "assets_declaration": AssetsExtractor,
+        "debts_and_encumbrances": DebtsExtractor,
         "income_from_legal_person_to_holder": IncomePJExtractor,
+        "income_from_legal_person_to_dependents": IncomePJDependentsExtractor,
+        "income_from_individual_to_holder": IncomePFExtractor,
+        "accumulated_income_from_legal_person_to_holder": AccumulatedIncomePJExtractor,
         "exempt_income": ExemptIncomeExtractor,
         "exclusive_taxation_income": ExclusiveIncomeExtractor,
         "exploited_rural_properties_in_brazil": RuralPropertiesExtractor,
@@ -155,6 +172,9 @@ class IRPFParser:
         "calculation_of_rural_results_in_brazil": RuralResultsExtractor,
         "rural_activity_assets_in_brazil": RuralAssetsExtractor,
         "rural_activity_debts_in_brazil": RuralDebtsExtractor,
+        "livestock_movement_in_brazil": LivestockMovementExtractor,
+        "payments_made": PaymentsExtractor,
+        "donations_made": DonationsExtractor,
     }
     
     def __init__(
@@ -259,6 +279,7 @@ class IRPFParser:
         result.warnings = context.warnings
         result.confidence = self._calculate_confidence(result)
         result.total_value = self._calculate_total_value(result)
+        result.equity_evolution = self._calculate_equity_evolution(result)
         
         return result
     
@@ -286,11 +307,29 @@ class IRPFParser:
                 pages_text[page_num] = page_text
                 full_text += page_text + "\n"
         
-        return ExtractionContext(
+        context = ExtractionContext(
             full_text=full_text,
             pages_text=pages_text,
             total_pages=total_pages
         )
+        
+        if self._is_scanned_pdf(full_text, total_pages):
+            context.add_warning(
+                "PDF_SCANNED: Este documento parece ser escaneado (imagem). "
+                "Recomendado processar via OCR para melhor extracao."
+            )
+            logger.warning(
+                "PDF escaneado detectado",
+                total_pages=total_pages,
+                text_chars=len(full_text.strip())
+            )
+        
+        return context
+    
+    def _is_scanned_pdf(self, full_text: str, total_pages: int) -> bool:
+        text_stripped = full_text.strip()
+        chars_per_page = len(text_stripped) / max(total_pages, 1)
+        return chars_per_page < 50
     
     def _run_extractor(
         self,
@@ -330,6 +369,10 @@ class IRPFParser:
         extraction_method: str = "digital",
         ocr_confidence: float | None = None,
     ) -> float:
+        detected_sections = set()
+        if self._last_profile:
+            detected_sections = self._last_profile.detected_sections
+        
         calculator = ConfidenceCalculatorFactory.for_declaration(
             use_ocr=(extraction_method == "ocr")
         )
@@ -338,6 +381,7 @@ class IRPFParser:
             extracted_data=result.to_dict(),
             extraction_method=extraction_method,
             ocr_confidence=ocr_confidence,
+            detected_sections=detected_sections,
         )
         
         self._last_confidence_result = confidence_result
@@ -346,29 +390,28 @@ class IRPFParser:
     def get_confidence_details(self) -> ConfidenceResult | None:
         return getattr(self, "_last_confidence_result", None)
     
-    def _calculate_total_value(self, result: IRPFDeclarationResult) -> float:
+    def _calculate_total_value(self, result: IRPFDeclarationResult) -> int:
         if result.assets_declaration:
-            return result.assets_declaration.get("current_year_total_value", 0.0)
-        return 0.0
+            value = result.assets_declaration.get("current_year_total_value", 0)
+            return int(value)
+        return 0
+    
+    def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> int:
+        if not result.assets_declaration:
+            return 0
+        
+        current_year = result.assets_declaration.get("current_year_total_value", 0.0)
+        last_year = result.assets_declaration.get("last_year_total_value", 0.0)
+        
+        return int(current_year - last_year)
 
     def parse_from_text(
         self,
         text: str,
         total_pages: int = 1,
         version: Optional[str] = None,
+        ocr_confidence: Optional[float] = None,
     ) -> IRPFDeclarationResult:
-        """Parseia texto IRPF extraído via OCR.
-        
-        Usado quando o texto já foi extraído por um engine OCR externo.
-        
-        Args:
-            text: Texto completo extraído do PDF
-            total_pages: Número total de páginas do documento
-            version: Versão específica do template (opcional)
-            
-        Returns:
-            IRPFDeclarationResult com os dados extraídos
-        """
         pages_text = {1: text}
         
         context = ExtractionContext(
@@ -407,7 +450,12 @@ class IRPFParser:
             self._run_extractor(extractor, context, result)
         
         result.warnings = context.warnings
-        result.confidence = self._calculate_confidence(result, extraction_method="ocr")
+        result.confidence = self._calculate_confidence(
+            result, 
+            extraction_method="ocr",
+            ocr_confidence=ocr_confidence,
+        )
         result.total_value = self._calculate_total_value(result)
+        result.equity_evolution = self._calculate_equity_evolution(result)
         
         return result

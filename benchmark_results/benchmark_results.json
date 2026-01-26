@@ -1,0 +1,994 @@
+{
+  "timestamp": "2026-01-23T05:26:56.788261",
+  "total_pdfs": 10,
+  "successful_pdfs": 10,
+  "total_pages": 191,
+  "total_vision_chars": 349035,
+  "vision_api_calls": 191,
+  "overall_match_rate": 0.43902,
+  "avg_parser_confidence": 0.65215,
+  "total_time_seconds": 737.11,
+  "results": [
+    {
+      "pdf_name": "01_maria",
+      "pdf_path": "/tmp/benchmark_pdfs/01_maria.pdf",
+      "pages": 8,
+      "vision_chars": 9343,
+      "vision_time_seconds": 22.09,
+      "parser_time_seconds": 0.35,
+      "parser_confidence": 0.7464,
+      "overall_match_rate": 0.6429,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 4,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 0.5,
+          "missing_in_parser": [
+            "CNPJ: 08.337.337/0001-09",
+            "CNPJ: 39.427.632/0001-71"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 3,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "02_paulo",
+      "pdf_path": "/tmp/benchmark_pdfs/02_paulo.pdf",
+      "pages": 11,
+      "vision_chars": 14365,
+      "vision_time_seconds": 32.44,
+      "parser_time_seconds": 0.25,
+      "parser_confidence": 0.7464,
+      "overall_match_rate": 0.5429,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 16,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 0.125,
+          "missing_in_parser": [
+            "CNPJ: 04.467.958/0001-48",
+            "CNPJ: 02.246.046/0001-10",
+            "CNPJ: 47.270.887/0001-00",
+            "CNPJ: 06.063.672/0001-22",
+            "CNPJ: 41.980.319/0001-08"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 3,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 1,
+          "parser_items": 1,
+          "matched_items": 1,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 11,
+          "parser_items": 11,
+          "matched_items": 11,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "03_luiz",
+      "pdf_path": "/tmp/benchmark_pdfs/03_luiz.pdf",
+      "pages": 55,
+      "vision_chars": 135804,
+      "vision_time_seconds": 236.2,
+      "parser_time_seconds": 2.06,
+      "parser_confidence": 0.8564,
+      "overall_match_rate": 0.457,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 82,
+          "parser_items": 1,
+          "matched_items": 1,
+          "match_rate": 0.012195121951219513,
+          "missing_in_parser": [
+            "CNPJ: 10.559.336/0002-23",
+            "CNPJ: 30.306.294/0001-45",
+            "CNPJ: 07.093.380/0001-03",
+            "CNPJ: 42.232.896/0001-84",
+            "CNPJ: 14.874.338/0001-87"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 3,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 49,
+          "parser_items": 49,
+          "matched_items": 49,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 12,
+          "parser_items": 12,
+          "matched_items": 12,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "04_gelson",
+      "pdf_path": "/tmp/benchmark_pdfs/04_gelson.pdf",
+      "pages": 19,
+      "vision_chars": 30973,
+      "vision_time_seconds": 63.96,
+      "parser_time_seconds": 7.0,
+      "parser_confidence": 0.34,
+      "overall_match_rate": 0.0,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 18,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "CNPJ: 52.303.626/0001-70",
+            "CNPJ: 24.654.881/0001-22",
+            "CNPJ: 16.727.230/0001-97",
+            "CNPJ: 58.160.789/0001-28",
+            "CNPJ: 03.477.742/0001-09"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "05_sueli",
+      "pdf_path": "/tmp/benchmark_pdfs/05_sueli.pdf",
+      "pages": 10,
+      "vision_chars": 15027,
+      "vision_time_seconds": 34.4,
+      "parser_time_seconds": 0.24,
+      "parser_confidence": 0.7829,
+      "overall_match_rate": 0.8462,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 4,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "CNPJ: 39.700.775/0001-05",
+            "CNPJ: 00.360.305/0001-04",
+            "CNPJ: 05.114.716/0001-33",
+            "CNPJ: 58.441.431/0001-73"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 1,
+          "matched_items": 1,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 4,
+          "parser_items": 4,
+          "matched_items": 4,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 1,
+          "matched_items": 1,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 12,
+          "parser_items": 12,
+          "matched_items": 12,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "06_elvis",
+      "pdf_path": "/tmp/benchmark_pdfs/06_elvis.pdf",
+      "pages": 19,
+      "vision_chars": 30165,
+      "vision_time_seconds": 63.37,
+      "parser_time_seconds": 0.7,
+      "parser_confidence": 0.86,
+      "overall_match_rate": 0.7167,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 40,
+          "parser_items": 6,
+          "matched_items": 6,
+          "match_rate": 0.15,
+          "missing_in_parser": [
+            "CNPJ: 57.714.669/0001-62",
+            "CNPJ: 01.181.521/0001-55",
+            "CNPJ: 12.005.956/0001-65",
+            "CNPJ: 02.332.886/0001-04",
+            "CNPJ: 04.013.172/0001-50"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 4,
+          "parser_items": 4,
+          "matched_items": 4,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 13,
+          "parser_items": 13,
+          "matched_items": 13,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 37,
+          "parser_items": 37,
+          "matched_items": 37,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 12,
+          "parser_items": 12,
+          "matched_items": 12,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 12,
+          "parser_items": 12,
+          "matched_items": 12,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "07_fabricio",
+      "pdf_path": "/tmp/benchmark_pdfs/07_fabricio.pdf",
+      "pages": 12,
+      "vision_chars": 18427,
+      "vision_time_seconds": 40.41,
+      "parser_time_seconds": 4.46,
+      "parser_confidence": 0.34,
+      "overall_match_rate": 0.0,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 14,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "CNPJ: 60.746.948/0001-12",
+            "CNPJ: 38.381.967/0001-33",
+            "CNPJ: 03.226.149/0015-87",
+            "CNPJ: 36.040.404/0001-56",
+            "CNPJ: 50.157.365/0001-00"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "08_kleber",
+      "pdf_path": "/tmp/benchmark_pdfs/08_kleber.pdf",
+      "pages": 15,
+      "vision_chars": 23591,
+      "vision_time_seconds": 51.32,
+      "parser_time_seconds": 0.39,
+      "parser_confidence": 0.79,
+      "overall_match_rate": 0.5893,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 25,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 0.12,
+          "missing_in_parser": [
+            "CNPJ: 44.754.018/0001-54",
+            "CNPJ: 62.472.501/0001-28",
+            "CNPJ: 58.160.789/0001-28",
+            "CNPJ: 18.681.653/0001-49",
+            "CNPJ: 18.825.428/0001-39"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 3,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 3,
+          "parser_items": 3,
+          "matched_items": 3,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 18,
+          "parser_items": 18,
+          "matched_items": 18,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 4,
+          "parser_items": 4,
+          "matched_items": 4,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "09_sandra",
+      "pdf_path": "/tmp/benchmark_pdfs/09_sandra.pdf",
+      "pages": 13,
+      "vision_chars": 18648,
+      "vision_time_seconds": 42.0,
+      "parser_time_seconds": 0.36,
+      "parser_confidence": 0.7194,
+      "overall_match_rate": 0.5952,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 15,
+          "parser_items": 1,
+          "matched_items": 1,
+          "match_rate": 0.06666666666666667,
+          "missing_in_parser": [
+            "CNPJ: 60.746.948/0001-12",
+            "CNPJ: 60.701.190/0001-04",
+            "CNPJ: 17.672.459/0001-34",
+            "CNPJ: 23.620.579/0001-90",
+            "CNPJ: 47.968.226/0001-44"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 2,
+          "parser_items": 2,
+          "matched_items": 2,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 20,
+          "parser_items": 20,
+          "matched_items": 20,
+          "match_rate": 1.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    },
+    {
+      "pdf_name": "10_alex",
+      "pdf_path": "/tmp/benchmark_pdfs/10_alex.pdf",
+      "pages": 29,
+      "vision_chars": 52692,
+      "vision_time_seconds": 122.12,
+      "parser_time_seconds": 12.9,
+      "parser_confidence": 0.34,
+      "overall_match_rate": 0.0,
+      "sections": {
+        "taxpayer": {
+          "section_name": "Taxpayer (Contribuinte)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "income_pj": {
+          "section_name": "Income from Legal Person (Rend. PJ)",
+          "vision_items": 40,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "CNPJ: 71.785.687/0001-66",
+            "CNPJ: 03.177.158/0001-20",
+            "CNPJ: 50.716.952/0001-84",
+            "CNPJ: 32.846.811/0001-02",
+            "CNPJ: 39.321.083/0001-56"
+          ],
+          "extra_in_parser": []
+        },
+        "exempt_income": {
+          "section_name": "Exempt Income (Rend. Isentos)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "exclusive_taxation": {
+          "section_name": "Exclusive Taxation (Trib. Exclusiva)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "assets": {
+          "section_name": "Assets (Bens e Direitos)",
+          "vision_items": 0,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [],
+          "extra_in_parser": []
+        },
+        "debts": {
+          "section_name": "Debts (Dividas e Onus)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        },
+        "rural": {
+          "section_name": "Rural Activity (Atividade Rural)",
+          "vision_items": 1,
+          "parser_items": 0,
+          "matched_items": 0,
+          "match_rate": 0.0,
+          "missing_in_parser": [
+            "Rural section present in Vision but empty in parser"
+          ],
+          "extra_in_parser": []
+        }
+      },
+      "errors": []
+    }
+  ],
+  "section_summary": {
+    "taxpayer": {
+      "total_vision_items": 14,
+      "total_parser_items": 14,
+      "total_matched": 14,
+      "missing_items": [],
+      "avg_match_rate": 1.0
+    },
+    "income_pj": {
+      "total_vision_items": 258,
+      "total_parser_items": 15,
+      "total_matched": 15,
+      "missing_items": [
+        "CNPJ: 08.337.337/0001-09",
+        "CNPJ: 39.427.632/0001-71",
+        "CNPJ: 04.467.958/0001-48",
+        "CNPJ: 02.246.046/0001-10",
+        "CNPJ: 47.270.887/0001-00",
+        "CNPJ: 06.063.672/0001-22",
+        "CNPJ: 41.980.319/0001-08",
+        "CNPJ: 10.559.336/0002-23",
+        "CNPJ: 30.306.294/0001-45",
+        "CNPJ: 07.093.380/0001-03",
+        "CNPJ: 42.232.896/0001-84",
+        "CNPJ: 14.874.338/0001-87",
+        "CNPJ: 52.303.626/0001-70",
+        "CNPJ: 24.654.881/0001-22",
+        "CNPJ: 16.727.230/0001-97",
+        "CNPJ: 58.160.789/0001-28",
+        "CNPJ: 03.477.742/0001-09",
+        "CNPJ: 39.700.775/0001-05",
+        "CNPJ: 00.360.305/0001-04",
+        "CNPJ: 05.114.716/0001-33",
+        "CNPJ: 58.441.431/0001-73",
+        "CNPJ: 57.714.669/0001-62",
+        "CNPJ: 01.181.521/0001-55",
+        "CNPJ: 12.005.956/0001-65",
+        "CNPJ: 02.332.886/0001-04",
+        "CNPJ: 04.013.172/0001-50",
+        "CNPJ: 60.746.948/0001-12",
+        "CNPJ: 38.381.967/0001-33",
+        "CNPJ: 03.226.149/0015-87",
+        "CNPJ: 36.040.404/0001-56",
+        "CNPJ: 50.157.365/0001-00",
+        "CNPJ: 44.754.018/0001-54",
+        "CNPJ: 62.472.501/0001-28",
+        "CNPJ: 58.160.789/0001-28",
+        "CNPJ: 18.681.653/0001-49",
+        "CNPJ: 18.825.428/0001-39",
+        "CNPJ: 60.746.948/0001-12",
+        "CNPJ: 60.701.190/0001-04",
+        "CNPJ: 17.672.459/0001-34",
+        "CNPJ: 23.620.579/0001-90",
+        "CNPJ: 47.968.226/0001-44",
+        "CNPJ: 71.785.687/0001-66",
+        "CNPJ: 03.177.158/0001-20",
+        "CNPJ: 50.716.952/0001-84",
+        "CNPJ: 32.846.811/0001-02",
+        "CNPJ: 39.321.083/0001-56"
+      ],
+      "avg_match_rate": 0.09738617886178862
+    },
+    "exempt_income": {
+      "total_vision_items": 18,
+      "total_parser_items": 13,
+      "total_matched": 13,
+      "missing_items": [
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser"
+      ],
+      "avg_match_rate": 0.5
+    },
+    "exclusive_taxation": {
+      "total_vision_items": 28,
+      "total_parser_items": 24,
+      "total_matched": 24,
+      "missing_items": [
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser"
+      ],
+      "avg_match_rate": 0.6
+    },
+    "assets": {
+      "total_vision_items": 142,
+      "total_parser_items": 142,
+      "total_matched": 142,
+      "missing_items": [],
+      "avg_match_rate": 1.0
+    },
+    "debts": {
+      "total_vision_items": 25,
+      "total_parser_items": 19,
+      "total_matched": 19,
+      "missing_items": [
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser",
+        "Section present in Vision but empty in parser"
+      ],
+      "avg_match_rate": 0.4
+    },
+    "rural": {
+      "total_vision_items": 43,
+      "total_parser_items": 36,
+      "total_matched": 36,
+      "missing_items": [
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser",
+        "Rural section present in Vision but empty in parser"
+      ],
+      "avg_match_rate": 0.3
+    }
+  }
+}

@@ -1,5 +1,7 @@
 """Parser para recibos de entrega IRPF."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -27,8 +29,10 @@ class IRPFReceiptResult:
     exercise_year: str = ""
     calendar_year: str = ""
     declaration_type: str = ""
+    total_taxable_income: float = 0.0
     tax_due: float = 0.0
     tax_refund: float = 0.0
+    tax_to_pay: float = 0.0
     refund_bank_code: str = ""
     refund_bank_name: str = ""
     refund_agency: str = ""
@@ -53,8 +57,10 @@ class IRPFReceiptResult:
             "exercise_year": self.exercise_year,
             "calendar_year": self.calendar_year,
             "declaration_type": self.declaration_type,
+            "total_taxable_income": self.total_taxable_income,
             "tax_due": self.tax_due,
             "tax_refund": self.tax_refund,
+            "tax_to_pay": self.tax_to_pay,
             "refund_bank_code": self.refund_bank_code,
             "refund_bank_name": self.refund_bank_name,
             "refund_agency": self.refund_agency,
@@ -94,8 +100,12 @@ class ReceiptParser:
 
         return result
 
-    def parse_from_text(self, text: str, total_pages: int = 1) -> IRPFReceiptResult:
-        """Parseia recibo a partir de texto extraído (ex: via OCR)."""
+    def parse_from_text(
+        self, 
+        text: str, 
+        total_pages: int = 1,
+        ocr_confidence: float | None = None,
+    ) -> IRPFReceiptResult:
         context = ExtractionContext(
             full_text=text,
             pages_text={1: text},
@@ -108,7 +118,11 @@ class ReceiptParser:
             self._assign_to_result(data, result)
 
         result.warnings = context.warnings
-        result.confidence = self._calculate_confidence(result, extraction_method="ocr")
+        result.confidence = self._calculate_confidence(
+            result, 
+            extraction_method="ocr",
+            ocr_confidence=ocr_confidence,
+        )
 
         return result
 

@@ -204,10 +204,33 @@ class VersionDetector:
         
         for section_name, markers in self.SECTION_MARKERS.items():
             for marker in markers:
-                if marker.upper() in text_upper:
-                    if section_name not in profile.detected_sections:
-                        profile.detected_sections.append(section_name)
+                marker_upper = marker.upper()
+                if marker_upper in text_upper:
+                    if self._section_has_data(text_upper, marker_upper):
+                        if section_name not in profile.detected_sections:
+                            profile.detected_sections.append(section_name)
                     break
+    
+    def _section_has_data(self, text_upper: str, marker_upper: str) -> bool:
+        idx = text_upper.find(marker_upper)
+        if idx == -1:
+            return False
+        
+        context_after = text_upper[idx + len(marker_upper):idx + len(marker_upper) + 100]
+        
+        no_data_markers = [
+            "SEM INFORMAÇÕES",
+            "SEM INFORMACOES",
+            "SEM DADOS",
+            "NAO HA DADOS",
+            "NÃO HÁ DADOS",
+        ]
+        
+        for no_data in no_data_markers:
+            if no_data in context_after:
+                return False
+        
+        return True
     
     def _calculate_confidence(self, profile: DocumentProfile) -> None:
         score = 0.0

@@ -1,0 +1,77 @@
+{
+  "execution": {
+    "timestamp": "2026-01-23T03:03:13.627629+00:00",
+    "duration_seconds": 0.65,
+    "gabarito_dir": "compare/AMOSTR1",
+    "pdf_dir": "pdfs"
+  },
+  "summary": {
+    "total_gabaritos": 6,
+    "average_accuracy": 0.0,
+    "high_accuracy_count": 0,
+    "medium_accuracy_count": 0,
+    "low_accuracy_count": 6
+  },
+  "results": [
+    {
+      "filename": "0001_IRPF_Maria de Fa´tima] IRPF 2025 - Declarac¸a~o.pdf",
+      "gabarito_file": "0001_IRPF_Maria de Fa´tima] IRPF 2025 - Declarac¸a~o_GABARITO.json",
+      "processing_time": 0.6365407919999999,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": "unsupported operand type(s) for |: 'list' and 'set'",
+      "sections": []
+    },
+    {
+      "filename": "N/A",
+      "gabarito_file": "0132_IRPF_9750982991-IRPF-2025-2024-origi-imagem-declaracao_GABARITO.json",
+      "processing_time": 0.0,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": null,
+      "sections": []
+    },
+    {
+      "filename": "N/A",
+      "gabarito_file": "0242_IRPF_EC. IRPF 2025-2024 ROZANY_GABARITO.json",
+      "processing_time": 0.0,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": null,
+      "sections": []
+    },
+    {
+      "filename": "N/A",
+      "gabarito_file": "0276_IRPF_ECLARAÇÃO 2025-2024 WIENFRIED_GABARITO.json",
+      "processing_time": 0.0,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": null,
+      "sections": []
+    },
+    {
+      "filename": "N/A",
+      "gabarito_file": "0779_IRPF_RPF Renato Declaração 2024 2025_GABARITO.json",
+      "processing_time": 0.0,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": null,
+      "sections": []
+    },
+    {
+      "filename": "N/A",
+      "gabarito_file": "1052_IRPF_oberto98884662087-IRPF-2024-2023_GABARITO.json",
+      "processing_time": 0.0,
+      "total_expected_sections": 0,
+      "total_matched_sections": 0,
+      "overall_accuracy": 0.0,
+      "error_message": null,
+      "sections": []
+    }
+  ]
+}

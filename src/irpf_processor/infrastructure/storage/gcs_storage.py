@@ -1,13 +1,16 @@
 """Implementação do serviço de storage usando Google Cloud Storage."""
 
+from __future__ import annotations
+
 import asyncio
 import time
 from functools import partial
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from google.oauth2 import service_account
+from google.auth.credentials import AnonymousCredentials
 
 from irpf_processor.application.interfaces import IStorageService
 from irpf_processor.config import get_settings
@@ -16,6 +19,9 @@ from irpf_processor.shared.metrics import (
     STORAGE_OPERATION_DURATION_SECONDS,
 )
 
+if TYPE_CHECKING:
+    from google.oauth2 import service_account
+
 
 class GCSStorageService:
     """Serviço de armazenamento usando Google Cloud Storage."""
@@ -23,11 +29,24 @@ class GCSStorageService:
     def __init__(self) -> None:
         settings = get_settings()
 
-        if settings.gcp_auth_type == "service_account" and settings.gcp_credentials_path:
-            credentials = service_account.Credentials.from_service_account_file(
+        if settings.gcp_emulator_endpoint:
+            self._client = storage.Client(
+                credentials=AnonymousCredentials(),
+                project="local-project",
+            )
+            self._client._http.mount("http://", self._client._http.adapters["https://"])
+            self._client._base_connection.API_BASE_URL = settings.gcp_emulator_endpoint
+        elif settings.gcp_auth_type == "service_account" and settings.gcp_credentials_path:
+            from google.oauth2 import service_account as sa_module
+            credentials = sa_module.Credentials.from_service_account_file(
                 settings.gcp_credentials_path
             )
             self._client = storage.Client(credentials=credentials)
+        elif settings.gcp_auth_type == "anonymous":
+            self._client = storage.Client(
+                credentials=AnonymousCredentials(),
+                project="local-project",
+            )
         else:
             self._client = storage.Client()
 
