@@ -10,9 +10,18 @@ from ..table_extractor import parse_currency, generate_item_id
 class IncomePJDependentsExtractor(ISectionExtractor):
     """Extrai rendimentos tributaveis de pessoa juridica pelos dependentes."""
     
-    SECTION_MARKER = "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA"
+    SECTION_MARKERS = [
+        "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES",
+        "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELOS DEPENDENTES"
+    ]
     DEPENDENTS_MARKER = "PELOS DEPENDENTES"
-    ALT_SECTION_MARKER = "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELOS DEPENDENTES"
+    
+    SECTION_END_MARKERS = [
+        "RENDIMENTOS ISENTOS",
+        "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO",
+        "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA",
+        "PAGAMENTOS EFETUADOS"
+    ]
     
     @property
     def section_name(self) -> str:
@@ -20,23 +29,37 @@ class IncomePJDependentsExtractor(ISectionExtractor):
     
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
-        return (
-            (self.SECTION_MARKER in upper_text and self.DEPENDENTS_MARKER in upper_text) or
-            self.ALT_SECTION_MARKER in upper_text
-        )
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        seen_ids = set()
         
-        for page_num, page_text in context.pages_text.items():
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        in_section = False
+        section_ended = False
+        
+        for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
             
-            if self.ALT_SECTION_MARKER not in upper_page:
-                if self.SECTION_MARKER not in upper_page or self.DEPENDENTS_MARKER not in upper_page:
-                    continue
+            # Entrar na seção
+            if any(marker in upper_page for marker in self.SECTION_MARKERS):
+                in_section = True
             
-            page_items = self._extract_from_page(page_text, page_num)
+            if not in_section:
+                continue
+            
+            if section_ended:
+                break
+            
+            # Extrair itens
+            page_items = self._extract_from_page(page_text, page_num, seen_ids)
             items.extend(page_items)
+            
+            # Verificar fim após extração
+            if self._is_definitive_section_end(page_text):
+                section_ended = True
         
         if not items:
             return None
@@ -49,7 +72,15 @@ class IncomePJDependentsExtractor(ISectionExtractor):
             "total_values": totals
         }
     
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _is_definitive_section_end(self, page_text: str) -> bool:
+        """Verifica se a página marca o fim da seção."""
+        upper_text = page_text.upper()
+        for marker in self.SECTION_END_MARKERS:
+            if marker in upper_text:
+                return True
+        return False
+    
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         
@@ -58,19 +89,16 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            if self.ALT_SECTION_MARKER in upper_line:
+            # Detectar início da seção
+            if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 continue
             
-            if self.SECTION_MARKER in upper_line:
-                if self.DEPENDENTS_MARKER in upper_line:
-                    in_section = True
-                elif "PELO TITULAR" in upper_line:
-                    in_section = False
-                continue
-            
+            # Detectar fim da seção
             if in_section:
-                if "RENDIMENTOS" in upper_line and "PESSOA" not in upper_line:
+                if any(end in upper_line for end in self.SECTION_END_MARKERS):
+                    break
+                if "PELO TITULAR" in upper_line:
                     break
                 if "SEM INFORMAÇÕES" in upper_line:
                     continue
@@ -78,8 +106,10 @@ class IncomePJDependentsExtractor(ISectionExtractor):
             if not in_section:
                 continue
             
+            # Tentar parsear item
             item = self._try_parse_income_line(line, lines, i, page_num)
-            if item:
+            if item and item["id"] not in seen_ids:
+                seen_ids.add(item["id"])
                 items.append(item)
         
         return items
@@ -91,6 +121,7 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
+        # Formato: NOME RENDIMENTO CONTRIB_PREV IRRF 13_SALARIO IRRF_13
         pattern = re.match(
             r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -114,6 +145,7 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         dependent_name = ""
         dependent_cpf = ""
         
+        # Procurar CNPJ e dados do dependente nas linhas seguintes
         for j in range(idx + 1, min(idx + 8, len(lines))):
             next_line = lines[j].strip()
             
@@ -162,17 +194,20 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         return result
     
     def _should_skip_line(self, text: str) -> bool:
-        skip_keywords = ["TOTAL", "CNPJ", "NOME DA", "REND.", "DEPENDENTE"]
+        skip_keywords = ["TOTAL", "CNPJ", "NOME DA", "REND.", "DEPENDENTE", "CÓDIGO"]
         return any(kw in text.upper() for kw in skip_keywords)
     
     def _is_name_continuation(self, line: str) -> bool:
         if len(line) <= 2:
             return False
         
-        if "TOTAL" in line.upper():
+        if "TOTAL" in line.upper() or "CNPJ" in line.upper():
             return False
         
         if "Dependente" in line or "CPF" in line:
+            return False
+        
+        if re.match(r"^\d{2}\.\d{3}\.\d{3}", line):
             return False
         
         if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):

@@ -10,9 +10,19 @@ from ..table_extractor import parse_currency, generate_item_id
 class AccumulatedIncomePJExtractor(ISectionExtractor):
     """Extrai rendimentos tributaveis de PJ recebidos acumuladamente pelo titular."""
     
-    SECTION_MARKER = "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE"
-    ALT_MARKER = "RRA"
+    SECTION_MARKERS = [
+        "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+        "RENDIMENTOS TRIBUTÁVEIS DE PJ RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+        "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE"
+    ]
     HOLDER_MARKER = "PELO TITULAR"
+    
+    SECTION_END_MARKERS = [
+        "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",
+        "RENDIMENTOS ISENTOS",
+        "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO",
+        "PAGAMENTOS EFETUADOS"
+    ]
     
     @property
     def section_name(self) -> str:
@@ -20,25 +30,38 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
     
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
-        return (
-            self.SECTION_MARKER in upper_text and
-            self.HOLDER_MARKER in upper_text
-        )
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        seen_ids = set()
         
-        for page_num, page_text in context.pages_text.items():
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        in_section = False
+        section_ended = False
+        
+        for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
             
-            if self.SECTION_MARKER not in upper_page:
+            # Entrar na seção
+            if any(marker in upper_page for marker in self.SECTION_MARKERS):
+                if self.HOLDER_MARKER in upper_page:
+                    in_section = True
+            
+            if not in_section:
                 continue
             
-            if self.HOLDER_MARKER not in upper_page:
-                continue
+            if section_ended:
+                break
             
-            page_items = self._extract_from_page(page_text, page_num)
+            # Extrair itens
+            page_items = self._extract_from_page(page_text, page_num, seen_ids)
             items.extend(page_items)
+            
+            # Verificar fim após extração
+            if self._is_definitive_section_end(page_text):
+                section_ended = True
         
         if not items:
             return None
@@ -51,36 +74,45 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             "total_values": totals
         }
     
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _is_definitive_section_end(self, page_text: str) -> bool:
+        """Verifica se a página marca o fim da seção."""
+        upper_text = page_text.upper()
+        for marker in self.SECTION_END_MARKERS:
+            if marker in upper_text:
+                return True
+        return False
+    
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         
         in_section = False
-        is_holder = False
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            if self.SECTION_MARKER in upper_line:
+            # Detectar início da seção
+            if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 if self.HOLDER_MARKER in upper_line:
                     in_section = True
-                    is_holder = True
                 elif "PELOS DEPENDENTES" in upper_line:
-                    in_section = False
-                    is_holder = False
+                    break
                 continue
             
-            if in_section and is_holder:
-                if "RENDIMENTOS" in upper_line and "ACUMULADAMENTE" not in upper_line:
+            # Detectar fim da seção
+            if in_section:
+                if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
                 if "SEM INFORMAÇÕES" in upper_line:
                     continue
             
-            if not in_section or not is_holder:
+            if not in_section:
                 continue
             
+            # Tentar parsear item
             item = self._try_parse_income_line(line, lines, i, page_num)
-            if item:
+            if item and item["id"] not in seen_ids:
+                seen_ids.add(item["id"])
                 items.append(item)
         
         return items
@@ -92,6 +124,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
+        # Formato com 4 valores: NOME REND_ACUM CONTRIB_PREV IRRF DESP_JUDICIAL
         pattern = re.match(
             r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -101,19 +134,31 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             line.strip()
         )
         
-        if not pattern:
-            pattern_alt = re.match(
-                r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
-                r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-                r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-                r"([\d]+[.,][\d]+[.,]?\d*)\s*$",
-                line.strip()
-            )
-            if pattern_alt:
-                return self._parse_alt_format(pattern_alt, lines, idx, page_num)
-            return None
+        if pattern:
+            return self._parse_4_values(pattern, lines, idx, page_num)
         
-        payer_name_start = pattern.group(1).strip()
+        # Formato alternativo com 3 valores
+        pattern_alt = re.match(
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s*$",
+            line.strip()
+        )
+        
+        if pattern_alt:
+            return self._parse_3_values(pattern_alt, lines, idx, page_num)
+        
+        return None
+    
+    def _parse_4_values(
+        self,
+        match: re.Match,
+        lines: list[str],
+        idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        payer_name_start = match.group(1).strip()
         
         if self._should_skip_line(payer_name_start):
             return None
@@ -147,10 +192,10 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         result = {
             "payer_name": full_name,
-            "accumulated_income": parse_currency(pattern.group(2)),
-            "social_security_contribution": parse_currency(pattern.group(3)),
-            "tax_withheld_at_source": parse_currency(pattern.group(4)),
-            "judicial_expenses": parse_currency(pattern.group(5)),
+            "accumulated_income": parse_currency(match.group(2)),
+            "social_security_contribution": parse_currency(match.group(3)),
+            "tax_withheld_at_source": parse_currency(match.group(4)),
+            "judicial_expenses": parse_currency(match.group(5)),
             "cpf_cnpj": cnpj,
             "id": item_id,
             "page": page_num
@@ -161,7 +206,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         return result
     
-    def _parse_alt_format(
+    def _parse_3_values(
         self,
         match: re.Match,
         lines: list[str],
@@ -176,7 +221,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         name_parts = [payer_name_start]
         cnpj = ""
         
-        for j in range(idx + 1, min(idx + 5, len(lines))):
+        for j in range(idx + 1, min(idx + 6, len(lines))):
             next_line = lines[j].strip()
             
             cnpj_match = re.search(r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", next_line)
@@ -204,17 +249,20 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         }
     
     def _should_skip_line(self, text: str) -> bool:
-        skip_keywords = ["TOTAL", "CNPJ", "NOME DA", "REND.", "MESES"]
+        skip_keywords = ["TOTAL", "CNPJ", "NOME DA", "REND.", "MESES", "CÓDIGO"]
         return any(kw in text.upper() for kw in skip_keywords)
     
     def _is_name_continuation(self, line: str) -> bool:
         if len(line) <= 2:
             return False
         
-        if "TOTAL" in line.upper():
+        if "TOTAL" in line.upper() or "CNPJ" in line.upper():
             return False
         
-        if "Meses" in line or "CNPJ" in line:
+        if "Meses" in line:
+            return False
+        
+        if re.match(r"^\d{2}\.\d{3}\.\d{3}", line):
             return False
         
         if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):

@@ -3,7 +3,13 @@
 set -e
 
 echo "🔄 Parando containers e removendo volumes..."
-docker compose down -v
+docker compose down -v --remove-orphans 2>/dev/null || true
+
+echo "🧹 Removendo TODOS os containers irpf-processor..."
+docker ps -a --filter "name=irpf-processor" -q | xargs -r docker rm -f 2>/dev/null || true
+
+echo "🗑️ Removendo TODOS os volumes irpf-processor..."
+docker volume ls --filter "name=irpf-processor" -q | xargs -r docker volume rm 2>/dev/null || true
 
 echo "🔨 Fazendo build e subindo containers..."
 docker compose up -d --build

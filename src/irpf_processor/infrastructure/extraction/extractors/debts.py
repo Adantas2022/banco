@@ -15,12 +15,12 @@ class DebtsExtractor(ISectionExtractor):
         "DOAÇÕES A PARTIDOS",
         "RENDIMENTOS ISENTOS",
         "RENDIMENTOS TRIBUTÁVEIS",
-        "PROPRIEDADES RURAIS EXPLORADAS",
         "PAGAMENTOS EFETUADOS",
         "DOAÇÕES EFETUADAS",
-        "BENS DA ATIVIDADE RURAL"
+        "ESPÓLIO"
     ]
-    VALID_DEBT_CODES = {"10", "11", "12", "13", "14", "15"}
+    # Códigos válidos expandidos
+    VALID_DEBT_CODES = {"10", "11", "12", "13", "14", "15", "16", "17", "18", "19"}
     
     @property
     def section_name(self) -> str:
@@ -31,33 +31,40 @@ class DebtsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        seen_ids = set()
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
+        section_ended = False
+        
         for page_num, page_text in sorted_pages:
             upper_text = page_text.upper()
             
-            is_rural_debt_section = "DÍVIDAS E ÔNUS REAIS - ATIVIDADE RURAL" in upper_text or "DIVIDAS E ONUS REAIS - ATIVIDADE RURAL" in upper_text
+            # Verificar se é seção de atividade rural (ignorar)
+            is_rural_debt_section = (
+                "DÍVIDAS E ÔNUS REAIS - ATIVIDADE RURAL" in upper_text or 
+                "DIVIDAS E ONUS REAIS - ATIVIDADE RURAL" in upper_text
+            )
             
-            if self._has_rural_section_heading(page_text) and not is_rural_debt_section:
-                if in_section:
-                    break
-                continue
-            
-            if self.SECTION_MARKER in upper_text:
-                is_other_rural = "ATIVIDADE RURAL" in upper_text and not is_rural_debt_section
-                if not is_other_rural:
+            # Entrar na seção de dívidas (não rural)
+            if self.SECTION_MARKER in upper_text and not is_rural_debt_section:
+                if "ATIVIDADE RURAL" not in upper_text:
                     in_section = True
             
-            if in_section:
-                if self._has_section_end_heading(page_text):
-                    page_items = self._extract_from_page(page_text, page_num)
-                    items.extend(page_items)
-                    break
-                
-                page_items = self._extract_from_page(page_text, page_num)
-                items.extend(page_items)
+            if not in_section:
+                continue
+            
+            if section_ended:
+                break
+            
+            # Extrair itens da página
+            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            items.extend(page_items)
+            
+            # Verificar se a seção terminou APÓS extrair
+            if self._is_definitive_section_end(page_text):
+                section_ended = True
         
         if not items:
             return None
@@ -76,79 +83,65 @@ class DebtsExtractor(ISectionExtractor):
             "pages_with_problems": []
         }
     
-    def _has_section_end_heading(self, page_text: str) -> bool:
+    def _is_definitive_section_end(self, page_text: str) -> bool:
+        """Verifica se esta página marca o fim definitivo da seção."""
         lines = page_text.split("\n")
         for i, line in enumerate(lines):
             stripped = line.strip().upper()
             if not stripped:
                 continue
+            
+            # Verificar marcadores de fim de seção
             for marker in self.SECTION_END_MARKERS:
                 if stripped == marker or stripped.startswith(marker + " "):
-                    next_lines = " ".join(lines[i+1:i+4]).upper()
+                    # Confirmar que é uma nova seção (tem código ou cabeçalho)
+                    next_lines = " ".join(lines[i+1:i+5]).upper()
                     if "CÓDIGO" in next_lines or "DISCRIMINAÇÃO" in next_lines:
                         return True
-                    if re.search(r"^\d{2}\s+", stripped[len(marker):].strip()):
+                    if re.search(r"^\d{2}\s+", next_lines):
                         return True
+            
+            # Se encontrar outra seção principal
+            if stripped.startswith("PROPRIEDADES RURAIS EXPLORADAS"):
+                return True
+            if stripped == "BENS DA ATIVIDADE RURAL - BRASIL":
+                return True
+        
         return False
     
-    def _has_rural_section_heading(self, page_text: str) -> bool:
-        lines = page_text.split("\n")
-        for i, line in enumerate(lines):
-            stripped = line.strip().upper()
-            if not stripped:
-                continue
-            if "ATIVIDADE RURAL" in stripped:
-                if "DÍVIDAS E ÔNUS REAIS" in stripped or "DIVIDAS E ONUS REAIS" in stripped:
-                    continue
-                if stripped.startswith("PROPRIEDADES RURAIS"):
-                    return True
-                if stripped == "ATIVIDADE RURAL - BRASIL" or stripped == "ATIVIDADE RURAL BRASIL":
-                    return True
-                if stripped.startswith("ATIVIDADE RURAL") and len(stripped) < 40:
-                    next_lines = " ".join(lines[i+1:i+4]).upper()
-                    if "CÓDIGO" in next_lines or "DISCRIMINAÇÃO" in next_lines or "PROPRIEDADE" in next_lines:
-                        return True
-        return False
-    
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         
         in_section = False
-        found_header = False
-        consecutive_invalid = 0
         i = 0
+        
         while i < len(lines):
             line = lines[i].strip()
             upper_line = line.upper()
             
+            # Detectar início da seção
             if "DÍVIDAS E ÔNUS REAIS" in upper_line:
-                found_header = True
+                if "ATIVIDADE RURAL" not in upper_line:
+                    in_section = True
+                    i += 1
+                    continue
+            
+            # Detectar fim da seção nesta página
+            if in_section and self._is_section_end_line(upper_line):
+                break
+            
+            # Skip linhas de cabeçalho
+            if "CÓDIGO" in upper_line or "DISCRIMINAÇÃO" in upper_line:
                 in_section = True
                 i += 1
                 continue
             
-            if found_header and self._is_section_end_line(upper_line):
-                break
-            
-            if "CÓDIGO" in upper_line or "TOTAL" in upper_line:
-                if not found_header:
-                    in_section = True
+            if "TOTAL" in upper_line and not re.match(r"^\d{2}\s+", line):
                 i += 1
                 continue
             
-            if not in_section:
-                debt_match = re.match(
-                    r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
-                    line
-                )
-                if debt_match and self._is_valid_debt_code(debt_match.group(1)):
-                    in_section = True
-            
-            if not in_section:
-                i += 1
-                continue
-            
+            # Tentar detectar item mesmo sem estar "in_section" se parecer item válido
             debt_match = re.match(
                 r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
@@ -156,28 +149,31 @@ class DebtsExtractor(ISectionExtractor):
             
             if debt_match:
                 code = debt_match.group(1)
-                if not self._is_valid_debt_code(code):
-                    consecutive_invalid += 1
-                    if consecutive_invalid >= 3:
-                        break
-                    i += 1
-                    continue
-                
-                consecutive_invalid = 0
-                item = self._parse_debt(debt_match, lines, i, page_num)
-                if item:
-                    items.append(item)
-                    i = item.pop("_next_index", i + 1)
-                    continue
+                if self._is_valid_debt_code(code):
+                    in_section = True
+                    item = self._parse_debt(debt_match, lines, i, page_num)
+                    if item and item["id"] not in seen_ids:
+                        seen_ids.add(item["id"])
+                        items.append(item)
+                        i = item.pop("_next_index", i + 1)
+                        continue
             
             i += 1
         
         return items
     
     def _is_section_end_line(self, upper_line: str) -> bool:
+        """Verifica se a linha indica fim da seção."""
         for marker in self.SECTION_END_MARKERS:
             if upper_line == marker or upper_line.startswith(marker + " "):
                 return True
+        
+        # Outras seções que indicam fim
+        if upper_line.startswith("PROPRIEDADES RURAIS"):
+            return True
+        if upper_line == "BENS DA ATIVIDADE RURAL - BRASIL":
+            return True
+        
         return False
     
     def _is_valid_debt_code(self, code: str) -> bool:
@@ -203,19 +199,24 @@ class DebtsExtractor(ISectionExtractor):
             next_line = lines[j].strip()
             upper_next = next_line.upper()
             
-            if "TOTAL" in upper_next:
+            # Parar em TOTAL
+            if "TOTAL" in upper_next and not re.match(r"^\d{2}\s+", next_line):
                 break
             
+            # Parar em marcadores de fim
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
             
+            # Parar se encontrar novo item
             is_new_item = re.match(r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
             if is_new_item:
                 break
             
+            # Adicionar como continuação da descrição
             if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+\s+[\d.,]+$", next_line):
                 if not next_line.upper().startswith("CÓDIGO"):
-                    desc_parts.append(next_line)
+                    if not next_line.upper().startswith("DISCRIMINAÇÃO"):
+                        desc_parts.append(next_line)
             
             j += 1
         
