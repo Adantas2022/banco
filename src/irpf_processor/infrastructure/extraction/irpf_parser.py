@@ -38,6 +38,7 @@ from .extractors import (
     LivestockMovementExtractor,
     PaymentsExtractor,
     DonationsExtractor,
+    ReceiptExtractor,
 )
 from .version_detector import VersionDetector, DocumentProfile
 from .validation_executor import ValidationExecutor

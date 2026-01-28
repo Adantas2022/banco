@@ -229,9 +229,28 @@ def process_document(document_id: str, tenant_id: str) -> None:
                     }
                 }
             else:
+                # Quando é DECLARAÇÃO, também tentar extrair o recibo se presente
+                receipt_data = None
+                try:
+                    receipt_parser = ReceiptParser()
+                    receipt_result = receipt_parser.parse(tmp_path)
+                    if receipt_result and receipt_result.receipt_number:
+                        receipt_data = receipt_result.to_dict()
+                        logger.info(
+                            "Receipt also extracted from declaration document",
+                            document_id=document_id,
+                            receipt_number=receipt_result.receipt_number,
+                        )
+                except Exception as receipt_error:
+                    logger.debug(
+                        "No receipt found in declaration document",
+                        document_id=document_id,
+                        error=str(receipt_error),
+                    )
+                
                 ir_response_data = {
                     "ir_response": {
-                        "receipt": None,
+                        "receipt": receipt_data,
                         "declaration": result_dict,
                     }
                 }

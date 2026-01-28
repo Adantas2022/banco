@@ -281,14 +281,22 @@ class ReceiptExtractor(ISectionExtractor):
 
 
 def is_receipt_document(text: str) -> bool:
-    """Verifica se o texto representa um recibo de IRPF."""
+    """Verifica se o texto representa APENAS um recibo de IRPF.
+    
+    IMPORTANTE: Se o documento contém "DECLARAÇÃO DE AJUSTE ANUAL",
+    retorna False para que o IRPFParser processe a declaração completa.
+    Isso permite que PDFs com recibo + declaração sejam processados corretamente.
+    """
     text_upper = text.upper()
+    
+    # Se tem declaração de ajuste anual, NÃO é apenas recibo
+    # Usar IRPFParser para processar a declaração completa
+    if "DECLARAÇÃO DE AJUSTE ANUAL" in text_upper:
+        return False
+    
+    # Verificar se é apenas recibo (sem declaração)
     for marker in ReceiptExtractor.RECEIPT_MARKERS:
         if marker.upper() in text_upper:
-            if "DECLARAÇÃO DE AJUSTE ANUAL" not in text_upper:
-                return True
-            receipt_pos = text_upper.find(marker.upper())
-            decl_pos = text_upper.find("DECLARAÇÃO DE AJUSTE ANUAL")
-            if receipt_pos < decl_pos or decl_pos == -1:
-                return True
+            return True
+    
     return False
