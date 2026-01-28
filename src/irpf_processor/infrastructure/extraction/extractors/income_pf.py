@@ -65,6 +65,8 @@ class IncomePFExtractor(ISectionExtractor):
         nit_pis_pasep = ""
         income_data: dict[str, dict] = {}
         deductions_data: dict[str, dict] = {}
+        income_totals_pdf: dict[str, float] = {}
+        deductions_totals_pdf: dict[str, float] = {}
         
         in_income_section = False
         in_deduction_section = False
@@ -115,13 +117,30 @@ class IncomePFExtractor(ISectionExtractor):
                 continue
             
             if "TOTAL" in upper_line and "TOTALIZAÇÃO" not in upper_line:
-                if in_income_section:
+                values_str = re.sub(r"^TOTAL\s*", "", line, flags=re.IGNORECASE).strip()
+                values = self._extract_values_from_line(values_str)
+                
+                if in_income_section and len(values) >= 4:
+                    income_totals_pdf = {
+                        "unwaged_work": values[0],
+                        "rental": values[1],
+                        "others": values[2],
+                        "income_from_abroad": values[3],
+                    }
                     in_income_section = False
-                elif in_deduction_section:
+                elif in_deduction_section and len(values) >= 3:
+                    deductions_totals_pdf = {
+                        "official_social_security": values[0],
+                        "alimony": values[1] if len(values) > 1 else 0.0,
+                        "cashbook": values[2] if len(values) > 2 else 0.0,
+                    }
                     in_deduction_section = False
         
         if not income_data:
             return None
+        
+        # Calcular totais e adicionar estrutura {amount, valid}
+        income_data["total"] = self._calculate_income_totals(income_data, income_totals_pdf)
         
         item = {
             "nit_pis_pasep": nit_pis_pasep,
@@ -129,6 +148,7 @@ class IncomePFExtractor(ISectionExtractor):
         }
         
         if deductions_data:
+            deductions_data["total"] = self._calculate_deductions_totals(deductions_data, deductions_totals_pdf)
             item["deductions"] = deductions_data
         
         return {
@@ -136,6 +156,43 @@ class IncomePFExtractor(ISectionExtractor):
             "items": [item],
             "page": page_num
         }
+    
+    def _calculate_income_totals(self, income_data: dict, pdf_totals: dict) -> dict:
+        """Calcula totais de income com estrutura {amount, valid}."""
+        months = list(self.MONTHS_MAP.values())
+        
+        calculated = {
+            "unwaged_work": round(sum(income_data.get(m, {}).get("unwaged_work", 0) for m in months), 2),
+            "rental": round(sum(income_data.get(m, {}).get("rental", 0) for m in months), 2),
+            "others": round(sum(income_data.get(m, {}).get("others", 0) for m in months), 2),
+            "income_from_abroad": round(sum(income_data.get(m, {}).get("income_from_abroad", 0) for m in months), 2),
+        }
+        
+        result = {}
+        for field in ["unwaged_work", "rental", "others", "income_from_abroad"]:
+            amount = pdf_totals.get(field, calculated[field])
+            valid = abs(calculated[field] - amount) < 0.01 if pdf_totals else True
+            result[field] = {"amount": amount, "valid": valid}
+        
+        return result
+    
+    def _calculate_deductions_totals(self, deductions_data: dict, pdf_totals: dict) -> dict:
+        """Calcula totais de deductions com estrutura {amount, valid}."""
+        months = list(self.MONTHS_MAP.values())
+        
+        calculated = {
+            "official_social_security": round(sum(deductions_data.get(m, {}).get("official_social_security", 0) for m in months), 2),
+            "alimony": round(sum(deductions_data.get(m, {}).get("alimony", 0) for m in months), 2),
+            "cashbook": round(sum(deductions_data.get(m, {}).get("cashbook", 0) for m in months), 2),
+        }
+        
+        result = {}
+        for field in ["official_social_security", "alimony", "cashbook"]:
+            amount = pdf_totals.get(field, calculated[field])
+            valid = abs(calculated[field] - amount) < 0.01 if pdf_totals else True
+            result[field] = {"amount": amount, "valid": valid}
+        
+        return result
     
     def _extract_values_from_line(self, text: str) -> list[float]:
         values = []
