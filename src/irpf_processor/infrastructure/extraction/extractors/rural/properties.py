@@ -242,12 +242,10 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 
                 name_location = " ".join(name_parts)
             
-            if not cib:
-                return None
-            
+            # CIB é opcional - alguns imóveis não têm
             name_location = self._normalize_name(name_location)
             participants = self._extract_participants(lines, idx)
-            item_id = generate_item_id(f"{code}{name_location}{cib}")
+            item_id = generate_item_id(f"{code}{name_location}{cib or area}")
             
             return {
                 "code": code,
@@ -371,12 +369,10 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 name_parts.append(next_line)
             j += 1
         
-        if not cib:
-            return None
-        
+        # CIB é opcional - alguns imóveis não têm
         name_location = self._normalize_name(" ".join(name_parts))
         participants = self._extract_participants(lines, j - 1)
-        item_id = generate_item_id(f"{code}{name_location}{cib}")
+        item_id = generate_item_id(f"{code}{name_location}{cib or area}")
         
         return {
             "code": code,

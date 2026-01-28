@@ -321,19 +321,14 @@ class ExemptIncomeExtractor(ISectionExtractor):
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_main_section = False
+        in_subsection = False  # Manter estado entre páginas
+        section_ended = False
         
         for page_idx, (page_num, page_text) in enumerate(sorted_pages):
-            upper_page = page_text.upper()
-            
-            # Verificar se estamos na seção principal
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_main_section = True
-            
-            if not in_main_section:
-                continue
+            if section_ended:
+                break
             
             lines = page_text.split("\n")
-            in_subsection = False
             
             next_page_lines = []
             if page_idx + 1 < len(sorted_pages):
@@ -343,20 +338,38 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 lower_line = line.lower()
                 upper_line = line.upper()
                 
+                # Detectar início da seção principal
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_main_section = True
+                    continue
+                
+                if not in_main_section:
+                    continue
+                
+                # Detectar fim da seção principal (RENDIMENTOS SUJEITOS À TRIBUTAÇÃO... como título de seção)
+                # Só considerar como fim se for início de nova seção (não parte de título de outra seção)
+                if "RENDIMENTOS SUJEITOS" in upper_line and "TRIBUTAÇÃO EXCLUSIVA" in upper_line:
+                    section_ended = True
+                    break
+                
                 # Detectar início da subseção
                 if f"{code}." in line and any(k in lower_line for k in keywords):
                     in_subsection = True
                     continue
                 
+                # Detectar fim da subseção (outro código de seção como 99., 12., etc.)
+                if re.match(r"^\d{2}\.", line) and not line.startswith(f"{code}."):
+                    in_subsection = False
+                    continue
+                
+                # Detectar fim por TOTAL (mas não linha de item)
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    # Verificar se é TOTAL da seção principal ou apenas subtotal
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                        in_subsection = False
+                        continue
+                
                 if in_subsection:
-                    # Detectar fim da subseção
-                    if re.match(r"^\d{2}\.", line) and not line.startswith(f"{code}."):
-                        in_subsection = False
-                        continue
-                    if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
-                        in_subsection = False
-                        continue
-                    
                     # Parsear item
                     item = self._parse_item(line, lines, i, page_num, next_page_lines)
                     if item:

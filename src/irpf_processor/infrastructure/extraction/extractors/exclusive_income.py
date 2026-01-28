@@ -141,27 +141,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_section = False
+        in_subsection = False  # Manter estado entre páginas
         
         for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            
-            # Verificar se estamos na seção correta
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            if not in_section:
-                continue
-            
-            # Verificar fim da seção
-            if any(end in upper_page for end in self.SECTION_END_MARKERS):
-                # Processar esta página e depois parar
-                pass
-            
             lines = page_text.split("\n")
-            in_subsection = False
             
             for i, line in enumerate(lines):
                 upper_line = line.upper()
+                
+                # Detectar início da seção principal (TRIBUTAÇÃO EXCLUSIVA)
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
                 
                 # Detectar início da subseção 06
                 if re.search(r"06[.\s]+(?:RENDIMENTOS|REND\.?)\s*(?:DE\s*)?(?:APLIC|FINANC)", upper_line, re.IGNORECASE):
@@ -169,13 +163,23 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 # Detectar fim da subseção (próximo código ou seção)
-                if in_subsection:
-                    if re.match(r"^(?:07|08|09|10|11|12|13)[.\s]+", line.strip()):
+                if re.match(r"^(?:07|08|09|10|11|12|13)[.\s]+", line.strip()):
+                    in_subsection = False
+                    continue
+                
+                # Detectar TOTAL como fim
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
                         in_subsection = False
                         continue
-                    if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                
+                # Detectar fim da seção principal (só verificar se já entramos na seção)
+                if in_section and in_subsection:
+                    # Verificar apenas markers específicos de fim
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
                         in_subsection = False
-                        continue
+                        in_section = False
+                        break
                 
                 if in_subsection:
                     # Tentar parsear item inline
@@ -233,21 +237,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_section = False
+        in_subsection = False  # Manter estado entre páginas
         
         for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            if not in_section:
-                continue
-            
             lines = page_text.split("\n")
-            in_subsection = False
             
             for i, line in enumerate(lines):
                 upper_line = line.upper()
+                
+                # Detectar início da seção principal
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
                 
                 # Detectar início da subseção 10
                 if re.search(r"10[.\s]+JUROS\s+SOBRE\s+CAPITAL\s+PR[OÓ]PRIO", upper_line, re.IGNORECASE):
@@ -255,13 +259,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 # Detectar fim da subseção
-                if in_subsection:
-                    if re.match(r"^(?:11|12|13)[.\s]+", line.strip()):
+                if re.match(r"^(?:11|12|13)[.\s]+", line.strip()):
+                    in_subsection = False
+                    continue
+                
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
                         in_subsection = False
                         continue
-                    if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                
+                # Detectar fim da seção principal (só se já entramos)
+                if in_section and in_subsection:
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
                         in_subsection = False
-                        continue
+                        in_section = False
+                        break
                 
                 if in_subsection:
                     item = self._parse_income_item(line, lines, i, page_num)
@@ -317,21 +329,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_section = False
+        in_subsection = False  # Manter estado entre páginas
         
         for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            if not in_section:
-                continue
-            
             lines = page_text.split("\n")
-            in_subsection = False
             
             for i, line in enumerate(lines):
                 upper_line = line.upper()
+                
+                # Detectar início da seção principal
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
                 
                 # Detectar início da subseção 13.Outros ou 12.Outros
                 if re.search(r"(?:12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE):
@@ -339,13 +351,17 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 # Detectar fim da subseção
-                if in_subsection:
-                    if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
                         in_subsection = False
                         continue
-                    if any(end in upper_line for end in self.SECTION_END_MARKERS):
+                
+                # Detectar fim da seção principal (só se já entramos)
+                if in_section and in_subsection:
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
                         in_subsection = False
-                        continue
+                        in_section = False
+                        break
                 
                 if in_subsection:
                     item = self._parse_others_item(line, lines, i, page_num)

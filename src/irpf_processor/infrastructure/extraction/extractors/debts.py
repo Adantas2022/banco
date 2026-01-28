@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id, sum_currency_values
+from ..validation_utils import create_validated_total
 
 
 class DebtsExtractor(ISectionExtractor):
@@ -17,10 +18,15 @@ class DebtsExtractor(ISectionExtractor):
         "RENDIMENTOS TRIBUTÁVEIS",
         "PAGAMENTOS EFETUADOS",
         "DOAÇÕES EFETUADAS",
-        "ESPÓLIO"
+        "ESPÓLIO",
+        # Seções de atividade rural que indicam fim
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL",
+        "DIVIDAS VINCULADAS A ATIVIDADE RURAL",
+        "BENS DA ATIVIDADE RURAL",
+        "PROPRIEDADES RURAIS EXPLORADAS",
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL",
     ]
-    # Códigos válidos expandidos
-    VALID_DEBT_CODES = {"10", "11", "12", "13", "14", "15", "16", "17", "18", "19"}
+    VALID_DEBT_CODES = {"11", "12", "13", "14", "15", "16", "17", "18", "19"}
     
     @property
     def section_name(self) -> str:
@@ -32,6 +38,7 @@ class DebtsExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         seen_ids = set()
+        pdf_totals = []  # Totais do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
@@ -41,16 +48,26 @@ class DebtsExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_text = page_text.upper()
             
-            # Verificar se é seção de atividade rural (ignorar)
-            is_rural_debt_section = (
-                "DÍVIDAS E ÔNUS REAIS - ATIVIDADE RURAL" in upper_text or 
-                "DIVIDAS E ONUS REAIS - ATIVIDADE RURAL" in upper_text
+            # Verificar se é seção de atividade rural (ignorar completamente)
+            is_rural_section = (
+                "DÍVIDAS VINCULADAS À ATIVIDADE RURAL" in upper_text or
+                "DIVIDAS VINCULADAS A ATIVIDADE RURAL" in upper_text or
+                "BENS DA ATIVIDADE RURAL" in upper_text or
+                "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO" in upper_text
             )
             
-            # Entrar na seção de dívidas (não rural)
-            if self.SECTION_MARKER in upper_text and not is_rural_debt_section:
-                if "ATIVIDADE RURAL" not in upper_text:
-                    in_section = True
+            # Se encontrou seção rural, encerrar
+            if in_section and is_rural_section:
+                section_ended = True
+                break
+            
+            # Se é página de atividade rural, pular
+            if is_rural_section:
+                continue
+            
+            # Entrar na seção de dívidas (apenas se NÃO for atividade rural)
+            if self.SECTION_MARKER in upper_text and not is_rural_section:
+                in_section = True
             
             if not in_section:
                 continue
@@ -58,9 +75,16 @@ class DebtsExtractor(ISectionExtractor):
             if section_ended:
                 break
             
-            # Extrair itens da página
-            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            # Extrair itens da página ANTES de verificar fim
+            # (a página pode ter itens E o marcador de fim depois deles)
+            # Passar flag indicando que já estamos dentro da seção (para páginas de continuação)
+            page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section=in_section)
             items.extend(page_items)
+            
+            if not pdf_totals:
+                page_totals = self._extract_debts_total(page_text)
+                if page_totals:
+                    pdf_totals = page_totals
             
             # Verificar se a seção terminou APÓS extrair
             if self._is_definitive_section_end(page_text):
@@ -69,9 +93,15 @@ class DebtsExtractor(ISectionExtractor):
         if not items:
             return None
         
+        # Somar valores extraídos
         year_before_last_total = sum_currency_values([i["year_before_last_value"] for i in items], as_int=False)
         last_year_total = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
         paid_total = sum_currency_values([i.get("current_year_value", 0) for i in items], as_int=False)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
+        pdf_paid = pdf_totals[2] if len(pdf_totals) > 2 else None
         
         return {
             "section_name": "Dívidas e Ônus Reais",
@@ -80,6 +110,11 @@ class DebtsExtractor(ISectionExtractor):
             "year_before_last_total_value": year_before_last_total,
             "last_year_total_value": last_year_total,
             "current_year_total_value": paid_total,
+            "total_values": {
+                "year_before_last_value": create_validated_total(year_before_last_total, pdf_before),
+                "last_year_value": create_validated_total(last_year_total, pdf_last),
+                "current_year_value": create_validated_total(paid_total, pdf_paid)
+            },
             "pages_with_problems": []
         }
     
@@ -109,18 +144,19 @@ class DebtsExtractor(ISectionExtractor):
         
         return False
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set, already_in_section: bool = False) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         
-        in_section = False
+        # Se já estamos na seção (página de continuação), começar como True
+        in_section = already_in_section
         i = 0
         
         while i < len(lines):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início da seção
+            # Detectar início da seção (para primeira página)
             if "DÍVIDAS E ÔNUS REAIS" in upper_line:
                 if "ATIVIDADE RURAL" not in upper_line:
                     in_section = True
@@ -131,7 +167,7 @@ class DebtsExtractor(ISectionExtractor):
             if in_section and self._is_section_end_line(upper_line):
                 break
             
-            # Skip linhas de cabeçalho
+            # Skip linhas de cabeçalho (também entra na seção)
             if "CÓDIGO" in upper_line or "DISCRIMINAÇÃO" in upper_line:
                 in_section = True
                 i += 1
@@ -141,7 +177,13 @@ class DebtsExtractor(ISectionExtractor):
                 i += 1
                 continue
             
-            # Tentar detectar item mesmo sem estar "in_section" se parecer item válido
+            # SOMENTE extrair se já estiver dentro da seção
+            # NÃO forçar entrada na seção apenas por encontrar padrão de código
+            if not in_section:
+                i += 1
+                continue
+            
+            # Tentar detectar item de dívida
             debt_match = re.match(
                 r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
@@ -150,7 +192,6 @@ class DebtsExtractor(ISectionExtractor):
             if debt_match:
                 code = debt_match.group(1)
                 if self._is_valid_debt_code(code):
-                    in_section = True
                     item = self._parse_debt(debt_match, lines, i, page_num)
                     if item and item["id"] not in seen_ids:
                         seen_ids.add(item["id"])
@@ -165,13 +206,13 @@ class DebtsExtractor(ISectionExtractor):
     def _is_section_end_line(self, upper_line: str) -> bool:
         """Verifica se a linha indica fim da seção."""
         for marker in self.SECTION_END_MARKERS:
-            if upper_line == marker or upper_line.startswith(marker + " "):
+            if marker.upper() in upper_line:
                 return True
         
         # Outras seções que indicam fim
         if upper_line.startswith("PROPRIEDADES RURAIS"):
             return True
-        if upper_line == "BENS DA ATIVIDADE RURAL - BRASIL":
+        if "ATIVIDADE RURAL" in upper_line:
             return True
         
         return False
@@ -238,3 +279,25 @@ class DebtsExtractor(ISectionExtractor):
             "page": page_num,
             "_next_index": j
         }
+    
+    def _extract_debts_total(self, page_text: str) -> list[float]:
+        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        lines = page_text.split("\n")
+        in_debts_section = False
+        
+        for line in lines:
+            upper_line = line.upper().strip()
+            
+            if self.SECTION_MARKER in upper_line:
+                in_debts_section = True
+                continue
+            
+            if in_debts_section and upper_line.startswith("TOTAL"):
+                if "DEDUÇÃO" in upper_line or "DEDUCAO" in upper_line:
+                    continue
+                
+                matches = re.findall(num_pattern, line)
+                if len(matches) >= 2:
+                    return [parse_currency(m) for m in matches]
+        
+        return []

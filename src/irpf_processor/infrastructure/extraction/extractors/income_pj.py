@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id
+from ..validation_utils import extract_section_total, create_validated_total
 
 
 class IncomePJExtractor(ISectionExtractor):
@@ -35,6 +36,7 @@ class IncomePJExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         seen_ids = set()
+        pdf_totals = []  # Totais extraídos do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
@@ -58,6 +60,16 @@ class IncomePJExtractor(ISectionExtractor):
             page_items = self._extract_from_page(page_text, page_num, seen_ids)
             items.extend(page_items)
             
+            # Extrair total do PDF (se existir nesta página)
+            if not pdf_totals:
+                page_totals = extract_section_total(
+                    page_text, 
+                    "TOTAL",
+                    skip_keywords=["TOTAL DE DEDUÇÃO", "TOTAL DO"]
+                )
+                if page_totals:
+                    pdf_totals = page_totals
+            
             # Verificar fim após extração
             if self._is_definitive_section_end(page_text):
                 section_ended = True
@@ -65,7 +77,7 @@ class IncomePJExtractor(ISectionExtractor):
         if not items:
             return None
         
-        totals = self._calculate_totals(items)
+        totals = self._calculate_totals(items, pdf_totals)
         
         return {
             "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
@@ -123,13 +135,15 @@ class IncomePJExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         # Formato: NOME RENDIMENTO CONTRIB_PREV IRRF 13_SALARIO IRRF_13
+        # Padrão de número brasileiro: 1.234.567,89 ou 0,00
+        num_pattern = r"([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})"
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
-            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
-            r"([\d]+[.,][\d]+[.,]?\d*)\s*$",
+            rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"
+            rf"{num_pattern}\s+"
+            rf"{num_pattern}\s+"
+            rf"{num_pattern}\s+"
+            rf"{num_pattern}\s+"
+            rf"{num_pattern}\s*$",
             line.strip()
         )
         
@@ -160,7 +174,10 @@ class IncomePJExtractor(ISectionExtractor):
             return None
         
         full_name = " ".join(name_parts)
-        item_id = generate_item_id(f"{cnpj}{full_name}")
+        # Incluir valores no ID para diferenciar entradas do mesmo pagador com valores diferentes
+        income_val = pattern.group(2)
+        contrib_val = pattern.group(3)
+        item_id = generate_item_id(f"{cnpj}{full_name}{income_val}{contrib_val}")
         
         return {
             "payer_name": full_name,
@@ -193,26 +210,33 @@ class IncomePJExtractor(ISectionExtractor):
         
         return False
     
-    def _calculate_totals(self, items: list[dict]) -> dict:
+    def _calculate_totals(self, items: list[dict], pdf_totals: list[float] = None) -> dict:
+        """Calcula totais e valida contra os totais do PDF.
+        
+        Args:
+            items: Lista de itens extraídos
+            pdf_totals: Lista de totais do PDF [rend, contrib, irrf, 13º, irrf_13]
+        """
+        pdf_totals = pdf_totals or []
+        
+        # Somar valores extraídos
+        sum_income = round(sum(i["income_from_legal_person"] for i in items), 2)
+        sum_contrib = round(sum(i["official_social_security_contribution"] for i in items), 2)
+        sum_irrf = round(sum(i["tax_withheld_at_source"] for i in items), 2)
+        sum_13 = round(sum(i["thirteenth_salary"] for i in items), 2)
+        sum_irrf_13 = round(sum(i["irrf_on_thirteenth_salary"] for i in items), 2)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_income = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_contrib = pdf_totals[1] if len(pdf_totals) > 1 else None
+        pdf_irrf = pdf_totals[2] if len(pdf_totals) > 2 else None
+        pdf_13 = pdf_totals[3] if len(pdf_totals) > 3 else None
+        pdf_irrf_13 = pdf_totals[4] if len(pdf_totals) > 4 else None
+        
         return {
-            "income_from_legal_person": {
-                "amount": round(sum(i["income_from_legal_person"] for i in items), 2),
-                "valid": True
-            },
-            "official_social_security_contribution": {
-                "amount": round(sum(i["official_social_security_contribution"] for i in items), 2),
-                "valid": True
-            },
-            "tax_withheld_at_source": {
-                "amount": round(sum(i["tax_withheld_at_source"] for i in items), 2),
-                "valid": True
-            },
-            "thirteenth_salary": {
-                "amount": round(sum(i["thirteenth_salary"] for i in items), 2),
-                "valid": True
-            },
-            "irrf_on_thirteenth_salary": {
-                "amount": round(sum(i["irrf_on_thirteenth_salary"] for i in items), 2),
-                "valid": True
-            }
+            "income_from_legal_person": create_validated_total(sum_income, pdf_income),
+            "official_social_security_contribution": create_validated_total(sum_contrib, pdf_contrib),
+            "tax_withheld_at_source": create_validated_total(sum_irrf, pdf_irrf),
+            "thirteenth_salary": create_validated_total(sum_13, pdf_13),
+            "irrf_on_thirteenth_salary": create_validated_total(sum_irrf_13, pdf_irrf_13)
         }

@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id, sum_currency_values
+from ..validation_utils import extract_section_total, create_validated_total
 
 
 class AssetsExtractor(ISectionExtractor):
@@ -28,6 +29,7 @@ class AssetsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        pdf_totals = []  # Totais do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
@@ -44,6 +46,16 @@ class AssetsExtractor(ISectionExtractor):
             if self._has_section_end_heading(page_text):
                 page_items = self._extract_from_page(page_text, page_num)
                 items.extend(page_items)
+                
+                # Extrair total do PDF antes de sair da seção
+                if not pdf_totals:
+                    page_totals = extract_section_total(
+                        page_text,
+                        "TOTAL",
+                        skip_keywords=["TOTAL DE BENS", "TOTAL DE DEDUÇÃO"]
+                    )
+                    if page_totals:
+                        pdf_totals = page_totals
                 break
             
             if items:
@@ -53,18 +65,37 @@ class AssetsExtractor(ISectionExtractor):
             
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
+            
+            # Extrair total do PDF (geralmente na última página da seção)
+            if not pdf_totals:
+                page_totals = extract_section_total(
+                    page_text,
+                    "TOTAL",
+                    skip_keywords=["TOTAL DE BENS", "TOTAL DE DEDUÇÃO"]
+                )
+                if page_totals:
+                    pdf_totals = page_totals
         
         if not items:
             return None
         
+        # Somar valores extraídos
         last_year_total = sum_currency_values([i["before_year_asset_value"] for i in items], as_int=False)
         current_year_total = sum_currency_values([i["current_year_asset_value"] for i in items], as_int=False)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_last_year = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_current_year = pdf_totals[1] if len(pdf_totals) > 1 else None
         
         return {
             "section_name": "Declaração de Bens e Direitos",
             "items": items,
             "last_year_total_value": last_year_total,
             "current_year_total_value": current_year_total,
+            "total_values": {
+                "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
+                "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
+            },
             "pages_with_problems": []
         }
     
