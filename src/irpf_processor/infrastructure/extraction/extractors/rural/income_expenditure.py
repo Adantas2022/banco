@@ -36,9 +36,9 @@ class RuralIncomeExpenditureExtractor(ISectionExtractor):
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
             
-            # Extrair total do PDF (se existir nesta página)
+            # Extrair total do PDF APENAS dentro da seção
             if not pdf_totals:
-                page_totals = extract_section_total(page_text, "TOTAL")
+                page_totals = self._extract_section_total(page_text)
                 if page_totals:
                     pdf_totals = page_totals
         
@@ -63,6 +63,44 @@ class RuralIncomeExpenditureExtractor(ISectionExtractor):
             "items": items,
             "total_values": totals
         }
+    
+    def _extract_section_total(self, page_text: str) -> list[float]:
+        """Extrai o TOTAL específico da seção de Receitas/Despesas.
+        
+        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção.
+        """
+        lines = page_text.split("\n")
+        in_section = False
+        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        
+        for line in lines:
+            upper_line = line.upper()
+            
+            # Entrar na seção
+            if self.SECTION_MARKER in upper_line:
+                in_section = True
+                continue
+            
+            if not in_section:
+                continue
+            
+            # Encontrar linha de TOTAL dentro da seção
+            if upper_line.strip().startswith("TOTAL"):
+                matches = re.findall(num_pattern, line)
+                if matches:
+                    return [self._parse_currency(m) for m in matches]
+        
+        return []
+    
+    def _parse_currency(self, value_str: str) -> float:
+        """Converte string de valor brasileiro para float."""
+        if not value_str:
+            return 0.0
+        cleaned = value_str.replace(".", "").replace(",", ".")
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0
     
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
         items = []
