@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id
+from ..validation_utils import extract_section_total, create_validated_total
 
 
 class AccumulatedIncomePJExtractor(ISectionExtractor):
@@ -35,6 +36,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         seen_ids = set()
+        pdf_totals = []  # Totais extraídos do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
@@ -59,6 +61,16 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             page_items = self._extract_from_page(page_text, page_num, seen_ids)
             items.extend(page_items)
             
+            # Extrair total do PDF (se existir nesta página)
+            if not pdf_totals:
+                page_totals = extract_section_total(
+                    page_text, 
+                    "TOTAL",
+                    skip_keywords=["TOTAL DE DEDUÇÃO", "TOTAL DO"]
+                )
+                if page_totals:
+                    pdf_totals = page_totals
+            
             # Verificar fim após extração
             if self._is_definitive_section_end(page_text):
                 section_ended = True
@@ -66,7 +78,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         if not items:
             return None
         
-        totals = self._calculate_totals(items)
+        totals = self._calculate_totals(items, pdf_totals)
         
         return {
             "section_name": "Rendimentos Tributáveis de Pessoa Jurídica Recebidos Acumuladamente pelo Titular",
@@ -270,28 +282,36 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         return False
     
-    def _calculate_totals(self, items: list[dict]) -> dict:
+    def _calculate_totals(self, items: list[dict], pdf_totals: list[float] = None) -> dict:
+        """Calcula totais e valida contra os totais do PDF.
+        
+        Args:
+            items: Lista de itens extraídos
+            pdf_totals: Lista de totais do PDF [rend_acum, contrib_prev, irrf, desp_judicial]
+        """
+        pdf_totals = pdf_totals or []
+        
+        # Somar valores extraídos
+        sum_income = round(sum(i.get("accumulated_income", 0) for i in items), 2)
+        sum_irrf = round(sum(i.get("tax_withheld_at_source", 0) for i in items), 2)
+        sum_contrib = round(sum(i.get("social_security_contribution", 0) for i in items), 2)
+        sum_judicial = round(sum(i.get("judicial_expenses", 0) for i in items), 2)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_income = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_contrib = pdf_totals[1] if len(pdf_totals) > 1 else None
+        pdf_irrf = pdf_totals[2] if len(pdf_totals) > 2 else None
+        pdf_judicial = pdf_totals[3] if len(pdf_totals) > 3 else None
+        
         totals = {
-            "accumulated_income": {
-                "amount": round(sum(i.get("accumulated_income", 0) for i in items), 2),
-                "valid": True
-            },
-            "tax_withheld_at_source": {
-                "amount": round(sum(i.get("tax_withheld_at_source", 0) for i in items), 2),
-                "valid": True
-            }
+            "accumulated_income": create_validated_total(sum_income, pdf_income),
+            "tax_withheld_at_source": create_validated_total(sum_irrf, pdf_irrf)
         }
         
         if any("social_security_contribution" in i for i in items):
-            totals["social_security_contribution"] = {
-                "amount": round(sum(i.get("social_security_contribution", 0) for i in items), 2),
-                "valid": True
-            }
+            totals["social_security_contribution"] = create_validated_total(sum_contrib, pdf_contrib)
         
         if any("judicial_expenses" in i for i in items):
-            totals["judicial_expenses"] = {
-                "amount": round(sum(i.get("judicial_expenses", 0) for i in items), 2),
-                "valid": True
-            }
+            totals["judicial_expenses"] = create_validated_total(sum_judicial, pdf_judicial)
         
         return totals

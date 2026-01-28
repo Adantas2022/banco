@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id
+from ...validation_utils import extract_section_total, create_validated_total
 
 
 class LivestockMovementExtractor(ISectionExtractor):
@@ -36,6 +37,7 @@ class LivestockMovementExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         seen_ids = set()
+        pdf_totals = []  # Totais extraídos do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
@@ -59,6 +61,12 @@ class LivestockMovementExtractor(ISectionExtractor):
             page_items = self._extract_from_page(page_text, page_num, seen_ids)
             items.extend(page_items)
             
+            # Extrair total do PDF (se existir nesta página)
+            if not pdf_totals:
+                page_totals = extract_section_total(page_text, "TOTAL")
+                if page_totals:
+                    pdf_totals = page_totals
+            
             # Verificar fim após extração
             if self._is_definitive_section_end(page_text):
                 section_ended = True
@@ -66,7 +74,7 @@ class LivestockMovementExtractor(ISectionExtractor):
         if not items:
             return None
         
-        totals = self._calculate_totals(items)
+        totals = self._calculate_totals(items, pdf_totals)
         
         return {
             "section_name": "Movimentação do Rebanho - Brasil",
@@ -261,30 +269,36 @@ class LivestockMovementExtractor(ISectionExtractor):
         skip_keywords = ["TOTAL", "CÓDIGO", "ESPÉCIE", "QUANTIDADE", "NASCIMENTO", "ESTOQUE"]
         return any(kw in text.upper() for kw in skip_keywords)
     
-    def _calculate_totals(self, items: list[dict]) -> dict:
+    def _calculate_totals(self, items: list[dict], pdf_totals: list[float] = None) -> dict:
+        """Calcula totais e valida contra os totais do PDF.
+        
+        Args:
+            items: Lista de itens extraídos
+            pdf_totals: Lista de totais do PDF [est_ini, aquisic, nascim, perdas, vendas, est_final]
+        """
+        pdf_totals = pdf_totals or []
+        
+        # Somar valores extraídos
+        sum_initial = sum(i.get("initial_stock", 0) for i in items)
+        sum_acquisitions = sum(i.get("acquisitions", 0) for i in items)
+        sum_births = sum(i.get("births", 0) for i in items)
+        sum_losses = sum(i.get("consumption_and_losses", 0) for i in items)
+        sum_sales = sum(i.get("sales", 0) for i in items)
+        sum_final = sum(i.get("final_stock", 0) for i in items)
+        
+        # Totais do PDF (se disponíveis) - ordem pode variar conforme PDF
+        pdf_initial = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_acquisitions = pdf_totals[1] if len(pdf_totals) > 1 else None
+        pdf_births = pdf_totals[2] if len(pdf_totals) > 2 else None
+        pdf_losses = pdf_totals[3] if len(pdf_totals) > 3 else None
+        pdf_sales = pdf_totals[4] if len(pdf_totals) > 4 else None
+        pdf_final = pdf_totals[5] if len(pdf_totals) > 5 else None
+        
         return {
-            "initial_stock": {
-                "amount": sum(i.get("initial_stock", 0) for i in items),
-                "valid": True
-            },
-            "births": {
-                "amount": sum(i.get("births", 0) for i in items),
-                "valid": True
-            },
-            "acquisitions": {
-                "amount": sum(i.get("acquisitions", 0) for i in items),
-                "valid": True
-            },
-            "consumption_and_losses": {
-                "amount": sum(i.get("consumption_and_losses", 0) for i in items),
-                "valid": True
-            },
-            "sales": {
-                "amount": sum(i.get("sales", 0) for i in items),
-                "valid": True
-            },
-            "final_stock": {
-                "amount": sum(i.get("final_stock", 0) for i in items),
-                "valid": True
-            }
+            "initial_stock": create_validated_total(sum_initial, pdf_initial),
+            "acquisitions": create_validated_total(sum_acquisitions, pdf_acquisitions),
+            "births": create_validated_total(sum_births, pdf_births),
+            "consumption_and_losses": create_validated_total(sum_losses, pdf_losses),
+            "sales": create_validated_total(sum_sales, pdf_sales),
+            "final_stock": create_validated_total(sum_final, pdf_final)
         }

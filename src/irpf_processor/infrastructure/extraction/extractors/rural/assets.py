@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id, sum_currency_values
+from ...validation_utils import extract_section_total, create_validated_total
 
 
 class RuralAssetsExtractor(ISectionExtractor):
@@ -27,6 +28,7 @@ class RuralAssetsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        pdf_totals = []  # Totais extraídos do PDF
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
@@ -44,6 +46,12 @@ class RuralAssetsExtractor(ISectionExtractor):
                 page_items = self._extract_from_page(page_text, page_num, end_line_index)
                 items.extend(page_items)
                 
+                # Extrair total do PDF (se existir nesta página)
+                if not pdf_totals:
+                    page_totals = extract_section_total(page_text, "TOTAL")
+                    if page_totals:
+                        pdf_totals = page_totals
+                
                 # Se encontrou marcador de fim, parar após processar esta página
                 if end_line_index is not None:
                     break
@@ -51,15 +59,17 @@ class RuralAssetsExtractor(ISectionExtractor):
         if not items:
             return None
         
+        # Somar valores extraídos
+        sum_before = sum_currency_values([i["year_before_last_value"] for i in items], as_int=False)
+        sum_last = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
+        
         totals = {
-            "year_before_last_value": {
-                "amount": sum_currency_values([i["year_before_last_value"] for i in items], as_int=False),
-                "valid": True
-            },
-            "last_year_value": {
-                "amount": sum_currency_values([i["last_year_value"] for i in items], as_int=False),
-                "valid": True
-            }
+            "year_before_last_value": create_validated_total(sum_before, pdf_before),
+            "last_year_value": create_validated_total(sum_last, pdf_last)
         }
         
         return {

@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id
+from ...validation_utils import extract_section_total, create_validated_total
 
 
 class RuralIncomeExpenditureExtractor(ISectionExtractor):
@@ -26,6 +27,7 @@ class RuralIncomeExpenditureExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        pdf_totals = []  # Totais extraídos do PDF
         
         for page_num, page_text in context.pages_text.items():
             if self.SECTION_MARKER not in page_text.upper():
@@ -33,19 +35,27 @@ class RuralIncomeExpenditureExtractor(ISectionExtractor):
             
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
+            
+            # Extrair total do PDF (se existir nesta página)
+            if not pdf_totals:
+                page_totals = extract_section_total(page_text, "TOTAL")
+                if page_totals:
+                    pdf_totals = page_totals
         
         if not items:
             return None
         
+        # Somar valores extraídos
+        sum_revenue = round(sum(i["gross_revenue"] for i in items), 2)
+        sum_expenses = round(sum(i["funding_expenses"] for i in items), 2)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_revenue = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_expenses = pdf_totals[1] if len(pdf_totals) > 1 else None
+        
         totals = {
-            "gross_revenue": {
-                "amount": round(sum(i["gross_revenue"] for i in items), 2),
-                "valid": True
-            },
-            "funding_expenses": {
-                "amount": round(sum(i["funding_expenses"] for i in items), 2),
-                "valid": True
-            }
+            "gross_revenue": create_validated_total(sum_revenue, pdf_revenue),
+            "funding_expenses": create_validated_total(sum_expenses, pdf_expenses)
         }
         
         return {
