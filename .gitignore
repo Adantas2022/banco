@@ -86,6 +86,13 @@ batch_results*.json
 # Business confidential
 business/
 
+# Agents (WIP - not ready for production)
+src/irpf_processor/infrastructure/agents/
+src/irpf_processor/templates/rules/
+tests/unit/agents/
+tests/unit/test_rules_loader.py
+docs/PROPOSTA_AGENTES_V1.md
+
 # Generated PDFs
 *.pdf
 !docs/**/*.pdf

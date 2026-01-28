@@ -234,6 +234,46 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                 )
 
             extraction_collection = db["extraction_results"]
+            
+            # Estruturar dados no mesmo formato do extraction_worker (ir_response wrapper)
+            if document_category == DocumentCategory.RECIBO:
+                ir_response_data = {
+                    "ir_response": {
+                        "receipt": result_dict,
+                        "declaration": None,
+                    }
+                }
+            else:
+                # Quando é DECLARAÇÃO, também tentar extrair o recibo se presente
+                receipt_data = None
+                try:
+                    receipt_parser_for_receipt = ReceiptParser()
+                    receipt_result = receipt_parser_for_receipt.parse_from_text(
+                        processed_text,
+                        ocr_result.total_pages,
+                        ocr_confidence=ocr_result.confidence,
+                    )
+                    if receipt_result and receipt_result.receipt_number:
+                        receipt_data = receipt_result.to_dict()
+                        logger.info(
+                            "Receipt also extracted from OCR declaration",
+                            document_id=document_id,
+                            receipt_number=receipt_result.receipt_number,
+                        )
+                except Exception as receipt_error:
+                    logger.debug(
+                        "No receipt found in OCR declaration",
+                        document_id=document_id,
+                        error=str(receipt_error),
+                    )
+                
+                ir_response_data = {
+                    "ir_response": {
+                        "receipt": receipt_data,
+                        "declaration": result_dict,
+                    }
+                }
+            
             extraction_doc = {
                 "document_id": document_id,
                 "tenant_id": tenant_id,
@@ -243,7 +283,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                 "confidence_details": confidence_details.to_dict() if confidence_details else None,
                 "total_pages": ocr_result.total_pages,
                 "warnings": irpf_result.warnings + ocr_result.warnings,
-                "data": result_dict,
+                "data": ir_response_data,
                 "ocr_engine": ocr_result.engine_used,
                 "ocr_confidence": ocr_result.confidence,
                 "extraction_method": "ocr",

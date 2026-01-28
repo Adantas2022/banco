@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id, sum_currency_values
+from ...validation_utils import extract_section_total, create_validated_total
 
 
 class RuralAssetsExtractor(ISectionExtractor):
@@ -27,6 +28,7 @@ class RuralAssetsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        pdf_totals = []  # Totais extraídos do PDF
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
@@ -44,6 +46,12 @@ class RuralAssetsExtractor(ISectionExtractor):
                 page_items = self._extract_from_page(page_text, page_num, end_line_index)
                 items.extend(page_items)
                 
+                # Extrair total do PDF APENAS dentro da seção
+                if not pdf_totals:
+                    page_totals = self._extract_section_total(page_text, end_line_index)
+                    if page_totals:
+                        pdf_totals = page_totals
+                
                 # Se encontrou marcador de fim, parar após processar esta página
                 if end_line_index is not None:
                     break
@@ -51,15 +59,17 @@ class RuralAssetsExtractor(ISectionExtractor):
         if not items:
             return None
         
+        # Somar valores extraídos
+        sum_before = sum_currency_values([i["year_before_last_value"] for i in items], as_int=False)
+        sum_last = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
+        
         totals = {
-            "year_before_last_value": {
-                "amount": sum_currency_values([i["year_before_last_value"] for i in items], as_int=False),
-                "valid": True
-            },
-            "last_year_value": {
-                "amount": sum_currency_values([i["last_year_value"] for i in items], as_int=False),
-                "valid": True
-            }
+            "year_before_last_value": create_validated_total(sum_before, pdf_before),
+            "last_year_value": create_validated_total(sum_last, pdf_last)
         }
         
         return {
@@ -264,3 +274,48 @@ class RuralAssetsExtractor(ISectionExtractor):
     def _normalize_description(self, desc: str) -> str:
         normalized = re.sub(r"\s+", " ", desc)
         return normalized.strip()
+    
+    def _extract_section_total(self, page_text: str, end_line_index: Optional[int] = None) -> list[float]:
+        """Extrai o TOTAL específico da seção de Bens Rurais.
+        
+        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção
+        e ANTES do marcador de fim (se existir).
+        """
+        lines = page_text.split("\n")
+        in_section = False
+        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        
+        # Limitar busca até o marcador de fim
+        max_line = end_line_index if end_line_index is not None else len(lines)
+        
+        for i, line in enumerate(lines):
+            if i >= max_line:
+                break
+                
+            upper_line = line.upper()
+            
+            # Entrar na seção
+            if self.SECTION_MARKER in upper_line and "BRASIL" in upper_line and "EXTERIOR" not in upper_line:
+                in_section = True
+                continue
+            
+            if not in_section:
+                continue
+            
+            # Encontrar linha de TOTAL dentro da seção
+            if upper_line.strip().startswith("TOTAL"):
+                matches = re.findall(num_pattern, line)
+                if matches:
+                    return [self._parse_currency(m) for m in matches]
+        
+        return []
+    
+    def _parse_currency(self, value_str: str) -> float:
+        """Converte string de valor brasileiro para float."""
+        if not value_str:
+            return 0.0
+        cleaned = value_str.replace(".", "").replace(",", ".")
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0

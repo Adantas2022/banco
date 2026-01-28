@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id, sum_currency_values
+from ...validation_utils import extract_section_total, create_validated_total
 
 
 class RuralDebtsExtractor(ISectionExtractor):
@@ -21,6 +22,7 @@ class RuralDebtsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
+        pdf_totals = []  # Totais extraídos do PDF
         
         for page_num, page_text in context.pages_text.items():
             if self.SECTION_MARKER not in page_text.upper():
@@ -28,23 +30,30 @@ class RuralDebtsExtractor(ISectionExtractor):
             
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
+            
+            # Extrair total do PDF APENAS após o marcador da seção
+            if not pdf_totals:
+                page_totals = self._extract_section_total(page_text)
+                if page_totals:
+                    pdf_totals = page_totals
         
         if not items:
             return None
         
+        # Somar valores extraídos
+        sum_before = sum_currency_values([i["year_before_last_value"] for i in items], as_int=False)
+        sum_last = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
+        sum_paid = sum_currency_values([i["paid_value_in_last_year"] for i in items], as_int=False)
+        
+        # Totais do PDF (se disponíveis)
+        pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
+        pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
+        pdf_paid = pdf_totals[2] if len(pdf_totals) > 2 else None
+        
         totals = {
-            "year_before_last_value": {
-                "amount": sum_currency_values([i["year_before_last_value"] for i in items], as_int=False),
-                "valid": True
-            },
-            "last_year_value": {
-                "amount": sum_currency_values([i["last_year_value"] for i in items], as_int=False),
-                "valid": True
-            },
-            "paid_value_in_last_year": {
-                "amount": sum_currency_values([i["paid_value_in_last_year"] for i in items], as_int=False),
-                "valid": True
-            }
+            "year_before_last_value": create_validated_total(sum_before, pdf_before),
+            "last_year_value": create_validated_total(sum_last, pdf_last),
+            "paid_value_in_last_year": create_validated_total(sum_paid, pdf_paid)
         }
         
         return {
@@ -52,6 +61,45 @@ class RuralDebtsExtractor(ISectionExtractor):
             "items": items,
             "total_values": totals
         }
+    
+    def _extract_section_total(self, page_text: str) -> list[float]:
+        """Extrai o TOTAL específico da seção de Dívidas Rurais.
+        
+        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção,
+        evitando pegar totais de seções anteriores na mesma página.
+        """
+        lines = page_text.split("\n")
+        in_section = False
+        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        
+        for line in lines:
+            upper_line = line.upper()
+            
+            # Entrar na seção
+            if self.SECTION_MARKER in upper_line:
+                in_section = True
+                continue
+            
+            if not in_section:
+                continue
+            
+            # Encontrar linha de TOTAL dentro da seção
+            if upper_line.strip().startswith("TOTAL"):
+                matches = re.findall(num_pattern, line)
+                if matches:
+                    return [self._parse_currency(m) for m in matches]
+        
+        return []
+    
+    def _parse_currency(self, value_str: str) -> float:
+        """Converte string de valor brasileiro para float."""
+        if not value_str:
+            return 0.0
+        cleaned = value_str.replace(".", "").replace(",", ".")
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0
     
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
         items = []

@@ -38,8 +38,10 @@ from .extractors import (
     LivestockMovementExtractor,
     PaymentsExtractor,
     DonationsExtractor,
+    ReceiptExtractor,
 )
 from .version_detector import VersionDetector, DocumentProfile
+from .validation_executor import ValidationExecutor
 from irpf_processor.templates import IRPFTemplate
 from irpf_processor.templates.registry import YamlTemplateRegistry, ITemplateRegistry
 
@@ -182,6 +184,7 @@ class IRPFParser:
         extractors: Optional[list[ISectionExtractor]] = None,
         auto_detect: bool = True,
         template_registry: Optional[ITemplateRegistry] = None,
+        enable_validation: bool = True,
     ):
         self._custom_extractors = extractors
         self._auto_detect = auto_detect
@@ -191,6 +194,9 @@ class IRPFParser:
         self._last_profile: Optional[DocumentProfile] = None
         self._current_template: Optional[IRPFTemplate] = None
         self._detected_version: Optional[str] = None
+        self._enable_validation = enable_validation
+        self._validation_executor: Optional[ValidationExecutor] = None
+        self._validation_summary: Optional[dict] = None
     
     @property
     def detected_version(self) -> Optional[str]:
@@ -204,8 +210,11 @@ class IRPFParser:
     
     @property
     def available_versions(self) -> list[str]:
-        """Lista versões de templates disponíveis."""
         return self._template_registry.list_versions()
+    
+    @property
+    def validation_summary(self) -> Optional[dict]:
+        return self._validation_summary
     
     def _create_extractors_for_profile(
         self, 
@@ -261,6 +270,9 @@ class IRPFParser:
         else:
             context.add_warning("Nenhum template encontrado, usando extração genérica")
         
+        if self._enable_validation:
+            self._validation_executor = ValidationExecutor(self._current_template)
+        
         if self._auto_detect and not self._custom_extractors:
             profile = self._version_detector.detect(context)
             self._last_profile = profile
@@ -275,6 +287,17 @@ class IRPFParser:
         
         for extractor in extractors:
             self._run_extractor(extractor, context, result)
+        
+        if self._enable_validation and self._validation_executor:
+            self._validation_summary = self._validation_executor.get_validation_summary(
+                result.to_dict()
+            )
+            valid_totals = self._validation_summary.get("valid_totals", 0)
+            invalid_totals = self._validation_summary.get("invalid_totals", 0)
+            if invalid_totals > 0:
+                context.add_warning(
+                    f"Validacao de totais: {valid_totals} OK, {invalid_totals} com divergencia"
+                )
         
         result.warnings = context.warnings
         result.confidence = self._calculate_confidence(result)
@@ -343,6 +366,10 @@ class IRPFParser:
         try:
             data = extractor.extract(context)
             if data:
+                if self._enable_validation and self._validation_executor:
+                    data = self._validation_executor.validate_section(
+                        extractor.section_name, data, context
+                    )
                 self._assign_to_result(extractor.section_name, data, result)
         except Exception as e:
             if extractor.section_name in OPTIONAL_SECTIONS:

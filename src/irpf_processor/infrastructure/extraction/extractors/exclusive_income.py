@@ -10,34 +10,73 @@ from ..table_extractor import parse_currency, generate_item_id
 class ExclusiveIncomeExtractor(ISectionExtractor):
     """Extrai rendimentos de tributação exclusiva/definitiva."""
     
-    SECTION_MARKER = "TRIBUTAÇÃO EXCLUSIVA"
+    SECTION_MARKERS = [
+        "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+        "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+        "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA",
+        "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+        "TRIBUTAÇÃO EXCLUSIVA"
+    ]
+    
+    SECTION_END_MARKERS = [
+        "RENDIMENTOS ISENTOS",
+        "RENDIMENTOS TRIBUTÁVEIS",
+        "RENDIMENTOS RECEBIDOS DE PESSOA",
+        "PAGAMENTOS EFETUADOS",
+        "DOAÇÕES EFETUADAS",
+        "BENS E DIREITOS"
+    ]
     
     @property
     def section_name(self) -> str:
         return "exclusive_taxation_income"
     
     def can_extract(self, context: ExtractionContext) -> bool:
-        return self.SECTION_MARKER in context.full_text.upper()
+        upper_text = context.full_text.upper()
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         subsections = {}
         
+        # 01. 13º salário
         thirteenth = self._extract_thirteenth_salary(context)
         if thirteenth:
             subsections["thirteenth_salary"] = thirteenth
         
+        # 05. Ganhos líquidos em renda variável
         variable_income = self._extract_variable_income_gains(context)
         if variable_income:
             subsections["net_gains_from_variable_income_stocks_futures_and_reits"] = variable_income
         
+        # 06. Rendimentos de aplicações financeiras
         financial = self._extract_financial_income(context)
-        if financial["items"]:
+        if financial and financial.get("items"):
             subsections["income_from_financial_investments"] = financial
+        
+        # 07. Rendimentos recebidos acumuladamente
+        accumulated = self._extract_accumulated_income(context)
+        if accumulated:
+            subsections["accumulated_income_received"] = accumulated
+        
+        # 10. Juros sobre capital próprio
+        interest = self._extract_interest_on_capital(context)
+        if interest and interest.get("items"):
+            subsections["interest_on_own_capital"] = interest
+        
+        # 12. Aplicações financeiras e lucros/dividendos no exterior
+        abroad = self._extract_financial_abroad(context)
+        if abroad:
+            subsections["financial_investments_and_profits_and_dividends_abroad"] = abroad
+        
+        # 13. Outros
+        others = self._extract_others(context)
+        if others and others.get("items"):
+            subsections["others_13"] = others
         
         if not subsections:
             return None
         
-        total_value = sum(s["total_value"] for s in subsections.values())
+        total_value = sum(s.get("total_value", 0) for s in subsections.values())
         
         return {
             "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
@@ -46,75 +85,118 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "subsections": subsections
         }
     
+    def _is_in_exclusive_section(self, page_text: str) -> bool:
+        """Verifica se a página contém a seção de tributação exclusiva."""
+        upper_text = page_text.upper()
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
+    
     def _extract_thirteenth_salary(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 01. 13º salário."""
         for page_text in context.pages_text.values():
-            if "01." in page_text and "13" in page_text and "salário" in page_text.lower():
-                pattern = re.search(
-                    r"01\.\s*13[º°]?\s*salário\s+([\d.,]+)",
-                    page_text,
-                    re.IGNORECASE
-                )
-                if pattern:
-                    value = parse_currency(pattern.group(1))
-                    return {
-                        "name": "01. 13º salário",
-                        "code": "01",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
+            if not self._is_in_exclusive_section(page_text):
+                continue
+            
+            pattern = re.search(
+                r"01[.\s]+13[º°]?\s*(?:sal[aá]rio|SALÁRIO)\s+([\d.,]+)",
+                page_text,
+                re.IGNORECASE
+            )
+            if pattern:
+                value = parse_currency(pattern.group(1))
+                return {
+                    "name": "01. 13º salário",
+                    "code": "01",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
         return None
     
     def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 05. Ganhos líquidos em renda variável."""
         for page_text in context.pages_text.values():
-            if "05." in page_text and "Ganhos líquidos" in page_text:
-                pattern = re.search(
-                    r"05\.\s*Ganhos líquidos em renda variável[^\d]+([\d.,]+)",
-                    page_text,
-                    re.IGNORECASE
-                )
-                if pattern:
-                    value = parse_currency(pattern.group(1))
-                    return {
-                        "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
-                        "code": "05",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
+            if not self._is_in_exclusive_section(page_text):
+                continue
+            
+            pattern = re.search(
+                r"05[.\s]+Ganhos\s+l[ií]quidos\s+(?:em\s+)?renda\s+vari[aá]vel[^\d]+([\d.,]+)",
+                page_text,
+                re.IGNORECASE
+            )
+            if pattern:
+                value = parse_currency(pattern.group(1))
+                return {
+                    "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
+                    "code": "05",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
         return None
     
     def _extract_financial_income(self, context: ExtractionContext) -> dict:
+        """Extrai 06. Rendimentos de aplicações financeiras."""
         items = []
+        seen_keys = set()
         
-        for page_num, page_text in context.pages_text.items():
-            if self.SECTION_MARKER not in page_text.upper():
-                continue
-            
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        in_section = False
+        in_subsection = False  # Manter estado entre páginas
+        
+        for page_num, page_text in sorted_pages:
             lines = page_text.split("\n")
-            in_section = False
             
             for i, line in enumerate(lines):
-                if "06." in line and "aplicações financeiras" in line.lower():
+                upper_line = line.upper()
+                
+                # Detectar início da seção principal (TRIBUTAÇÃO EXCLUSIVA)
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
                     in_section = True
                     continue
                 
-                if in_section:
-                    if "TOTAL" in line.upper() or re.match(r"^\d{2}\.", line):
-                        in_section = False
+                if not in_section:
+                    continue
+                
+                # Detectar início da subseção 06
+                if re.search(r"06[.\s]+(?:RENDIMENTOS|REND\.?)\s*(?:DE\s*)?(?:APLIC|FINANC)", upper_line, re.IGNORECASE):
+                    in_subsection = True
+                    continue
+                
+                # Detectar fim da subseção (próximo código ou seção)
+                if re.match(r"^(?:07|08|09|10|11|12|13)[.\s]+", line.strip()):
+                    in_subsection = False
+                    continue
+                
+                # Detectar TOTAL como fim
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                        in_subsection = False
                         continue
-                    
-                    item = self._parse_item(line, lines, i, page_num)
+                
+                # Detectar fim da seção principal (só verificar se já entramos na seção)
+                if in_section and in_subsection:
+                    # Verificar apenas markers específicos de fim
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
+                        in_subsection = False
+                        in_section = False
+                        break
+                
+                if in_subsection:
+                    # Tentar parsear item inline
+                    item = self._parse_income_item(line, lines, i, page_num)
                     if item:
-                        items.append(item)
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(item)
                     
-                    multiline_item = self._parse_multiline_item(lines, i, page_num)
-                    if multiline_item and not any(
-                        existing.get("payer_cnpj") == multiline_item.get("payer_cnpj") and
-                        existing.get("value") == multiline_item.get("value")
-                        for existing in items
-                    ):
-                        items.append(multiline_item)
+                    # Tentar parsear item multiline (CNPJ na linha sozinho)
+                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
+                    if multiline_item:
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(multiline_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -123,16 +205,191 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "code": "06",
             "total_value": total,
             "valid_total": True,
-            "items": items
+            "items": items if items else None
         }
     
-    def _parse_item(
+    def _extract_accumulated_income(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 07. Rendimentos recebidos acumuladamente."""
+        for page_text in context.pages_text.values():
+            if not self._is_in_exclusive_section(page_text):
+                continue
+            
+            pattern = re.search(
+                r"07[.\s]+Rendimentos\s+recebidos\s+acumuladamente[^\d]+([\d.,]+)",
+                page_text,
+                re.IGNORECASE
+            )
+            if pattern:
+                value = parse_currency(pattern.group(1))
+                return {
+                    "name": "07. Rendimentos recebidos acumuladamente",
+                    "code": "07",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": []
+                }
+        return None
+    
+    def _extract_interest_on_capital(self, context: ExtractionContext) -> dict:
+        """Extrai 10. Juros sobre capital próprio."""
+        items = []
+        seen_keys = set()
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        in_section = False
+        in_subsection = False  # Manter estado entre páginas
+        
+        for page_num, page_text in sorted_pages:
+            lines = page_text.split("\n")
+            
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                
+                # Detectar início da seção principal
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
+                
+                # Detectar início da subseção 10
+                if re.search(r"10[.\s]+JUROS\s+SOBRE\s+CAPITAL\s+PR[OÓ]PRIO", upper_line, re.IGNORECASE):
+                    in_subsection = True
+                    continue
+                
+                # Detectar fim da subseção
+                if re.match(r"^(?:11|12|13)[.\s]+", line.strip()):
+                    in_subsection = False
+                    continue
+                
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                        in_subsection = False
+                        continue
+                
+                # Detectar fim da seção principal (só se já entramos)
+                if in_section and in_subsection:
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
+                        in_subsection = False
+                        in_section = False
+                        break
+                
+                if in_subsection:
+                    item = self._parse_income_item(line, lines, i, page_num)
+                    if item:
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(item)
+                    
+                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
+                    if multiline_item:
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(multiline_item)
+        
+        total = round(sum(i["value"] for i in items), 2)
+        
+        return {
+            "name": "10. Juros sobre capital próprio",
+            "code": "10",
+            "total_value": total,
+            "valid_total": True,
+            "items": items if items else None
+        }
+    
+    def _extract_financial_abroad(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior."""
+        for page_text in context.pages_text.values():
+            if not self._is_in_exclusive_section(page_text):
+                continue
+            
+            pattern = re.search(
+                r"12[.\s]+Aplica[çc][õo]es\s+Financeiras\s+e\s+Lucros[^\d]+([\d.,]+)",
+                page_text,
+                re.IGNORECASE
+            )
+            if pattern:
+                value = parse_currency(pattern.group(1))
+                return {
+                    "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                    "code": "12",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": []
+                }
+        return None
+    
+    def _extract_others(self, context: ExtractionContext) -> dict:
+        """Extrai 13. Outros (ou 12. Outros em alguns PDFs)."""
+        items = []
+        seen_keys = set()
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        in_section = False
+        in_subsection = False  # Manter estado entre páginas
+        
+        for page_num, page_text in sorted_pages:
+            lines = page_text.split("\n")
+            
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                
+                # Detectar início da seção principal
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
+                
+                # Detectar início da subseção 13.Outros ou 12.Outros
+                if re.search(r"(?:12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE):
+                    in_subsection = True
+                    continue
+                
+                # Detectar fim da subseção
+                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                        in_subsection = False
+                        continue
+                
+                # Detectar fim da seção principal (só se já entramos)
+                if in_section and in_subsection:
+                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
+                        in_subsection = False
+                        in_section = False
+                        break
+                
+                if in_subsection:
+                    item = self._parse_others_item(line, lines, i, page_num)
+                    if item:
+                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(item)
+        
+        total = round(sum(i["value"] for i in items), 2)
+        
+        return {
+            "name": "13. Outros",
+            "code": "13",
+            "total_value": total,
+            "valid_total": True,
+            "items": items if items else None
+        }
+    
+    def _parse_income_item(
         self,
         line: str,
         lines: list[str],
         idx: int,
         page_num: int
     ) -> Optional[dict]:
+        """Parseia item de rendimento com formato inline."""
+        # Formato: Titular/Dependente CPF CNPJ Nome Valor
         pattern = re.match(
             r"^(Titular|Dependente)\s+"
             r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
@@ -142,33 +399,34 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             line.strip()
         )
         
-        if not pattern:
-            return None
+        if pattern:
+            beneficiary = pattern.group(1)
+            cpf = pattern.group(2)
+            cnpj = pattern.group(3)
+            payer_name = pattern.group(4).strip()
+            value = parse_currency(pattern.group(5))
+            
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
         
-        beneficiary = pattern.group(1)
-        cpf = pattern.group(2)
-        cnpj = pattern.group(3)
-        payer_name = pattern.group(4).strip()
-        value = parse_currency(pattern.group(5))
-        
-        item_id = generate_item_id(f"{cnpj}{cpf}{value}")
-        
-        return {
-            "beneficiary": beneficiary,
-            "cpf": cpf,
-            "payer_cnpj": cnpj,
-            "payer_name": payer_name,
-            "value": value,
-            "id": item_id,
-            "page": page_num
-        }
+        return None
     
-    def _parse_multiline_item(
+    def _parse_multiline_income_item(
         self,
         lines: list[str],
         start_idx: int,
         page_num: int
     ) -> Optional[dict]:
+        """Parseia item de rendimento com formato multiline (CNPJ em linha separada)."""
         cnpj_pattern = r"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$"
         current_line = lines[start_idx].strip()
         
@@ -181,7 +439,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         value = None
         cpf = None
         
-        for offset in range(1, 6):
+        for offset in range(1, 8):
             if start_idx + offset >= len(lines):
                 break
             
@@ -194,14 +452,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 beneficiary = next_line
             elif re.match(r"^\d{3}\.\d{3}\.\d{3}-\d{2}$", next_line):
                 cpf = next_line
-            elif re.match(r"^[\d.,]+$", next_line) and "." in next_line:
+            elif re.match(r"^[\d.,]+$", next_line) and "," in next_line:
                 parsed_value = parse_currency(next_line)
                 if parsed_value > 0:
                     value = parsed_value
-            elif re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line) and not re.match(cnpj_pattern, next_line):
-                if not re.match(r"^\d{2}\.", next_line) and "TOTAL" not in next_line.upper():
-                    if payer_name is None:
-                        payer_name = next_line
+            elif re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line):
+                if not re.match(cnpj_pattern, next_line):
+                    if not re.match(r"^\d{2}[.\s]", next_line) and "TOTAL" not in next_line.upper():
+                        if payer_name is None:
+                            payer_name = next_line
+            
+            # Parar se encontrarmos outro CNPJ ou código de seção
+            if re.match(cnpj_pattern, next_line) and next_line != cnpj:
+                break
+            if re.match(r"^\d{2}[.\s]+[A-Z]", next_line):
+                break
         
         if cnpj and value is not None and value > 0:
             item_id = generate_item_id(f"{cnpj}{cpf or ''}{value}")
@@ -210,6 +475,58 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 "cpf": cpf or "",
                 "payer_cnpj": cnpj,
                 "payer_name": payer_name or "",
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        return None
+    
+    def _parse_others_item(
+        self,
+        line: str,
+        lines: list[str],
+        idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        """Parseia item de 'Outros' com descrição."""
+        # Formato: Titular/Dependente CPF CPF/CNPJ Nome Descrição Valor
+        pattern = re.match(
+            r"^(Titular|Dependente)\s+"
+            r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
+            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
+            r"(.+?)\s+"
+            r"([\d.,]+)\s*$",
+            line.strip()
+        )
+        
+        if pattern:
+            beneficiary = pattern.group(1)
+            cpf = pattern.group(2)
+            payer_cpf_cnpj = pattern.group(3)
+            remaining = pattern.group(4).strip()
+            value = parse_currency(pattern.group(5))
+            
+            # Separar nome do pagador da descrição
+            payer_name = remaining
+            description = ""
+            
+            # Procurar descrição nas linhas seguintes ou no restante
+            for j in range(idx + 1, min(idx + 3, len(lines))):
+                next_line = lines[j].strip()
+                if next_line and not re.match(r"^(Titular|Dependente|[\d.,]+|\d{2}\.)", next_line):
+                    if "TOTAL" not in next_line.upper():
+                        description = next_line
+                        break
+            
+            item_id = generate_item_id(f"{payer_cpf_cnpj}{cpf}{value}")
+            
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cpf_cnpj": payer_cpf_cnpj,
+                "payer_name": payer_name,
+                "description": description,
                 "value": value,
                 "id": item_id,
                 "page": page_num

@@ -80,9 +80,12 @@ class VersionDetector:
             "BENS E DIREITOS"
         ],
         "income_from_legal_person_to_holder": [
-            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR"
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR",
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELO TITULAR"  # Variação plural
         ],
         "income_from_legal_person_to_dependents": [
+            # IMPORTANTE: Plural primeiro! O singular também aparece em "COM EXIGIBILIDADE SUSPENSA" que não tem dados
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELOS DEPENDENTES",
             "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES"
         ],
         "exempt_income": [
