@@ -14,7 +14,11 @@ class IncomePFExtractor(ISectionExtractor):
     ALT_MARKER = "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA E DO EXTERIOR"
     HOLDER_MARKER = "PELO TITULAR"
     
-    MONTHS = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
+    MONTHS_MAP = {
+        "JAN": "jan", "FEV": "fev", "MAR": "mar", "ABR": "abr",
+        "MAI": "mai", "JUN": "jun", "JUL": "jul", "AGO": "ago",
+        "SET": "set", "OUT": "out", "NOV": "nov", "DEZ": "dez"
+    }
     
     @property
     def section_name(self) -> str:
@@ -43,39 +47,24 @@ class IncomePFExtractor(ISectionExtractor):
             if "PELOS DEPENDENTES" in upper_page and "PELO TITULAR" not in upper_page:
                 continue
             
-            result = self._extract_monthly_format(page_text, page_num)
+            result = self._extract_dimensa_format(page_text, page_num)
             if result:
                 return result
         
+        return self._empty_result()
+    
+    def _empty_result(self) -> dict[str, Any]:
         return {
             "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular",
-            "nit_pis_pasep": None,
-            "monthly_income": [],
-            "monthly_deductions": [],
-            "income_totals": {
-                "trabalho_nao_assalariado": 0.0,
-                "por_temporada": 0.0,
-                "alugueis_inclusive": 0.0,
-                "outros": 0.0,
-                "exterior": 0.0
-            },
-            "deduction_totals": {
-                "previdencia_oficial": 0.0,
-                "quantidade_dependentes": 0,
-                "pensao_alimenticia": 0.0,
-                "livro_caixa": 0.0,
-                "darf_pago": 0.0
-            }
+            "items": []
         }
     
-    def _extract_monthly_format(self, page_text: str, page_num: int) -> Optional[dict]:
+    def _extract_dimensa_format(self, page_text: str, page_num: int) -> Optional[dict]:
         lines = page_text.split("\n")
         
-        nit_pis_pasep = None
-        monthly_income = []
-        monthly_deductions = []
-        income_totals = {}
-        deduction_totals = {}
+        nit_pis_pasep = ""
+        income_data: dict[str, dict] = {}
+        deductions_data: dict[str, dict] = {}
         
         in_income_section = False
         in_deduction_section = False
@@ -102,95 +91,50 @@ class IncomePFExtractor(ISectionExtractor):
             
             month_match = re.match(r"^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+", upper_line)
             if month_match:
-                month = month_match.group(1)
+                month_upper = month_match.group(1)
+                month_lower = self.MONTHS_MAP.get(month_upper, month_upper.lower())
                 values_str = line[month_match.end():].strip()
                 values = self._extract_values_from_line(values_str)
                 
                 if in_income_section or (not in_deduction_section and len(values) >= 4):
                     if len(values) >= 4:
-                        monthly_income.append({
-                            "month": month,
-                            "trabalho_nao_assalariado": values[0],
-                            "por_temporada": values[1],
-                            "alugueis_inclusive": values[2],
-                            "outros": values[3],
-                            "exterior": values[4] if len(values) > 4 else 0.0
-                        })
+                        income_data[month_lower] = {
+                            "unwaged_work": values[0],
+                            "rental": values[1],
+                            "others": values[2],
+                            "income_from_abroad": values[3],
+                        }
                 elif in_deduction_section:
                     if len(values) >= 5:
-                        monthly_deductions.append({
-                            "month": month,
-                            "previdencia_oficial": values[0],
-                            "quantidade_dependentes": int(values[1]) if values[1] == int(values[1]) else 0,
-                            "pensao_alimenticia": values[2],
-                            "livro_caixa": values[3],
-                            "darf_pago": values[4]
-                        })
+                        deductions_data[month_lower] = {
+                            "social_security": values[0],
+                            "dependents": int(values[1]) if values[1] == int(values[1]) else 0,
+                            "alimony": values[2],
+                            "cash_book": values[3],
+                            "darf_paid": values[4]
+                        }
                 continue
             
-            if "TOTAL" in upper_line and not "TOTALIZAÇÃO" in upper_line:
-                values_str = re.sub(r"^TOTAL\s*", "", line, flags=re.IGNORECASE).strip()
-                values = self._extract_values_from_line(values_str)
-                
-                if in_income_section and len(values) >= 4:
-                    income_totals = {
-                        "trabalho_nao_assalariado": values[0],
-                        "por_temporada": values[1],
-                        "alugueis_inclusive": values[2],
-                        "outros": values[3],
-                        "exterior": values[4] if len(values) > 4 else 0.0
-                    }
+            if "TOTAL" in upper_line and "TOTALIZAÇÃO" not in upper_line:
+                if in_income_section:
                     in_income_section = False
-                elif in_deduction_section and len(values) >= 4:
-                    deduction_totals = {
-                        "previdencia_oficial": values[0],
-                        "quantidade_dependentes": 0,
-                        "pensao_alimenticia": values[1] if len(values) > 1 else 0.0,
-                        "livro_caixa": values[2] if len(values) > 2 else 0.0,
-                        "darf_pago": values[3] if len(values) > 3 else 0.0
-                    }
+                elif in_deduction_section:
                     in_deduction_section = False
         
-        if not income_totals and monthly_income:
-            income_totals = {
-                "trabalho_nao_assalariado": sum(m.get("trabalho_nao_assalariado", 0) for m in monthly_income),
-                "por_temporada": sum(m.get("por_temporada", 0) for m in monthly_income),
-                "alugueis_inclusive": sum(m.get("alugueis_inclusive", 0) for m in monthly_income),
-                "outros": sum(m.get("outros", 0) for m in monthly_income),
-                "exterior": sum(m.get("exterior", 0) for m in monthly_income)
-            }
-        
-        if not deduction_totals and monthly_deductions:
-            deduction_totals = {
-                "previdencia_oficial": sum(m.get("previdencia_oficial", 0) for m in monthly_deductions),
-                "quantidade_dependentes": sum(m.get("quantidade_dependentes", 0) for m in monthly_deductions),
-                "pensao_alimenticia": sum(m.get("pensao_alimenticia", 0) for m in monthly_deductions),
-                "livro_caixa": sum(m.get("livro_caixa", 0) for m in monthly_deductions),
-                "darf_pago": sum(m.get("darf_pago", 0) for m in monthly_deductions)
-            }
-        
-        if not monthly_income and not income_totals:
+        if not income_data:
             return None
+        
+        item = {
+            "nit_pis_pasep": nit_pis_pasep,
+            "income": income_data,
+        }
+        
+        if deductions_data:
+            item["deductions"] = deductions_data
         
         return {
             "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular",
-            "nit_pis_pasep": nit_pis_pasep,
-            "monthly_income": monthly_income,
-            "monthly_deductions": monthly_deductions,
-            "income_totals": income_totals or {
-                "trabalho_nao_assalariado": 0.0,
-                "por_temporada": 0.0,
-                "alugueis_inclusive": 0.0,
-                "outros": 0.0,
-                "exterior": 0.0
-            },
-            "deduction_totals": deduction_totals or {
-                "previdencia_oficial": 0.0,
-                "quantidade_dependentes": 0,
-                "pensao_alimenticia": 0.0,
-                "livro_caixa": 0.0,
-                "darf_pago": 0.0
-            },
+            "items": [item],
             "page": page_num
         }
     
