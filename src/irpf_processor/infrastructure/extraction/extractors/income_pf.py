@@ -105,13 +105,12 @@ class IncomePFExtractor(ISectionExtractor):
                             "income_from_abroad": values[3],
                         }
                 elif in_deduction_section:
-                    if len(values) >= 5:
+                    if len(values) >= 4:
                         deductions_data[month_lower] = {
-                            "social_security": values[0],
-                            "dependents": int(values[1]) if values[1] == int(values[1]) else 0,
+                            "official_social_security": values[0],
+                            "dependents_number": int(values[1]) if values[1] == int(values[1]) else 0,
                             "alimony": values[2],
-                            "cash_book": values[3],
-                            "darf_paid": values[4]
+                            "cashbook": values[3]
                         }
                 continue
             
