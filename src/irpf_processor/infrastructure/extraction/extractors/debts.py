@@ -11,20 +11,32 @@ from ..validation_utils import create_validated_total
 class DebtsExtractor(ISectionExtractor):
     """Extrai dívidas e ônus reais."""
     
-    SECTION_MARKER = "DÍVIDAS E ÔNUS REAIS"
+    # Marcadores de seção - incluindo variações OCR
+    SECTION_MARKERS = [
+        "DÍVIDAS E ÔNUS REAIS",
+        "DIVIDAS E ONUS REAIS",
+        "DÍVIDAS E ONUS REAIS",
+        "DIVIDAS E ÔNUS REAIS",
+    ]
+    SECTION_MARKER = "DÍVIDAS E ÔNUS REAIS"  # Mantido para compatibilidade
+    # IMPORTANTE: Apenas marcadores de seções que vêm DEPOIS de dívidas na declaração IRPF
+    # A ordem no IRPF é: Identificação > Rendimentos > Pagamentos > Bens > DÍVIDAS > Doações > Atividade Rural
     SECTION_END_MARKERS = [
+        # Seções que vêm DEPOIS de dívidas
         "DOAÇÕES A PARTIDOS",
-        "RENDIMENTOS ISENTOS",
-        "RENDIMENTOS TRIBUTÁVEIS",
-        "PAGAMENTOS EFETUADOS",
+        "DOACOES A PARTIDOS",
         "DOAÇÕES EFETUADAS",
+        "DOACOES EFETUADAS",
         "ESPÓLIO",
+        "ESPOLIO",
         # Seções de atividade rural que indicam fim
         "DÍVIDAS VINCULADAS À ATIVIDADE RURAL",
         "DIVIDAS VINCULADAS A ATIVIDADE RURAL",
         "BENS DA ATIVIDADE RURAL",
         "PROPRIEDADES RURAIS EXPLORADAS",
         "DADOS E IDENTIFICAÇÃO DO IMÓVEL",
+        "DADOS E IDENTIFICACAO DO IMOVEL",
+        "DEMONSTRATIVO DE ATIVIDADE RURAL",
     ]
     VALID_DEBT_CODES = {"11", "12", "13", "14", "15", "16", "17", "18", "19"}
     
@@ -33,7 +45,8 @@ class DebtsExtractor(ISectionExtractor):
         return "debts_and_encumbrances"
     
     def can_extract(self, context: ExtractionContext) -> bool:
-        return self.SECTION_MARKER in context.full_text.upper()
+        upper_text = context.full_text.upper()
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -48,25 +61,12 @@ class DebtsExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_text = page_text.upper()
             
-            # Verificar se é seção de atividade rural (ignorar completamente)
-            is_rural_section = (
-                "DÍVIDAS VINCULADAS À ATIVIDADE RURAL" in upper_text or
-                "DIVIDAS VINCULADAS A ATIVIDADE RURAL" in upper_text or
-                "BENS DA ATIVIDADE RURAL" in upper_text or
-                "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO" in upper_text
-            )
+            # Verificar se a página contém o marcador de dívidas
+            has_debts_marker = any(marker in upper_text for marker in self.SECTION_MARKERS)
             
-            # Se encontrou seção rural, encerrar
-            if in_section and is_rural_section:
-                section_ended = True
-                break
-            
-            # Se é página de atividade rural, pular
-            if is_rural_section:
-                continue
-            
-            # Entrar na seção de dívidas (apenas se NÃO for atividade rural)
-            if self.SECTION_MARKER in upper_text and not is_rural_section:
+            # CORREÇÃO: Não pular página inteira se ela também contém nossa seção
+            # Isso acontece quando todo o texto OCR está em uma única página
+            if has_debts_marker:
                 in_section = True
             
             if not in_section:
@@ -156,8 +156,8 @@ class DebtsExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início da seção (para primeira página)
-            if "DÍVIDAS E ÔNUS REAIS" in upper_line:
+            # Detectar início da seção (para primeira página) - verificar todos os marcadores
+            if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 if "ATIVIDADE RURAL" not in upper_line:
                     in_section = True
                     i += 1
@@ -168,7 +168,7 @@ class DebtsExtractor(ISectionExtractor):
                 break
             
             # Skip linhas de cabeçalho (também entra na seção)
-            if "CÓDIGO" in upper_line or "DISCRIMINAÇÃO" in upper_line:
+            if "CÓDIGO" in upper_line or "CODIGO" in upper_line or "DISCRIMINAÇÃO" in upper_line or "DISCRIMINACAO" in upper_line:
                 in_section = True
                 i += 1
                 continue
@@ -183,10 +183,13 @@ class DebtsExtractor(ISectionExtractor):
                 i += 1
                 continue
             
-            # Tentar detectar item de dívida
+            # Normalizar linha para lidar com OCR (espaços antes da vírgula)
+            normalized_line = self._normalize_ocr_numbers(line)
+            
+            # Tentar detectar item de dívida - formato padrão
             debt_match = re.match(
                 r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
-                line
+                normalized_line
             )
             
             if debt_match:
@@ -199,9 +202,107 @@ class DebtsExtractor(ISectionExtractor):
                         i = item.pop("_next_index", i + 1)
                         continue
             
+            # Tentar formato alternativo OCR - código + descrição + valores em linhas separadas
+            if re.match(r"^(\d{2})\s+(.+)", normalized_line):
+                item = self._try_parse_multiline_debt(lines, i, page_num, seen_ids)
+                if item:
+                    if item["id"] not in seen_ids:
+                        seen_ids.add(item["id"])
+                        items.append(item)
+                        i = item.pop("_next_index", i + 1)
+                        continue
+            
             i += 1
         
         return items
+    
+    def _normalize_ocr_numbers(self, line: str) -> str:
+        """Normaliza números OCR removendo espaços antes da vírgula decimal."""
+        # Remove espaços antes da vírgula: "7.795.431 ,86" -> "7.795.431,86"
+        return re.sub(r'(\d)\s+,', r'\1,', line)
+    
+    def _try_parse_multiline_debt(
+        self, 
+        lines: list[str], 
+        idx: int, 
+        page_num: int,
+        seen_ids: set
+    ) -> Optional[dict]:
+        """Tenta parsear dívida em formato multiline (OCR)."""
+        line = self._normalize_ocr_numbers(lines[idx].strip())
+        
+        # Verificar se começa com código válido
+        code_match = re.match(r"^(\d{2})\s+(.+)", line)
+        if not code_match:
+            return None
+        
+        code = code_match.group(1)
+        if not self._is_valid_debt_code(code):
+            return None
+        
+        desc_start = code_match.group(2).strip()
+        
+        # Coletar descrição e valores nas próximas linhas
+        desc_parts = [desc_start]
+        values = []
+        j = idx + 1
+        
+        while j < len(lines):
+            next_line = self._normalize_ocr_numbers(lines[j].strip())
+            upper_next = next_line.upper()
+            
+            # Parar em TOTAL
+            if "TOTAL" in upper_next and not re.match(r"^\d{2}\s+", next_line):
+                break
+            
+            # Parar em marcadores de fim
+            if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
+                break
+            
+            # Parar se encontrar novo item
+            if re.match(r"^(\d{2})\s+.+\s+[\d.,]+\s+[\d.,]+\s+[\d.,]+\s*$", next_line):
+                break
+            if re.match(r"^(\d{2})\s+[A-Z]", next_line) and self._is_valid_debt_code(re.match(r"^(\d{2})", next_line).group(1)):
+                break
+            
+            # Extrair valores se a linha contiver 3 números
+            values_match = re.findall(r'([\d.]+,\d{2})', next_line)
+            if len(values_match) >= 3:
+                values = values_match[:3]
+                j += 1
+                break
+            
+            # Adicionar como continuação da descrição
+            if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+\s+[\d.,]+$", next_line):
+                if not upper_next.startswith("CÓDIGO") and not upper_next.startswith("CODIGO"):
+                    if not upper_next.startswith("DISCRIMINAÇÃO") and not upper_next.startswith("DISCRIMINACAO"):
+                        desc_parts.append(next_line)
+            
+            j += 1
+        
+        # Se não encontrou 3 valores, não é um item válido
+        if len(values) < 3:
+            return None
+        
+        full_desc = " ".join(desc_parts)
+        full_desc = re.sub(r"\s*Página\s+\d+\s+de\s*\d+\s*$", "", full_desc, flags=re.IGNORECASE)
+        full_desc = re.sub(r"\s*Pagina\s+\d+\s+de\s*\d+\s*$", "", full_desc, flags=re.IGNORECASE)
+        full_desc = re.sub(r"\s+", " ", full_desc).strip()
+        
+        normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
+        normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
+        item_id = generate_item_id(normalized_desc)
+        
+        return {
+            "debt_code": code,
+            "debt_description": full_desc,
+            "year_before_last_value": parse_currency(values[0]),
+            "last_year_value": parse_currency(values[1]),
+            "current_year_value": parse_currency(values[2]),
+            "id": item_id,
+            "page": page_num,
+            "_next_index": j
+        }
     
     def _is_section_end_line(self, upper_line: str) -> bool:
         """Verifica se a linha indica fim da seção."""
@@ -281,14 +382,17 @@ class DebtsExtractor(ISectionExtractor):
         }
     
     def _extract_debts_total(self, page_text: str) -> list[float]:
+        # Normalizar números OCR
+        page_text_normalized = self._normalize_ocr_numbers(page_text)
         num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
-        lines = page_text.split("\n")
+        lines = page_text_normalized.split("\n")
         in_debts_section = False
         
         for line in lines:
             upper_line = line.upper().strip()
             
-            if self.SECTION_MARKER in upper_line:
+            # Verificar todos os marcadores
+            if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_debts_section = True
                 continue
             

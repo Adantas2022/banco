@@ -96,22 +96,33 @@ class VersionDetector:
             "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA"
         ],
         "debts_and_encumbrances": [
-            "DÍVIDAS E ÔNUS REAIS"
+            "DÍVIDAS E ÔNUS REAIS",
+            "DIVIDAS E ONUS REAIS"  # OCR sem acentos
         ],
         "exploited_rural_properties_in_brazil": [
-            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO"
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO",
+            "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO",  # OCR sem acentos
+            "DADOS E IDENTIFICAGAO DO IMOVEL EXPLORADO"   # OCR: Ç -> G
         ],
         "rural_income_and_expenditure_in_brazil": [
             "RECEITAS E DESPESAS - BRASIL"
         ],
         "calculation_of_rural_results_in_brazil": [
-            "APURAÇÃO DO RESULTADO - BRASIL"
+            "APURAÇÃO DO RESULTADO - BRASIL",
+            "APURACAO DO RESULTADO - BRASIL",  # OCR sem acentos
+            "APURAGAO DO RESULTADO - BRASIL"   # OCR: Ç -> G
         ],
         "rural_activity_assets_in_brazil": [
             "BENS DA ATIVIDADE RURAL - BRASIL"
         ],
         "rural_activity_debts_in_brazil": [
-            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL"
+            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL",
+            "DIVIDAS VINCULADAS A ATIVIDADE RURAL"  # OCR sem acentos
+        ],
+        "livestock_movement_in_brazil": [
+            "MOVIMENTAÇÃO DO REBANHO",
+            "MOVIMENTACAO DO REBANHO",  # OCR sem acentos
+            "MOVIMENTAGAO DO REBANHO"   # OCR: Ç -> G
         ],
         "income_from_individual_to_holder": [
             "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA"

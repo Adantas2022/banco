@@ -11,8 +11,9 @@ docker ps -a --filter "name=irpf-processor" -q | xargs -r docker rm -f 2>/dev/nu
 echo "🗑️ Removendo TODOS os volumes irpf-processor..."
 docker volume ls --filter "name=irpf-processor" -q | xargs -r docker volume rm 2>/dev/null || true
 
-echo "🔨 Fazendo build e subindo containers..."
-docker compose up -d --build
+echo "🔨 Fazendo build (sem cache) e subindo containers..."
+docker compose build --no-cache
+docker compose up -d
 
 echo "⏳ Aguardando serviços iniciarem..."
 sleep 15
