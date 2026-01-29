@@ -15,6 +15,7 @@ class PdfTypeDetector:
     TEXT_RATIO_THRESHOLD = 0.1
     MIN_CHARS_PER_PAGE = 100
     IMAGE_COVERAGE_THRESHOLD = 0.8
+    MAX_PAGES_TO_ANALYZE = 10  # Analyze max 10 pages for type detection (optimization)
 
     def detect(self, pdf_path: Path) -> PdfType:
         result = self.detect_with_confidence(pdf_path)
@@ -46,22 +47,32 @@ class PdfTypeDetector:
         total_image_coverage = 0.0
         warnings = []
 
-        for page in pdf.pages:
+        # Optimization: analyze only a sample of pages for large PDFs
+        # Sample: first 3 pages, middle page, last 3 pages (max 10 pages)
+        pages_to_analyze = self._select_sample_pages(pdf.pages, total_pages)
+        
+        for page in pages_to_analyze:
             page_type, chars, img_coverage = self._analyze_page(page)
             page_types.append(page_type)
             total_text_chars += chars
             total_image_coverage += img_coverage
 
+        analyzed_count = len(pages_to_analyze)
         digital_pages = sum(1 for pt in page_types if pt == PdfType.DIGITAL)
         image_pages = sum(1 for pt in page_types if pt == PdfType.IMAGE)
+        
+        # If we sampled, extrapolate the page types for the full document
+        if analyzed_count < total_pages:
+            warnings.append(f"Sampled {analyzed_count}/{total_pages} pages for detection")
 
-        text_ratio = digital_pages / total_pages
-        image_ratio = image_pages / total_pages
+        # Calculate ratios based on analyzed pages
+        text_ratio = digital_pages / analyzed_count
+        image_ratio = image_pages / analyzed_count
 
-        if digital_pages == total_pages:
+        if digital_pages == analyzed_count:
             pdf_type = PdfType.DIGITAL
             confidence = 0.95
-        elif image_pages == total_pages:
+        elif image_pages == analyzed_count:
             pdf_type = PdfType.IMAGE
             confidence = 0.90
         elif digital_pages > 0 and image_pages > 0:
@@ -73,7 +84,7 @@ class PdfTypeDetector:
             confidence = 0.5
             warnings.append("Could not determine PDF type")
 
-        avg_chars_per_page = total_text_chars / total_pages
+        avg_chars_per_page = total_text_chars / analyzed_count
         if avg_chars_per_page < self.MIN_CHARS_PER_PAGE and pdf_type == PdfType.DIGITAL:
             confidence *= 0.8
             warnings.append(f"Low text content: {avg_chars_per_page:.0f} chars/page average")
@@ -83,6 +94,7 @@ class PdfTypeDetector:
             pdf_type=pdf_type.value,
             confidence=confidence,
             total_pages=total_pages,
+            analyzed_pages=analyzed_count,
             digital_pages=digital_pages,
             image_pages=image_pages,
         )
@@ -96,6 +108,35 @@ class PdfTypeDetector:
             total_pages=total_pages,
             warnings=warnings,
         )
+
+    def _select_sample_pages(self, pages: list, total_pages: int) -> list:
+        """Select a representative sample of pages for analysis.
+        
+        For small PDFs (<=10 pages): analyze all pages
+        For large PDFs: sample first 3, middle, and last 3 pages (max 10)
+        
+        This optimization significantly speeds up detection for large documents.
+        """
+        if total_pages <= self.MAX_PAGES_TO_ANALYZE:
+            return pages
+        
+        sample_indices = set()
+        
+        # First 3 pages
+        for i in range(min(3, total_pages)):
+            sample_indices.add(i)
+        
+        # Middle page
+        middle = total_pages // 2
+        sample_indices.add(middle)
+        
+        # Last 3 pages
+        for i in range(max(0, total_pages - 3), total_pages):
+            sample_indices.add(i)
+        
+        # Sort indices and get corresponding pages
+        sorted_indices = sorted(sample_indices)
+        return [pages[i] for i in sorted_indices]
 
     def _analyze_page(self, page: pdfplumber.PDF) -> tuple[PdfType, int, float]:
         text = page.extract_text() or ""
