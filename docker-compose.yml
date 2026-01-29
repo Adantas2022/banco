@@ -127,6 +127,7 @@ services:
       - GCP_EMULATOR_ENDPOINT=http://fake-gcs:4443
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+      # - SKIP_DUPLICATE_CHECK=true  # Uncomment to always reprocess (or use force=true in API)
     depends_on:
       mongo:
         condition: service_healthy

@@ -10,18 +10,29 @@ from ...table_extractor import generate_item_id
 class RuralPropertiesExtractor(ISectionExtractor):
     """Extrai dados de imoveis rurais explorados."""
     
+    # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
         "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO",
+        "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO",
+        "DADOS E IDENTIFICAGAO DO IMOVEL EXPLORADO",  # OCR: Ç -> G
         "PROPRIEDADES RURAIS EXPLORADAS",
-        "IMÓVEIS RURAIS EXPLORADOS"
+        "IMÓVEIS RURAIS EXPLORADOS",
+        "IMOVEIS RURAIS EXPLORADOS",
     ]
+    # IMPORTANTE: Apenas marcadores de seções que vêm DEPOIS de "Dados do Imóvel Explorado"
+    # A ordem no IRPF é: Imóvel Explorado > Movimentação Rebanho > Bens Atividade Rural > Receitas/Despesas
     SECTION_END_MARKERS = [
         "RECEITAS DA ATIVIDADE RURAL",
         "DESPESAS DA ATIVIDADE RURAL",
         "RESULTADO DA ATIVIDADE RURAL",
-        "DÍVIDAS E ÔNUS REAIS",
+        "RECEITAS E DESPESAS",
         "MOVIMENTAÇÃO DO REBANHO",
-        "BENS DA ATIVIDADE RURAL"
+        "MOVIMENTACAO DO REBANHO",
+        "MOVIMENTAGAO DO REBANHO",  # OCR: Ç -> G
+        "BENS DA ATIVIDADE RURAL",
+        "APURAÇÃO DO RESULTADO",
+        "APURACAO DO RESULTADO",
+        "APURAGAO DO RESULTADO",  # OCR: Ç -> G
     ]
     
     @property
@@ -112,14 +123,19 @@ class RuralPropertiesExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início da seção
+            # Detectar início da seção - verificar variações OCR
             if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 i += 1
                 continue
             
-            # Skip cabeçalhos
-            if any(h in upper_line for h in ["CÓDIGO", "ATIVIDADE", "PARTICIPAÇÃO", "CONDIÇÃO", "ÁREA", "CIB", "NOME E", "(HA)", "EXPLORAÇÃO"]):
+            # Skip cabeçalhos - incluindo variações OCR sem acentos
+            header_keywords = [
+                "CÓDIGO", "CODIGO", "ATIVIDADE", "PARTICIPAÇÃO", "PARTICIPACAO",
+                "CONDIÇÃO", "CONDICAO", "ÁREA", "AREA", "CIB", "NOME E", "(HA)",
+                "EXPLORAÇÃO", "EXPLORACAO", "NIRF"
+            ]
+            if any(h in upper_line for h in header_keywords):
                 in_section = True
                 i += 1
                 continue
@@ -128,12 +144,24 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 i += 1
                 continue
             
+            # Skip linhas "Estrangeiro: Nao" e similares
+            if upper_line.startswith("ESTRANGEIRO:"):
+                i += 1
+                continue
+            
             # Detectar fim da seção
             if in_section and any(marker in upper_line for marker in self.SECTION_END_MARKERS):
                 break
             
+            if not in_section:
+                i += 1
+                continue
+            
+            # Normalizar linha para OCR
+            normalized_line = re.sub(r'(\d)\s+,', r'\1,', line)
+            
             # Tentar parsear item inline
-            item = self._try_parse_inline_property(line, lines, i, page_num)
+            item = self._try_parse_inline_property(normalized_line, lines, i, page_num)
             if item and item["id"] not in seen_ids:
                 seen_ids.add(item["id"])
                 items.append(item)
@@ -142,7 +170,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
             
             # Tentar parsear item multiline (código em linha separada)
-            if re.match(r"^\d{1,2}$", line):
+            if re.match(r"^\d{1,2}$", normalized_line):
                 item = self._try_parse_multiline_property(lines, i, page_num)
                 if item and item["id"] not in seen_ids:
                     seen_ids.add(item["id"])
@@ -163,15 +191,19 @@ class RuralPropertiesExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         """Tenta parsear propriedade em formato inline."""
+        # Normalizar linha para OCR (espaços antes da vírgula)
+        line = re.sub(r'(\d)\s+,', r'\1,', line.strip())
+        
         # Formato: codigo participacao condicao nome area cib
+        # Ex: "10 15,00 3 FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
         pattern = re.match(
-            r"^(\d{1,2})\s+"
-            r"([\d.,]+)\s+"
-            r"(\d)\s+"
-            r"(.+?)\s+"
-            r"([\d.]+,\d+)\s+"
-            r"([\d.-]+)$",
-            line.strip()
+            r"^(\d{1,2})\s+"                    # código: 10, 11
+            r"([\d.,]+)\s+"                      # participação: 15,00 ou 100,00
+            r"(\d)\s+"                           # condição: 1, 3, 4
+            r"(.+?)\s+"                          # nome e localização
+            r"([\d.]+,\d+)\s+"                   # área: 1.200,0 ou 8.366,7
+            r"([\d.-]+)$",                       # CIB: 4.695.449-0
+            line
         )
         
         if pattern:
@@ -183,7 +215,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             r"([\d.,]+)\s+"
             r"(\d)\s+"
             r"(.+)$",
-            line.strip()
+            line
         )
         
         if partial_pattern:
@@ -194,6 +226,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             remaining = partial_pattern.group(4).strip()
             
             # Tentar extrair area e cib do remaining
+            # Formato: "FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
             area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", remaining)
             
             if area_cib_match:
@@ -208,14 +241,14 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 cib = ""
                 
                 for j in range(idx + 1, min(idx + 8, len(lines))):
-                    next_line = lines[j].strip()
+                    next_line = re.sub(r'(\d)\s+,', r'\1,', lines[j].strip())
                     upper_next = next_line.upper()
                     
                     # Parar em participantes
                     if "PARTICIPANTE" in upper_next:
                         break
                     
-                    # Parar em novo item
+                    # Parar em novo item (formato código participação condição)
                     if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
                         break
                     if re.match(r"^\d{1,2}$", next_line):

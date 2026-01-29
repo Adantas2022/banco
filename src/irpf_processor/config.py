@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     # Extraction
     confidence_threshold: float = 0.6
     max_retry_attempts: int = 3
+    
+    # Testing/Development flags
+    skip_duplicate_check: bool = False  # Set to True to always reprocess documents (ignores SHA256 cache)
 
     # Tracing (OpenTelemetry)
     otel_enabled: bool = True

@@ -11,9 +11,11 @@ from ...validation_utils import extract_section_total, create_validated_total
 class LivestockMovementExtractor(ISectionExtractor):
     """Extrai movimentacao do rebanho - Brasil."""
     
+    # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
         "MOVIMENTAÇÃO DO REBANHO",
         "MOVIMENTACAO DO REBANHO",
+        "MOVIMENTAGAO DO REBANHO",  # OCR: Ç -> G
         "MOVIMENTO DO REBANHO"
     ]
     BRAZIL_MARKER = "BRASIL"
@@ -140,19 +142,22 @@ class LivestockMovementExtractor(ISectionExtractor):
     ) -> Optional[dict]:
         """Tenta parsear uma linha de movimentação do rebanho."""
         
+        # Normalizar linha para OCR (espaços antes da vírgula)
+        line = re.sub(r'(\d)\s+,', r'\1,', line.strip())
+        
         # Formato 1: Código Espécie Qtd_Inicial Aquisições Nascimentos Perdas Vendas Qtd_Final
         # ou: Código Espécie valores...
         
-        # Padrão com 7 números após espécie
+        # Padrão com código de 2 dígitos e 6 valores
         pattern = re.match(
-            r"^(\d{2})\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]+?)\s+"
+            r"^(\d{2})\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,]+?)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
-            line.strip()
+            line
         )
         
         if pattern:
@@ -162,7 +167,6 @@ class LivestockMovementExtractor(ISectionExtractor):
             if self._should_skip_line(species):
                 return None
             
-            # Mapear para nomes do gabarito
             item_id = generate_item_id(f"livestock_{code}_{species}")
             
             return {
@@ -178,15 +182,93 @@ class LivestockMovementExtractor(ISectionExtractor):
                 "page": page_num
             }
         
-        # Padrão com 6 números (sem final_stock, calculado)
-        pattern_6 = re.match(
-            r"^(\d{2})\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]+?)\s+"
+        # NOVO: Padrão OCR SEM código - Espécie seguida de 6 valores
+        # Ex: "Bovinos e bufalinos 6.621,00 23.415,00 239,00 152,00 22.986,00 7.137,00"
+        pattern_no_code = re.match(
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,]+?)\s+"
+            r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
-            line.strip()
+            line
+        )
+        
+        if pattern_no_code:
+            species = pattern_no_code.group(1).strip()
+            
+            if self._should_skip_line(species):
+                return None
+            
+            # Gerar código baseado no nome da espécie
+            code = self._get_species_code(species)
+            item_id = generate_item_id(f"livestock_{species}")
+            
+            return {
+                "id": item_id,
+                "code": code,
+                "species": species,
+                "initial_stock": self._parse_number(pattern_no_code.group(2)),
+                "acquisitions": self._parse_number(pattern_no_code.group(3)),
+                "births": self._parse_number(pattern_no_code.group(4)),
+                "consumption_and_losses": self._parse_number(pattern_no_code.group(5)),
+                "sales": self._parse_number(pattern_no_code.group(6)),
+                "final_stock": self._parse_number(pattern_no_code.group(7)),
+                "page": page_num
+            }
+        
+        # Padrão com 5 números (sem final_stock, calculado)
+        pattern_5 = re.match(
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,]+?)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s*$",
+            line
+        )
+        
+        if pattern_5:
+            species = pattern_5.group(1).strip()
+            
+            if self._should_skip_line(species):
+                return None
+            
+            code = self._get_species_code(species)
+            initial = self._parse_number(pattern_5.group(2))
+            acquisitions = self._parse_number(pattern_5.group(3))
+            births = self._parse_number(pattern_5.group(4))
+            losses = self._parse_number(pattern_5.group(5))
+            sales = self._parse_number(pattern_5.group(6))
+            
+            # Calcular estoque final
+            final_stock = initial + acquisitions + births - losses - sales
+            
+            item_id = generate_item_id(f"livestock_{species}")
+            
+            return {
+                "id": item_id,
+                "code": code,
+                "species": species,
+                "initial_stock": initial,
+                "acquisitions": acquisitions,
+                "births": births,
+                "consumption_and_losses": losses,
+                "sales": sales,
+                "final_stock": final_stock,
+                "page": page_num
+            }
+        
+        # Padrão com código e 6 números (formato original)
+        pattern_6 = re.match(
+            r"^(\d{2})\s+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,]+?)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s+"
+            r"([\d.,]+)\s*$",
+            line
         )
         
         if pattern_6:
@@ -220,41 +302,29 @@ class LivestockMovementExtractor(ISectionExtractor):
                 "page": page_num
             }
         
-        # Padrão alternativo com formato diferente de números
-        pattern_alt = re.match(
-            r"^(\d{2})\s+(.+?)\s+"
-            r"([\d.]+)\s+"
-            r"([\d.]+)\s+"
-            r"([\d.]+)\s+"
-            r"([\d.]+)\s+"
-            r"([\d.]+)\s+"
-            r"([\d.]+)\s*$",
-            line.strip()
-        )
-        
-        if pattern_alt:
-            code = pattern_alt.group(1)
-            species = pattern_alt.group(2).strip()
-            
-            if self._should_skip_line(species):
-                return None
-            
-            item_id = generate_item_id(f"livestock_{code}_{species}")
-            
-            return {
-                "id": item_id,
-                "code": code,
-                "species": species,
-                "initial_stock": self._parse_number(pattern_alt.group(3)),
-                "acquisitions": self._parse_number(pattern_alt.group(4)),
-                "births": self._parse_number(pattern_alt.group(5)),
-                "consumption_and_losses": self._parse_number(pattern_alt.group(6)),
-                "sales": self._parse_number(pattern_alt.group(7)),
-                "final_stock": self._parse_number(pattern_alt.group(8)),
-                "page": page_num
-            }
-        
         return None
+    
+    def _get_species_code(self, species: str) -> str:
+        """Retorna código padrão baseado no nome da espécie."""
+        species_upper = species.upper()
+        codes = {
+            "BOVINOS": "01",
+            "BUFALINOS": "01",
+            "SUINOS": "02",
+            "SUÍNOS": "02",
+            "CAPRINOS": "03",
+            "OVINOS": "03",
+            "ASININOS": "04",
+            "EQUINOS": "04",
+            "MUARES": "04",
+            "AVES": "05",
+            "OUTROS": "99",
+        }
+        
+        for key, code in codes.items():
+            if key in species_upper:
+                return code
+        return "99"
     
     def _parse_number(self, value: str) -> float:
         """Parseia número com formato brasileiro (1.234,56 ou 1234)."""

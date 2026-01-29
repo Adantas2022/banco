@@ -9,6 +9,7 @@ from irpf_processor.domain.enums import AuthScope, DocumentStatus
 from irpf_processor.infrastructure.persistence.database import get_database
 from irpf_processor.infrastructure.persistence.document_repository import MongoDocumentRepository
 from irpf_processor.infrastructure.storage import get_storage_service
+from irpf_processor.config import get_settings
 from irpf_processor.presentation.api.dependencies import CurrentTenant, require_scope
 from irpf_processor.presentation.workers.router_worker import route_document
 from irpf_processor.shared.logging import get_logger
@@ -53,11 +54,17 @@ async def get_storage_service_dependency():
 async def upload_document(
     tenant_id: CurrentTenant,
     file: UploadFile = File(...),
+    force: bool = False,
     _: Annotated[ApiKey, Depends(require_scope(AuthScope.DOCUMENTS_WRITE.value))] = None,
     doc_repo: MongoDocumentRepository = Depends(get_document_repository),
     storage = Depends(get_storage_service_dependency),
 ) -> UploadResponse:
-    """Upload de documento PDF para processamento assíncrono."""
+    """Upload de documento PDF para processamento assíncrono.
+    
+    Args:
+        file: Arquivo PDF para processar
+        force: Se True, reprocessa mesmo se o documento já existir (ignora cache SHA256)
+    """
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -74,17 +81,31 @@ async def upload_document(
 
     sha256 = Document.calculate_sha256(content)
 
-    existing = await doc_repo.find_by_sha256(tenant_id, sha256)
-    if existing:
+    settings = get_settings()
+    
+    # Verificar duplicata apenas se:
+    # 1. force=False (parâmetro da request)
+    # 2. SKIP_DUPLICATE_CHECK=false (variável de ambiente)
+    skip_check = force or settings.skip_duplicate_check
+    
+    if not skip_check:
+        existing = await doc_repo.find_by_sha256(tenant_id, sha256)
+        if existing:
+            logger.info(
+                "Duplicate document detected",
+                existing_id=existing.document_id,
+                sha256=sha256,
+            )
+            return UploadResponse(
+                document_id=existing.document_id,
+                status=existing.status.value,
+                message="Document already exists. Use force=true to reprocess.",
+            )
+    else:
         logger.info(
-            "Duplicate document detected",
-            existing_id=existing.document_id,
+            "Duplicate check skipped",
             sha256=sha256,
-        )
-        return UploadResponse(
-            document_id=existing.document_id,
-            status=existing.status.value,
-            message="Document already exists",
+            reason="force=true" if force else "SKIP_DUPLICATE_CHECK=true",
         )
 
     document = Document(

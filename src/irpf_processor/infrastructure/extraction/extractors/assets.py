@@ -11,13 +11,20 @@ from ..validation_utils import extract_section_total, create_validated_total
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
     
-    SECTION_MARKER = "DECLARAÇÃO DE BENS E DIREITOS"
+    # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
+    SECTION_MARKERS = [
+        "DECLARAÇÃO DE BENS E DIREITOS",
+        "DECLARACAO DE BENS E DIREITOS",
+        "DECLARAGAO DE BENS E DIREITOS",  # OCR: Ç -> G
+    ]
+    SECTION_MARKER = "DECLARAÇÃO DE BENS E DIREITOS"  # Mantido para compatibilidade
+    # IMPORTANTE: Apenas marcadores de seções que vêm DEPOIS de bens na declaração IRPF
     SECTION_END_MARKERS = [
         "DÍVIDAS E ÔNUS REAIS",
+        "DIVIDAS E ONUS REAIS",
+        "DiVIDAS E ONUS REAIS",  # OCR: variação
         "DOAÇÕES EFETUADAS",
-        "RENDIMENTOS ISENTOS",
-        "RENDIMENTOS TRIBUTÁVEIS",
-        "PAGAMENTOS EFETUADOS"
+        "DOACOES EFETUADAS",
     ]
     
     @property
@@ -25,7 +32,8 @@ class AssetsExtractor(ISectionExtractor):
         return "assets_declaration"
     
     def can_extract(self, context: ExtractionContext) -> bool:
-        return self.SECTION_MARKER in context.full_text.upper()
+        upper_text = context.full_text.upper()
+        return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -37,7 +45,8 @@ class AssetsExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_text = page_text.upper()
             
-            if self.SECTION_MARKER in upper_text:
+            # Verificar todos os marcadores de seção (incluindo variações OCR)
+            if any(marker in upper_text for marker in self.SECTION_MARKERS):
                 in_section = True
             
             if not in_section:
@@ -326,10 +335,23 @@ class AssetsExtractor(ISectionExtractor):
                 if m:
                     info["zipcode"] = m.group(1).strip()
             
-            if "Área" in line:
-                m = re.search(r"Área[^:]*[:\s]*([\d.,]+\s*(?:m²|ha))", line, re.IGNORECASE)
+            if "Área" in line or "Area" in line:
+                # Ex: "Área Total: 529,5 m²", "Area Total: 1.200,0 ha"
+                m = re.search(r"[ÁA]rea[^:]*[:\s]*([\d.,]+\s*(?:m[²2]|ha)?)", line, re.IGNORECASE)
                 if m:
-                    info["area"] = m.group(1).strip()
+                    area_val = m.group(1).strip()
+                    # Adicionar unidade se não tiver
+                    if area_val and not re.search(r'(m[²2]|ha)', area_val, re.IGNORECASE):
+                        # Se é valor grande (>100), provavelmente é ha
+                        try:
+                            num = float(area_val.replace(".", "").replace(",", "."))
+                            if num > 100:
+                                area_val = f"{area_val} ha"
+                            else:
+                                area_val = f"{area_val} m²"
+                        except ValueError:
+                            pass
+                    info["area"] = area_val
             
             if "Data de Aquisição" in line:
                 m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
@@ -339,17 +361,34 @@ class AssetsExtractor(ISectionExtractor):
             if "Registrado" in line and "Cartório" in line:
                 info["registered_at_registy_office"] = "Sim" in line
             
-            if "Nome Cartório" in line:
-                m = re.search(r"Nome Cartório[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s0-9.-]+?)(?:\s+Matrícula|$)", line)
+            if "Nome Cartório" in line or "Nome Cartorio" in line:
+                # Ex: "Nome Cartório: 13 OFICIAL DE REGISTRO DE IMOVEIS DA COMARCA DE SAO PAULO"
+                m = re.search(r"Nome Cart[óo]rio[:\s]+([A-ZÀ-Ú0-9][A-Za-zÀ-ÿ\s0-9.-]+?)(?:\s+Matr[íi]cula|$)", line, re.IGNORECASE)
                 if m:
                     val = m.group(1).strip()
                     if val and len(val) > 2:
                         info["registry_office_name"] = val
+                else:
+                    # Formato onde cartório está depois sem matrícula
+                    m = re.search(r"Nome Cart[óo]rio[:\s]+(.+?)$", line, re.IGNORECASE)
+                    if m:
+                        val = m.group(1).strip()
+                        if val and len(val) > 2:
+                            info["registry_office_name"] = val
             
-            if "Matrícula" in line:
-                m = re.search(r"Matrícula[:\s]*([\d.]+)", line)
+            if "Matrícula" in line or "Matricula" in line:
+                # Capturar matrículas completas incluindo múltiplos números
+                # Ex: "Matrícula: 15722/15723", "Matrícula: 1116, 1458, 1459, 1460, 1461 E 1462"
+                m = re.search(r"Matr[íi]cula[:\s]*([\d.,/\sE]+)", line, re.IGNORECASE)
                 if m:
-                    info["matriculation"] = m.group(1)
+                    matriculation = m.group(1).strip()
+                    # Limpar espaços extras mas manter separadores
+                    matriculation = re.sub(r"\s+", " ", matriculation)
+                    # Remover espaços desnecessários ao redor de separadores
+                    matriculation = re.sub(r"\s*([,/])\s*", r"\1", matriculation)
+                    matriculation = re.sub(r"\s+E\s+", " E ", matriculation)
+                    if matriculation and len(matriculation) > 2:
+                        info["matriculation"] = matriculation
             
             if "CEI" in line or "CNO" in line:
                 m = re.search(r"(?:CEI/?CNO|CEI|CNO)[:\s]*([\d./-]+)", line)
@@ -433,15 +472,36 @@ class AssetsExtractor(ISectionExtractor):
         info = {}
         
         for line in lines:
-            if "RENAVAM" in line.upper():
+            upper_line = line.upper()
+            
+            # RENAVAM - formato: "RENAVAM: 00000110809" ou "RENAVAM 01386728052"
+            if "RENAVAM" in upper_line:
                 m = re.search(r"RENAVAM[:\s]*(\d+)", line, re.IGNORECASE)
                 if m:
                     info["renavam"] = m.group(1)
             
-            elif "Registro de Embarcação" in line:
-                m = re.search(r"Registro de Embarcação[:\s]*(.+)", line)
+            # Registro de Embarcação
+            elif "REGISTRO DE EMBARCAÇÃO" in upper_line or "REGISTRO DE EMBARCACAO" in upper_line:
+                m = re.search(r"Registro de Embarca[çc][ãa]o[:\s]*(.+)", line, re.IGNORECASE)
                 if m:
                     info["vessel_registration"] = m.group(1).strip()
+            
+            # Registro de Aeronave - formato: "Registro de Aeronave: PSECD"
+            elif "REGISTRO DE AERONAVE" in upper_line:
+                m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", line, re.IGNORECASE)
+                if m:
+                    info["aircraft_registration"] = m.group(1).strip()
+        
+        # Fallback: buscar no raw_text se não encontrou nos lines
+        if "renavam" not in info:
+            m = re.search(r"RENAVAM[:\s]*(\d+)", raw_text, re.IGNORECASE)
+            if m:
+                info["renavam"] = m.group(1)
+        
+        if "aircraft_registration" not in info:
+            m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", raw_text, re.IGNORECASE)
+            if m:
+                info["aircraft_registration"] = m.group(1).strip()
         
         return info
     
