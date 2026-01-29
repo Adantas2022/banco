@@ -101,9 +101,11 @@ class VersionDetector:
             "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA",
             "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA",
             "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA",  # OCR sem acentos
+            "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA / DEFINITIVA",  # OCR com espaços
             "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",
             "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
             "TRIBUTACAO EXCLUSIVA/DEFINITIVA",  # OCR sem acentos
+            "TRIBUTACAO EXCLUSIVA / DEFINITIVA",  # OCR com espaços
             "TRIBUTAGAO EXCLUSIVA",  # OCR: Ç → G
         ],
         "debts_and_encumbrances": [
