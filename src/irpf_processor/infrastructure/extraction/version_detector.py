@@ -77,23 +77,34 @@ class VersionDetector:
         ],
         "assets_declaration": [
             "DECLARAÇÃO DE BENS E DIREITOS",
+            "DECLARACAO DE BENS E DIREITOS",  # OCR sem acentos
+            "DECLARAGAO DE BENS E DIREITOS",  # OCR: Ç → G
             "BENS E DIREITOS"
         ],
         "income_from_legal_person_to_holder": [
             "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR",
-            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELO TITULAR"  # Variação plural
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELO TITULAR",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELO TITULAR",  # OCR sem acentos
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOAS JURIDICAS PELO TITULAR"
         ],
         "income_from_legal_person_to_dependents": [
-            # IMPORTANTE: Plural primeiro! O singular também aparece em "COM EXIGIBILIDADE SUSPENSA" que não tem dados
             "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOAS JURÍDICAS PELOS DEPENDENTES",
-            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES"
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOAS JURIDICAS PELOS DEPENDENTES",  # OCR sem acentos
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELOS DEPENDENTES"
         ],
         "exempt_income": [
-            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS"
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS",
+            "RENDIMENTOS ISENTOS E NAO TRIBUTAVEIS"  # OCR sem acentos
         ],
         "exclusive_taxation_income": [
             "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA",
-            "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA"
+            "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA",
+            "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA",  # OCR sem acentos
+            "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",
+            "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+            "TRIBUTACAO EXCLUSIVA/DEFINITIVA",  # OCR sem acentos
+            "TRIBUTAGAO EXCLUSIVA",  # OCR: Ç → G
         ],
         "debts_and_encumbrances": [
             "DÍVIDAS E ÔNUS REAIS",
@@ -125,16 +136,19 @@ class VersionDetector:
             "MOVIMENTAGAO DO REBANHO"   # OCR: Ç -> G
         ],
         "income_from_individual_to_holder": [
-            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA"
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA FISICA"  # OCR sem acentos
         ],
         "donations_made": [
-            "DOAÇÕES EFETUADAS"
+            "DOAÇÕES EFETUADAS",
+            "DOACOES EFETUADAS"  # OCR sem acentos
         ],
         "payments_made": [
             "PAGAMENTOS EFETUADOS"
         ],
         "dependents": [
-            "RELAÇÃO DE DEPENDENTES"
+            "RELAÇÃO DE DEPENDENTES",
+            "RELACAO DE DEPENDENTES"  # OCR sem acentos
         ]
     }
     

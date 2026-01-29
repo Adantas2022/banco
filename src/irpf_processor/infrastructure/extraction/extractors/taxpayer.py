@@ -99,77 +99,135 @@ class TaxpayerExtractor(ISectionExtractor):
     
     def _extract_occupation_nature(self, text: str) -> str:
         """Extrai natureza da ocupação lidando com formato OCR."""
-        # Primeiro tenta formato: "Natureza da Ocupação:\n12 - PROPRIETARIO..."
-        pattern1 = re.search(
-            r"Natureza da Ocupa[çc][ãa]o[:\s]*\n?\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,.-]+?)(?:\n|Ocupa|$)",
-            text, re.IGNORECASE | re.MULTILINE
-        )
-        if pattern1:
-            return pattern1.group(1).strip()
+        # Normalizar texto para facilitar busca
+        # OCR pode gerar: "Natureza da Ocupagao", "Natureza da Ocupacao", etc.
         
-        # Formato alternativo onde valor está na linha seguinte
+        # Pattern mais flexível para OCR - captura código e descrição
+        patterns = [
+            # Formato: "Natureza da Ocupação: 12 - PROPRIETARIO..."
+            r"Natureza\s+da\s+Ocupa[çcg][ãa]o[:\s]*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|Ocupa[çcg]|$)",
+            # Formato com quebra de linha
+            r"Natureza\s+da\s+Ocupa[çcg][ãa]o[:\s]*\n\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|$)",
+            # Formato OCR sem acentos
+            r"Natureza\s+da\s+Ocupacao[:\s]*(\d+\s*[-–]\s*[A-Z][A-Za-z\s,./()-]+?)(?:\n|Ocup|$)",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                result = match.group(1).strip()
+                # Limpar trailing "Ocup" que pode ter sido capturado
+                result = re.sub(r'\s*Ocup.*$', '', result, flags=re.IGNORECASE)
+                return result
+        
+        # Formato alternativo: buscar linha por linha
         lines = text.split('\n')
         for i, line in enumerate(lines):
-            if re.search(r"Natureza da Ocupa[çc][ãa]o", line, re.IGNORECASE):
-                # Valor na mesma linha
-                match = re.search(r"Natureza da Ocupa[çc][ãa]o[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
+            if re.search(r"Natureza\s+da\s+Ocupa", line, re.IGNORECASE):
+                # Valor na mesma linha após o label
+                match = re.search(r"Natureza\s+da\s+Ocupa[çcg]?[ãa]?o?[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
                 if match:
                     return match.group(1).strip()
-                # Valor na próxima linha
+                # Valor na próxima linha (OCR comum)
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()
                     if re.match(r"^\d+\s*[-–]", next_line):
-                        return next_line.strip()
+                        # Pode continuar na linha seguinte
+                        result = next_line
+                        if i + 2 < len(lines):
+                            next_next = lines[i + 2].strip()
+                            # Se a próxima linha parece continuação (sem número inicial)
+                            if next_next and not re.match(r"^\d+\s*[-–]", next_next) and not re.search(r"Ocupa[çcg]", next_next, re.IGNORECASE):
+                                if not re.match(r"^(Tipo|Endere|CEP|Munic)", next_next, re.IGNORECASE):
+                                    result += " " + next_next
+                        return result
         return ""
     
     def _extract_main_occupation(self, text: str) -> str:
         """Extrai ocupação principal lidando com formato OCR."""
-        # Primeiro tenta formato: "Ocupação Principal:\n610 - PRODUTOR..."
-        pattern1 = re.search(
-            r"Ocupa[çc][ãa]o Principal[:\s]*\n?\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,.-]+?)(?:\n|Tipo|$)",
-            text, re.IGNORECASE | re.MULTILINE
-        )
-        if pattern1:
-            return pattern1.group(1).strip()
+        # Patterns mais flexíveis para OCR
+        patterns = [
+            # Formato: "Ocupação Principal: 610 - PRODUTOR..."
+            r"Ocupa[çcg][ãa]o\s+Principal[:\s]*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|Tipo|$)",
+            # Formato com quebra de linha
+            r"Ocupa[çcg][ãa]o\s+Principal[:\s]*\n\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|$)",
+            # Formato OCR sem acentos
+            r"Ocupacao\s+Principal[:\s]*(\d+\s*[-–]\s*[A-Z][A-Za-z\s,./()-]+?)(?:\n|Tipo|$)",
+        ]
         
-        # Formato alternativo onde valor está na linha seguinte
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                result = match.group(1).strip()
+                # Limpar trailing "Tipo" que pode ter sido capturado
+                result = re.sub(r'\s*Tipo.*$', '', result, flags=re.IGNORECASE)
+                return result
+        
+        # Formato alternativo: buscar linha por linha
         lines = text.split('\n')
         for i, line in enumerate(lines):
-            if re.search(r"Ocupa[çc][ãa]o Principal", line, re.IGNORECASE):
+            if re.search(r"Ocupa[çcg]?[ãa]?o?\s+Principal", line, re.IGNORECASE):
                 # Valor na mesma linha
-                match = re.search(r"Ocupa[çc][ãa]o Principal[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
+                match = re.search(r"Ocupa[çcg]?[ãa]?o?\s+Principal[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
                 if match:
                     return match.group(1).strip()
                 # Valor na próxima linha
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()
                     if re.match(r"^\d+\s*[-–]", next_line):
-                        return next_line.strip()
+                        # Pode continuar na linha seguinte
+                        result = next_line
+                        if i + 2 < len(lines):
+                            next_next = lines[i + 2].strip()
+                            if next_next and not re.match(r"^\d+\s*[-–]", next_next) and not re.search(r"Tipo", next_next, re.IGNORECASE):
+                                if not re.match(r"^(Endere|CEP|Munic|Declara)", next_next, re.IGNORECASE):
+                                    result += " " + next_next
+                        return result
         return ""
     
     def _extract_type_ir(self, text: str) -> str:
         """Extrai tipo de declaração lidando com formato OCR."""
-        # Tenta formato: "Tipo de declaração:\nDeclaração de Ajuste Anual Original"
-        pattern1 = re.search(
-            r"Tipo de declara[çc][ãa]o[:\s]*\n?\s*(Declara[çc][ãa]o\s+de\s+Ajuste\s+Anual[^\n]*)",
-            text, re.IGNORECASE | re.MULTILINE
-        )
-        if pattern1:
-            return pattern1.group(1).strip().upper()
+        # Patterns mais flexíveis para OCR
+        patterns = [
+            # Formato: "Tipo de declaração: Declaração de Ajuste Anual Original"
+            r"Tipo\s+de\s+[Dd]eclara[çcg][ãa]o[:\s]*(Declara[çcg][ãa]o\s+de\s+Ajuste\s+Anual[^\n]*)",
+            # Formato com quebra de linha
+            r"Tipo\s+de\s+[Dd]eclara[çcg][ãa]o[:\s]*\n\s*(Declara[çcg][ãa]o\s+de\s+Ajuste\s+Anual[^\n]*)",
+            # OCR pode gerar: "Declaragao"
+            r"Tipo\s+de\s+[Dd]eclaracao[:\s]*(Declaracao\s+de\s+Ajuste\s+Anual[^\n]*)",
+            # Formato mais flexível
+            r"Tipo\s+de\s+[Dd]eclar[^\n:]*[:\s]+(Declar[^\n]+Ajuste\s+Anual[^\n]*)",
+        ]
         
-        # Formato alternativo onde valor está na linha seguinte
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                result = match.group(1).strip().upper()
+                # Normalizar: "DECLARAGAO" -> "DECLARACAO"
+                result = result.replace("DECLARAGAO", "DECLARACAO")
+                result = result.replace("DECLARAÇAO", "DECLARACAO")
+                result = result.replace("DECLARAÇÃO", "DECLARACAO")
+                return result
+        
+        # Buscar linha por linha
         lines = text.split('\n')
         for i, line in enumerate(lines):
-            if re.search(r"Tipo de declara[çc][ãa]o", line, re.IGNORECASE):
+            if re.search(r"Tipo\s+de\s+[Dd]eclar", line, re.IGNORECASE):
                 # Valor na mesma linha
-                match = re.search(r"Tipo de declara[çc][ãa]o[:\s]*(Declara[çc][ãa]o.+)", line, re.IGNORECASE)
+                match = re.search(r"Tipo\s+de\s+[Dd]eclar[^\n:]*[:\s]+(Declar.+)", line, re.IGNORECASE)
                 if match:
-                    return match.group(1).strip().upper()
+                    return match.group(1).strip().upper().replace("DECLARAGAO", "DECLARACAO")
                 # Valor na próxima linha
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()
-                    if re.search(r"Declara[çc][ãa]o", next_line, re.IGNORECASE):
-                        return next_line.strip().upper()
+                    if re.search(r"Declar", next_line, re.IGNORECASE):
+                        result = next_line.strip().upper()
+                        # Pode continuar na linha seguinte
+                        if i + 2 < len(lines) and "ORIGINAL" not in result and "RETIFICADORA" not in result:
+                            next_next = lines[i + 2].strip()
+                            if "ORIGINAL" in next_next.upper() or "RETIFICADORA" in next_next.upper():
+                                result += " " + next_next.upper()
+                        return result.replace("DECLARAGAO", "DECLARACAO")
         return ""
     
     def _extract_address(self, text: str) -> dict:
@@ -195,7 +253,6 @@ class TaxpayerExtractor(ISectionExtractor):
             "uf": "uf",
             "zip_code": "zip_code",
             "phone": "phone",
-            "email": "email",
             "cell_phone": "cell_phone"
         }
         
@@ -206,4 +263,44 @@ class TaxpayerExtractor(ISectionExtractor):
                 if match:
                     address[address_key] = match.group(1).strip()
         
+        # Extração melhorada de email para OCR
+        address["email"] = self._extract_email(text)
+        
         return address
+    
+    def _extract_email(self, text: str) -> str:
+        """Extrai email com tratamento especial para OCR."""
+        # Patterns de email
+        email_patterns = [
+            # Formato: "E-mail: email@domain.com"
+            r"E-?mail[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
+            # Formato com quebra de linha
+            r"E-?mail[:\s]*\n\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
+            # Email em qualquer lugar (fallback - busca padrão de email)
+            r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(?:COM|BR|NET|ORG|GOV)(?:\.[A-Z]{2})?)",
+        ]
+        
+        for pattern in email_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                email = match.group(1).strip().upper()
+                # Validar que parece um email válido
+                if "@" in email and "." in email.split("@")[1]:
+                    return email
+        
+        # Busca linha por linha para casos de OCR fragmentado
+        lines = text.split('\n')
+        for i, line in enumerate(lines):
+            if re.search(r"E-?mail", line, re.IGNORECASE):
+                # Tentar extrair email da mesma linha
+                email_match = re.search(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", line)
+                if email_match:
+                    return email_match.group(1).strip().upper()
+                # Tentar da próxima linha
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    email_match = re.search(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", next_line)
+                    if email_match:
+                        return email_match.group(1).strip().upper()
+        
+        return ""
