@@ -44,6 +44,16 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "name": "Rendimentos de cadernetas de poupança, letras hipotecárias, letras de crédito do agronegócio e imobiliário (LCA e LCI) e certificados de recebíveis do agronegócio e imobiliários (CRA e CRI)",
             "keywords": ["poupança", "cadernetas", "lci", "lca", "letras"]
         },
+        "asset_transfers_donations_and_inheritances": {
+            "code": "14",
+            "name": "Transferências patrimoniais - doações e heranças",
+            "keywords": ["transferências patrimoniais", "doações", "heranças", "doação", "herança"]
+        },
+        "income_tax_refund_from_previous_years": {
+            "code": "25",
+            "name": "Restituição do imposto sobre a renda de anos-calendário anteriores",
+            "keywords": ["restituição", "imposto", "anos-calendário anteriores", "anos anteriores"]
+        },
         "others_99": {
             "code": "99",
             "name": "Outros",
@@ -403,12 +413,16 @@ class ExemptIncomeExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         cnpj_pattern = r"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$"
+        cpf_pattern = r"^\d{3}\.\d{3}\.\d{3}-\d{2}$"
         current_line = lines[start_idx].strip()
         
-        if not re.match(cnpj_pattern, current_line):
+        is_cnpj = re.match(cnpj_pattern, current_line)
+        is_cpf_payer = re.match(cpf_pattern, current_line)
+        
+        if not is_cnpj and not is_cpf_payer:
             return None
         
-        cnpj = current_line
+        payer_doc = current_line
         payer_name = None
         beneficiary = None
         value = None
@@ -425,29 +439,28 @@ class ExemptIncomeExtractor(ISectionExtractor):
             
             if next_line in ("Titular", "Dependente"):
                 beneficiary = next_line
-            elif re.match(r"^\d{3}\.\d{3}\.\d{3}-\d{2}$", next_line):
+            elif re.match(cpf_pattern, next_line) and next_line != payer_doc:
                 cpf = next_line
             elif re.match(r"^[\d.,]+$", next_line) and "," in next_line:
                 parsed_value = parse_currency(next_line)
                 if parsed_value > 0:
                     value = parsed_value
-            elif re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line) and not re.match(cnpj_pattern, next_line):
+            elif re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line) and not re.match(cnpj_pattern, next_line) and not re.match(cpf_pattern, next_line):
                 if not re.match(r"^\d{2}\.", next_line) and "TOTAL" not in next_line.upper():
                     if payer_name is None:
                         payer_name = next_line
             
-            # Parar se encontrar outro CNPJ ou código
-            if re.match(cnpj_pattern, next_line) and next_line != cnpj:
+            if (re.match(cnpj_pattern, next_line) or re.match(cpf_pattern, next_line)) and next_line != payer_doc and next_line != cpf:
                 break
             if re.match(r"^\d{2}[.\s]+[A-Z]", next_line):
                 break
         
-        if cnpj and value is not None and value > 0:
-            item_id = generate_item_id(f"{cnpj}{cpf or ''}{value}")
+        if payer_doc and value is not None and value > 0:
+            item_id = generate_item_id(f"{payer_doc}{cpf or ''}{value}")
             return {
                 "beneficiary": beneficiary or "Titular",
                 "cpf": cpf or "",
-                "payer_cnpj": cnpj,
+                "payer_cnpj": payer_doc,
                 "payer_name": payer_name or "",
                 "value": value,
                 "id": item_id,
@@ -464,12 +477,15 @@ class ExemptIncomeExtractor(ISectionExtractor):
         page_num: int,
         next_page_lines: list[str] = None
     ) -> Optional[dict]:
+        CPF_PATTERN = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
+        CNPJ_PATTERN = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
+        
         pattern = re.match(
-            r"^(Titular|Dependente)\s+"
-            r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
-            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
-            r"(.+?)\s+"
-            r"([\d.,]+)\s*$",
+            rf"^(Titular|Dependente)\s+"
+            rf"({CPF_PATTERN})\s+"
+            rf"({CNPJ_PATTERN}|{CPF_PATTERN})\s+"
+            rf"(.+?)\s+"
+            rf"([\d.,]+)\s*$",
             line.strip()
         )
         
@@ -478,9 +494,13 @@ class ExemptIncomeExtractor(ISectionExtractor):
         
         beneficiary = pattern.group(1)
         cpf = pattern.group(2)
-        cnpj = pattern.group(3)
+        payer_doc = pattern.group(3)
         payer_name = pattern.group(4).strip()
         value = parse_currency(pattern.group(5))
+        
+        is_cnpj = "/" in payer_doc
+        cnpj = payer_doc if is_cnpj else ""
+        payer_cpf = payer_doc if not is_cnpj else ""
         
         if idx + 1 < len(lines):
             next_line = lines[idx + 1].strip()
@@ -491,17 +511,23 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 if orphan_name:
                     payer_name = f"{payer_name} {orphan_name}"
         
-        item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+        item_id = generate_item_id(f"{payer_doc}{cpf}{value}")
         
-        return {
+        result = {
             "beneficiary": beneficiary,
             "cpf": cpf,
-            "payer_cnpj": cnpj,
             "payer_name": payer_name,
             "value": value,
             "id": item_id,
             "page": page_num
         }
+        
+        if is_cnpj:
+            result["payer_cnpj"] = cnpj
+        else:
+            result["payer_cnpj"] = payer_cpf
+        
+        return result
     
     def _is_name_continuation(self, line: str) -> bool:
         if len(line) <= 2:

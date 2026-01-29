@@ -88,9 +88,13 @@ CMD ["dramatiq", "irpf_processor.presentation.workers", "--processes", "2", "--t
 # ===========================================
 FROM base as worker-ocr
 
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-por \
+    libtesseract-dev \
+    libleptonica-dev \
     poppler-utils \
     libgl1 \
     libglib2.0-0 \
@@ -98,6 +102,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender1 \
     build-essential \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
@@ -105,7 +110,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 
-RUN pip install --no-cache-dir docling docling-core docling-ibm-models
+RUN pip install --no-cache-dir docling docling-core docling-ibm-models tesserocr
 
 CMD ["dramatiq", "irpf_processor.presentation.workers.ocr_worker", "--processes", "1", "--threads", "1"]
 

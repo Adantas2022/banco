@@ -392,24 +392,24 @@ class RuralPropertiesExtractor(ISectionExtractor):
     
     def _count_property_lines(self, lines: list[str], start_idx: int) -> int:
         count = 1
-        for j in range(start_idx + 1, min(start_idx + 12, len(lines))):
+        CPF_PATTERN = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
+        CNPJ_PATTERN = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
+        
+        for j in range(start_idx + 1, min(start_idx + 20, len(lines))):
             line = lines[j].strip()
             upper_line = line.upper()
             
-            # Novo item inline
             if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", line):
                 break
-            # Novo item multiline
             if re.match(r"^\d{1,2}$", line):
                 break
-            # Fim de seção
             if any(marker in upper_line for marker in self.SECTION_END_MARKERS):
                 break
             
             if "PARTICIPANTE" in upper_line:
                 count += 1
                 continue
-            if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(\d{3}\.\d{3}\.\d{3}-\d{2}\)", line):
+            if re.match(rf"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(({CPF_PATTERN}|{CNPJ_PATTERN})\)", line):
                 count += 1
                 continue
             count += 1
@@ -431,35 +431,45 @@ class RuralPropertiesExtractor(ISectionExtractor):
     def _extract_participants(self, lines: list[str], start_idx: int) -> list[dict]:
         participants = []
         
-        for j in range(start_idx + 1, min(start_idx + 12, len(lines))):
+        CPF_PATTERN = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
+        CNPJ_PATTERN = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
+        CPF_OR_CNPJ = f"({CPF_PATTERN}|{CNPJ_PATTERN})"
+        
+        for j in range(start_idx + 1, min(start_idx + 20, len(lines))):
             next_line = lines[j].strip()
             upper_next = next_line.upper()
             
             if "PARTICIPANTE" in upper_next:
                 continue
             
-            # Novo item
             if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
                 break
             if re.match(r"^\d{1,2}$", next_line):
                 break
             
-            # Fim de seção
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
             
-            # Participante: Nome (CPF)
             part_match = re.match(
-                r"^(.+?)\s*\((\d{3}\.\d{3}\.\d{3}-\d{2})\)",
+                rf"^(.+?)\s*\({CPF_OR_CNPJ}\)",
                 next_line
             )
             
             if part_match:
-                participants.append({
-                    "participant_name": f"{part_match.group(1).strip()} ({part_match.group(2)})",
-                    "foreigner": "Estrangeiro: Sim" in next_line,
-                    "cpf": part_match.group(2),
-                    "id": generate_item_id(part_match.group(2))
-                })
+                doc_number = part_match.group(2)
+                is_cnpj = "/" in doc_number
+                
+                participant = {
+                    "participant_name": f"{part_match.group(1).strip()} ({doc_number})",
+                    "foreigner": "Estrangeiro: Sim" in next_line or "Estrangeiro:Sim" in next_line,
+                    "id": generate_item_id(doc_number)
+                }
+                
+                if is_cnpj:
+                    participant["cnpj"] = doc_number
+                else:
+                    participant["cpf"] = doc_number
+                
+                participants.append(participant)
         
         return participants

@@ -65,12 +65,12 @@ def create_ocr_orchestrator() -> OcrOrchestrator:
 
     try:
         from irpf_processor.infrastructure.extraction.ocr import DoclingEngine
-        docling = DoclingEngine(timeout=300)
+        docling = DoclingEngine(timeout=300, vision_model="default")
         if docling.is_available():
             engines.append(docling)
             logger.info("Docling engine available (fallback)")
     except ImportError:
-        logger.info("Docling not installed, using Tesseract only")
+        logger.info("Docling not installed")
 
     if not engines:
         raise RuntimeError("No OCR engines available")
@@ -78,7 +78,7 @@ def create_ocr_orchestrator() -> OcrOrchestrator:
     return OcrOrchestrator(engines=engines, min_confidence=0.5)
 
 
-@dramatiq.actor(queue_name="extraction-ocr", max_retries=2, min_backoff=5000, max_backoff=120000)
+@dramatiq.actor(queue_name="extraction-ocr", max_retries=2, min_backoff=5000, max_backoff=120000, time_limit=1800000)
 def process_ocr_document(document_id: str, tenant_id: str) -> None:
     start_time = time.perf_counter()
     document_category = DocumentCategory.UNKNOWN
@@ -122,7 +122,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
 
         try:
             ocr_start = time.perf_counter()
-            ocr_result = orchestrator.process(tmp_path, timeout=300)
+            ocr_result = orchestrator.process(tmp_path, timeout=900)  # 15 min para Granite Vision
             ocr_duration = time.perf_counter() - ocr_start
 
             logger.info(
