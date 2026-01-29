@@ -14,9 +14,11 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
         "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
         "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA",
+        "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",  # Post-processor com espaços
         "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+        "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",  # Post-processor com espaços
         "TRIBUTAÇÃO EXCLUSIVA",
-        # OCR variations - sem acentos
+        # OCR variations - sem acentos (antes do post-processor)
         "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA/DEFINITIVA",
         "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA / DEFINITIVA",  # Com espaços ao redor do /
         "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA",

@@ -100,10 +100,12 @@ class VersionDetector:
         "exclusive_taxation_income": [
             "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA",
             "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA",
+            "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",  # Post-processor com espaços
             "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA",  # OCR sem acentos
             "RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA / DEFINITIVA",  # OCR com espaços
-            "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",
+            "TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA",  # Post-processor
             "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA",
+            "TRIBUTAÇÃO EXCLUSIVA",
             "TRIBUTACAO EXCLUSIVA/DEFINITIVA",  # OCR sem acentos
             "TRIBUTACAO EXCLUSIVA / DEFINITIVA",  # OCR com espaços
             "TRIBUTAGAO EXCLUSIVA",  # OCR: Ç → G
