@@ -114,9 +114,16 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def _extract_section_total(self, context: ExtractionContext) -> Optional[float]:
         """Extrai o TOTAL da seção quando não há subsections (seção vazia).
         
-        Formato típico quando vazia:
-        RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA (Valores em Reais)
-        TOTAL 0,00
+        Formatos suportados:
+        1. Mesma linha: "TOTAL 0,00"
+        2. Linhas separadas:
+           TOTAL
+           0,00
+        3. Com "(Valores em Reais)" entre:
+           TOTAL
+           1.434.346,97  (valor da seção anterior - ignorar)
+           (Valores em Reais)
+           0,00  (valor correto)
         """
         for page_num, page_text in sorted(context.pages_text.items()):
             upper_page = page_text.upper()
@@ -128,13 +135,19 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             
             lines = page_text.split('\n')
             in_section = False
+            found_total_line = False
+            found_valores_em_reais = False
             
             for i, line in enumerate(lines):
                 upper_line = line.upper()
+                stripped_line = line.strip()
                 
                 # Detectar início da seção
                 if any(marker in upper_line for marker in self.SECTION_MARKERS):
                     in_section = True
+                    # Se "(Valores em Reais)" já está na mesma linha do marker, marcar
+                    if "(VALORES EM REAIS)" in upper_line:
+                        found_valores_em_reais = True
                     continue
                 
                 if not in_section:
@@ -144,12 +157,44 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 if any(marker in upper_line for marker in self.SECTION_END_MARKERS):
                     break
                 
-                # Buscar TOTAL logo após o marker
-                # Formato: "TOTAL 0,00" ou "TOTAL    0,00"
+                # Formato 1: TOTAL e valor na mesma linha
                 match = re.match(r"^\s*TOTAL\s+([\d.,]+)\s*$", line, re.IGNORECASE)
                 if match:
                     value = parse_currency(match.group(1))
                     return value
+                
+                # Detectar linha "TOTAL" sozinha
+                if re.match(r"^\s*TOTAL\s*$", stripped_line, re.IGNORECASE):
+                    found_total_line = True
+                    continue
+                
+                # Detectar "(Valores em Reais)"
+                if "(VALORES EM REAIS)" in upper_line:
+                    found_valores_em_reais = True
+                    continue
+                
+                # Formato 2 e 3: Valor em linha separada após TOTAL
+                if found_total_line:
+                    # Pular linhas vazias
+                    if not stripped_line:
+                        continue
+                    
+                    # Buscar valor monetário
+                    value_match = re.match(r"^\s*([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", stripped_line)
+                    if value_match:
+                        value = parse_currency(value_match.group(1))
+                        # Se já encontrou "(Valores em Reais)", este é o valor correto
+                        if found_valores_em_reais:
+                            return value
+                        # Se ainda não encontrou "(Valores em Reais)", pode ser valor da seção anterior
+                        # Continuar procurando
+                        continue
+                    
+                    # Se não é valor nem "(Valores em Reais)", resetar estado
+                    if not "(VALORES EM REAIS)" in upper_line:
+                        # Se encontrou outra coisa, e ainda não tinha "(Valores em Reais)",
+                        # o valor encontrado anteriormente pode ser o correto
+                        pass
         
         return None
     
@@ -238,6 +283,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             r"06[.\s]+(?:RENDIMENTOS|REND\.?)\s*(?:DE\s*)?(?:APLIC|FINANC)",
             r"06[.\s]+APLICACOES\s+FINANCEIRAS",
             r"06[.\s]+APLICAGOES\s+FINANCEIRAS",  # OCR Ç→G
+            r"06[.\s]+RENDIMENTOS\s+DE\s+APLICACOES\s+FINANCEIRAS",  # OCR sem acentos
+            r"06\.?\s*Rendimentos\s+de\s+aplica",  # Minúsculas
         ]
         
         for page_num, page_text in sorted_pages:
@@ -577,6 +624,68 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             beneficiary = pattern2.group(3)
             value = parse_currency(pattern2.group(4))
             cpf = pattern2.group(5)
+            
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        # Formato 3: Column-aligned com múltiplos espaços (PDFs escaneados)
+        # Ex: "Titular             097.427.418-67         22.791.329/0001-50        CAIXA E-SIMPLES FI RENDA FIXA LP                 0,50"
+        # Formato: Beneficiário   CPF   CNPJ   Nome   Valor
+        pattern3 = re.match(
+            r"^\s*(Titular|Dependente)\s{2,}"          # Beneficiário + 2+ espaços
+            r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s{2,}"       # CPF + 2+ espaços
+            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s{2,}" # CNPJ + 2+ espaços
+            r"(.+?)\s{2,}"                              # Nome + 2+ espaços
+            r"([\d.,]+)\s*$",                           # Valor
+            line
+        )
+        
+        if pattern3:
+            beneficiary = pattern3.group(1)
+            cpf = pattern3.group(2)
+            cnpj = pattern3.group(3)
+            payer_name = pattern3.group(4).strip()
+            value = parse_currency(pattern3.group(5))
+            
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        # Formato 4: Flexível com tabs ou espaços (OCR variável)
+        # Permite separadores flexíveis (\s+ em vez de exatamente 2+)
+        pattern4 = re.match(
+            r"^\s*(Titular|Dependente)\s+"              # Beneficiário + espaços
+            r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"           # CPF + espaços
+            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"     # CNPJ + espaços
+            r"(.+?)\s+"                                  # Nome + espaços
+            r"([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$",   # Valor brasileiro
+            line.strip(),
+            re.IGNORECASE
+        )
+        
+        if pattern4:
+            beneficiary = pattern4.group(1)
+            cpf = pattern4.group(2)
+            cnpj = pattern4.group(3)
+            payer_name = pattern4.group(4).strip()
+            value = parse_currency(pattern4.group(5))
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
