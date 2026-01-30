@@ -48,23 +48,30 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
+        import logging
+        logger = logging.getLogger(__name__)
+        
         subsections = {}
         
         # 01. 13º salário
         thirteenth = self._extract_thirteenth_salary(context)
         if thirteenth:
             subsections["thirteenth_salary"] = thirteenth
+            logger.info(f"[EXCLUSIVE] Found thirteenth_salary: {thirteenth.get('total_value', 0)}")
         
         # 05. Ganhos líquidos em renda variável
         variable_income = self._extract_variable_income_gains(context)
         if variable_income:
             subsections["net_gains_from_variable_income_stocks_futures_and_reits"] = variable_income
+            logger.info(f"[EXCLUSIVE] Found variable_income: {variable_income.get('total_value', 0)}")
         
         # 06. Rendimentos de aplicações financeiras
         financial = self._extract_financial_income(context)
+        logger.info(f"[EXCLUSIVE] financial result: items={len(financial.get('items') or [])}, total={financial.get('total_value', 0)}")
         # Incluir se tem itens OU se tem total extraído diretamente
         if financial and (financial.get("items") or financial.get("total_value", 0) > 0):
             subsections["income_from_financial_investments"] = financial
+            logger.info(f"[EXCLUSIVE] Added income_from_financial_investments")
         
         # 07. Rendimentos recebidos acumuladamente
         accumulated = self._extract_accumulated_income(context)
@@ -88,17 +95,21 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         # Calcular total das subsections
         total_value = sum(s.get("total_value", 0) for s in subsections.values())
+        logger.info(f"[EXCLUSIVE] Subsections found: {list(subsections.keys())}, total_value: {total_value}")
         
         # Se não há subsections, tentar extrair o TOTAL da seção diretamente
         # Isso acontece quando a seção existe mas está vazia (TOTAL 0,00)
         if not subsections:
             section_total = self._extract_section_total(context)
+            logger.info(f"[EXCLUSIVE] No subsections, section_total from _extract_section_total: {section_total}")
             if section_total is not None:
                 total_value = section_total
             else:
                 # Seção detectada mas não conseguimos extrair nada
+                logger.warning(f"[EXCLUSIVE] Section detected but NOT extracted - returning None")
                 return None
         
+        logger.info(f"[EXCLUSIVE] Returning result with total_value: {total_value}")
         return {
             "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
             "total_value": round(total_value, 2),
@@ -271,10 +282,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     
     def _extract_financial_income(self, context: ExtractionContext) -> dict:
         """Extrai 06. Rendimentos de aplicações financeiras."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         items = []
         seen_keys = set()
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        logger.info(f"[FIN_INCOME] Total pages: {len(sorted_pages)}")
         in_section = False
         in_subsection = False  # Mantido entre páginas para cross-page sections
         
@@ -297,9 +312,11 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             # Detectar início da seção principal
             if any(marker in upper_page for marker in self.SECTION_MARKERS):
                 in_section = True
+                logger.info(f"[FIN_INCOME] Page {page_num}: Found SECTION_MARKER, in_section=True")
             
             # Detectar fim da seção principal
             if in_section and any(marker in upper_page for marker in self.SECTION_END_MARKERS):
+                logger.info(f"[FIN_INCOME] Page {page_num}: Found END_MARKER, breaking")
                 in_subsection = False
                 break
             
@@ -312,6 +329,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 # Detectar início da subseção 06
                 if any(re.search(p, upper_line, re.IGNORECASE) for p in subsection_06_patterns):
                     in_subsection = True
+                    logger.info(f"[FIN_INCOME] Page {page_num}, Line {i}: Found subsection 06, in_subsection=True")
                     continue
                 
                 # Detectar fim da subseção (próximo código)
