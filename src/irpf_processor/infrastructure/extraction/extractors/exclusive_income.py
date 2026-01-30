@@ -344,6 +344,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 if in_subsection:
+                    # Log das primeiras 10 linhas após subsection para debug
+                    if len(items) == 0 and i < 60:
+                        logger.info(f"[FIN_INCOME] Processing Line {i}: {repr(line[:80]) if len(line) > 80 else repr(line)}")
+                    
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
@@ -351,6 +355,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
+                            logger.info(f"[FIN_INCOME] Found item via _parse_income_item: {item.get('payer_name')}")
                     
                     # Tentar parsear item multiline (CNPJ na linha sozinho)
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
@@ -375,6 +380,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(two_line_item)
+                            logger.info(f"[FIN_INCOME] Found item via _parse_2line: {two_line_item.get('payer_name')}")
         
         total = round(sum(i["value"] for i in items), 2)
         
