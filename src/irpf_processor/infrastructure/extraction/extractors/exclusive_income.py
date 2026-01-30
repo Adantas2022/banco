@@ -349,6 +349,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(five_line_item)
+                    
+                    # Tentar parsear item de 2 linhas (CNPJ+Nome / Benef+Valor+CPF)
+                    two_line_item = self._parse_2line_income_item(lines, i, page_num)
+                    if two_line_item:
+                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(two_line_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -769,6 +777,68 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 "cpf": cpf or "",
                 "payer_cnpj": cnpj,
                 "payer_name": payer_name or "",
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        return None
+    
+    def _parse_2line_income_item(
+        self,
+        lines: list[str],
+        start_idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        """Parseia item com formato de 2 linhas.
+        
+        Formato:
+        Linha 1: CNPJ NOME DA FONTE
+        Linha 2: Beneficiário Valor	CPF
+        
+        Exemplo:
+        07.667.259/0001-30 BRADESCO FIC DE FI REFERENCIADO DI ONIX
+        Titular 1.529,69	779.701.955-04
+        """
+        if start_idx + 1 >= len(lines):
+            return None
+        
+        line1 = lines[start_idx].strip()
+        line2 = lines[start_idx + 1].strip()
+        
+        # Linha 1: CNPJ + Nome (CNPJ no início seguido de espaço e nome)
+        match1 = re.match(
+            r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+(.+)$",
+            line1
+        )
+        if not match1:
+            return None
+        
+        cnpj = match1.group(1)
+        payer_name = match1.group(2).strip()
+        
+        # Linha 2: Beneficiário Valor CPF (separados por espaços ou tabs)
+        # Formatos possíveis:
+        # "Titular 1.529,69	779.701.955-04"
+        # "Dependente 24.232,72	783.468.005-68"
+        match2 = re.match(
+            r"^(Titular|Dependente)\s+([\d.,]+)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",
+            line2
+        )
+        if not match2:
+            return None
+        
+        beneficiary = match2.group(1)
+        value = parse_currency(match2.group(2))
+        cpf = match2.group(3)
+        
+        if value > 0:
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
                 "value": value,
                 "id": item_id,
                 "page": page_num
