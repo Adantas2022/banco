@@ -276,15 +276,18 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_section = False
-        in_subsection = False
+        in_subsection = False  # Mantido entre páginas para cross-page sections
         
-        # Patterns para detectar início da subseção 06
+        # Patterns para detectar início da subseção 06 (expandido para OCR)
         subsection_06_patterns = [
             r"06[.\s]+(?:RENDIMENTOS|REND\.?)\s*(?:DE\s*)?(?:APLIC|FINANC)",
             r"06[.\s]+APLICACOES\s+FINANCEIRAS",
             r"06[.\s]+APLICAGOES\s+FINANCEIRAS",  # OCR Ç→G
             r"06[.\s]+RENDIMENTOS\s+DE\s+APLICACOES\s+FINANCEIRAS",  # OCR sem acentos
             r"06\.?\s*Rendimentos\s+de\s+aplica",  # Minúsculas
+            r"06\.?\s+REND",  # OCR truncado
+            r"06\s+Rendimentos",  # Sem ponto
+            r"06[.\s]+Aplica[cç][oõ]es",  # Variações de acento
         ]
         
         for page_num, page_text in sorted_pages:
@@ -297,6 +300,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             
             # Detectar fim da seção principal
             if in_section and any(marker in upper_page for marker in self.SECTION_END_MARKERS):
+                in_subsection = False
                 break
             
             if not in_section:
@@ -306,7 +310,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar início da subseção 06
-                if any(re.search(p, upper_line) for p in subsection_06_patterns):
+                if any(re.search(p, upper_line, re.IGNORECASE) for p in subsection_06_patterns):
                     in_subsection = True
                     continue
                 
@@ -316,7 +320,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 # Detectar TOTAL como fim (mas não "TITULAR")
-                if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                # Aceitar TOTAL sozinho também (valor na próxima linha)
+                if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
                     in_subsection = False
                     continue
                 
@@ -336,6 +341,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
+                    
+                    # Tentar parsear item de 5 linhas (Beneficiário em linha separada)
+                    five_line_item = self._parse_5line_income_item(lines, i, page_num)
+                    if five_line_item:
+                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(five_line_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -754,6 +767,97 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             return {
                 "beneficiary": beneficiary or "Titular",
                 "cpf": cpf or "",
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name or "",
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        return None
+    
+    def _parse_5line_income_item(
+        self,
+        lines: list[str],
+        start_idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        """Parseia item com formato de 5 linhas (PDFs escaneados específicos).
+        
+        Formato:
+        Linha 1: Titular ou Dependente
+        Linha 2: 123.456.789-00  (CPF)
+        Linha 3: 12.345.678/0001-90  (CNPJ)
+        Linha 4: NOME DA FONTE PAGADORA
+        Linha 5: 1.234,56  (Valor)
+        """
+        if start_idx >= len(lines):
+            return None
+        
+        # Linha 1: Beneficiário
+        beneficiary_line = lines[start_idx].strip()
+        if beneficiary_line not in ("Titular", "Dependente"):
+            return None
+        
+        # Verificar se as próximas 4 linhas existem
+        if start_idx + 4 >= len(lines):
+            return None
+        
+        cpf = None
+        cnpj = None
+        payer_name = None
+        value = None
+        
+        cpf_pattern = r"^\d{3}\.\d{3}\.\d{3}-\d{2}$"
+        cnpj_pattern = r"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$"
+        
+        # Buscar nas próximas 4-6 linhas (permite linhas vazias)
+        fields_found = 0
+        for offset in range(1, 7):
+            if start_idx + offset >= len(lines):
+                break
+            
+            line = lines[start_idx + offset].strip()
+            
+            # Pular linhas vazias
+            if not line:
+                continue
+            
+            # Parar se encontrar outro Beneficiário (próximo item)
+            if line in ("Titular", "Dependente"):
+                break
+            
+            # Parar se encontrar TOTAL ou outro código de seção
+            if "TOTAL" in line.upper() or re.match(r"^\d{2}[.\s]+[A-Z]", line):
+                break
+            
+            # Identificar tipo de campo
+            if re.match(cpf_pattern, line) and not cpf:
+                cpf = line
+                fields_found += 1
+            elif re.match(cnpj_pattern, line) and not cnpj:
+                cnpj = line
+                fields_found += 1
+            elif re.match(r"^[\d.,\s]+$", line) and "," in line and not value:
+                parsed = parse_currency(line)
+                if parsed > 0:
+                    value = parsed
+                    fields_found += 1
+            elif line and not payer_name and not re.match(r"^\d", line):
+                # Nome não começa com dígito e não é CPF/CNPJ
+                payer_name = line
+                fields_found += 1
+            
+            # Se encontrou todos os campos, parar
+            if fields_found >= 4:
+                break
+        
+        # Validar item completo (CPF, CNPJ e valor são obrigatórios)
+        if cpf and cnpj and value is not None and value > 0:
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            return {
+                "beneficiary": beneficiary_line,
+                "cpf": cpf,
                 "payer_cnpj": cnpj,
                 "payer_name": payer_name or "",
                 "value": value,
