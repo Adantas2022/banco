@@ -432,6 +432,53 @@ class IRPFParser:
         
         return int(current_year - last_year)
 
+    def _split_text_by_pages(self, text: str, total_pages: int) -> dict[int, str]:
+        """Tenta dividir o texto por páginas usando o marcador 'Pagina X de Y'.
+        
+        O OCR concatena todo o texto mas preserva os marcadores de página.
+        Este método tenta reconstruir a estrutura por páginas.
+        """
+        import re
+        
+        # Padrão para "Pagina X de Y" ou "Página X de Y"
+        page_pattern = r"P[aá]gina\s*(\d+)\s*(?:de|DE)\s*(\d+)"
+        
+        # Encontrar todas as ocorrências
+        matches = list(re.finditer(page_pattern, text, re.IGNORECASE))
+        
+        if not matches:
+            # Sem marcadores de página, retorna todo texto como página 1
+            return {1: text}
+        
+        pages_text = {}
+        
+        for i, match in enumerate(matches):
+            page_num = int(match.group(1))
+            start_pos = match.end()
+            
+            # Fim é o início do próximo marcador ou fim do texto
+            if i + 1 < len(matches):
+                end_pos = matches[i + 1].start()
+            else:
+                end_pos = len(text)
+            
+            # Incluir também o texto ANTES do marcador (o conteúdo da página atual)
+            if i == 0:
+                # Primeira página: incluir desde o início
+                prev_end = 0
+            else:
+                prev_end = matches[i - 1].end()
+            
+            page_content = text[prev_end:match.start()].strip()
+            if page_content:
+                pages_text[page_num] = page_content
+        
+        # Se não conseguiu extrair páginas adequadamente, fallback para página única
+        if not pages_text:
+            return {1: text}
+        
+        return pages_text
+
     def parse_from_text(
         self,
         text: str,
@@ -439,7 +486,8 @@ class IRPFParser:
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
     ) -> IRPFDeclarationResult:
-        pages_text = {1: text}
+        # Tentar dividir o texto por páginas usando marcador "Pagina X de Y"
+        pages_text = self._split_text_by_pages(text, total_pages)
         
         context = ExtractionContext(
             full_text=text,

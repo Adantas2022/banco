@@ -121,6 +121,15 @@ class TaxpayerExtractor(ISectionExtractor):
                 return result
         
         # Formato alternativo: buscar linha por linha
+        # IMPORTANTE: O OCR pode colocar os 3 labels em linhas consecutivas
+        # e depois os valores em linhas separadas:
+        #   Natureza da Ocupac¢ao:
+        #   Ocupagao Principal:
+        #   Tipo de declaracao:
+        #   
+        #   12 - PROPRIETARIO...       <- valor de Natureza
+        #   610 - PRODUTOR...          <- valor de Ocupação Principal
+        #   Declaragao de Ajuste...    <- valor de Tipo
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if re.search(r"Natureza\s+da\s+Ocupa", line, re.IGNORECASE):
@@ -128,17 +137,20 @@ class TaxpayerExtractor(ISectionExtractor):
                 match = re.search(r"Natureza\s+da\s+Ocupa[çcg]?[ãa]?o?[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
                 if match:
                     return match.group(1).strip()
-                # Valor na próxima linha (OCR comum)
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    if re.match(r"^\d+\s*[-–]", next_line):
-                        # Pode continuar na linha seguinte
-                        result = next_line
-                        if i + 2 < len(lines):
-                            next_next = lines[i + 2].strip()
-                            # Se a próxima linha parece continuação (sem número inicial)
-                            if next_next and not re.match(r"^\d+\s*[-–]", next_next) and not re.search(r"Ocupa[çcg]", next_next, re.IGNORECASE):
-                                if not re.match(r"^(Tipo|Endere|CEP|Munic)", next_next, re.IGNORECASE):
+                # Buscar nas próximas 10 linhas por valor no formato "XX - DESCRIÇÃO"
+                # onde XX é código de 1-2 dígitos (natureza da ocupação: 01-99)
+                for j in range(i + 1, min(i + 10, len(lines))):
+                    next_line = lines[j].strip()
+                    # Código de natureza é 1-2 dígitos (diferente de ocupação principal que é 3+)
+                    match = re.match(r"^(\d{1,2}\s*[-–]\s*[A-Z][A-Za-zÀ-ÿ\s,./()ÁÀÂÃÉÊÍÓÔÕÚÇ-]+)", next_line, re.IGNORECASE)
+                    if match:
+                        result = match.group(1).strip()
+                        # Continuar na próxima linha se for continuação da descrição
+                        if j + 1 < len(lines):
+                            next_next = lines[j + 1].strip()
+                            # Não é continuação se começa com código novo ou label
+                            if next_next and not re.match(r"^\d{1,3}\s*[-–]", next_next):
+                                if not re.match(r"^(Tipo|Endere|CEP|Munic|Declar|Ocupa|ANO)", next_next, re.IGNORECASE):
                                     result += " " + next_next
                         return result
         return ""
@@ -164,6 +176,7 @@ class TaxpayerExtractor(ISectionExtractor):
                 return result
         
         # Formato alternativo: buscar linha por linha
+        # O OCR pode separar labels dos valores - buscar nas próximas linhas
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if re.search(r"Ocupa[çcg]?[ãa]?o?\s+Principal", line, re.IGNORECASE):
@@ -171,16 +184,19 @@ class TaxpayerExtractor(ISectionExtractor):
                 match = re.search(r"Ocupa[çcg]?[ãa]?o?\s+Principal[:\s]*(\d+\s*[-–].+)", line, re.IGNORECASE)
                 if match:
                     return match.group(1).strip()
-                # Valor na próxima linha
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    if re.match(r"^\d+\s*[-–]", next_line):
-                        # Pode continuar na linha seguinte
-                        result = next_line
-                        if i + 2 < len(lines):
-                            next_next = lines[i + 2].strip()
+                # Buscar nas próximas 10 linhas por valor no formato "XXX - DESCRIÇÃO"
+                # onde XXX é código de 3+ dígitos (ocupação principal: 100-999)
+                for j in range(i + 1, min(i + 10, len(lines))):
+                    next_line = lines[j].strip()
+                    # Código de ocupação principal é 3 dígitos (diferente de natureza que é 1-2)
+                    match = re.match(r"^(\d{3}\s*[-–]\s*[A-Z][A-Za-zÀ-ÿ\s,./()ÁÀÂÃÉÊÍÓÔÕÚÇ-]+)", next_line, re.IGNORECASE)
+                    if match:
+                        result = match.group(1).strip()
+                        # Continuar na próxima linha se for continuação
+                        if j + 1 < len(lines):
+                            next_next = lines[j + 1].strip()
                             if next_next and not re.match(r"^\d+\s*[-–]", next_next) and not re.search(r"Tipo", next_next, re.IGNORECASE):
-                                if not re.match(r"^(Endere|CEP|Munic|Declara)", next_next, re.IGNORECASE):
+                                if not re.match(r"^(Endere|CEP|Munic|Declara|ANO)", next_next, re.IGNORECASE):
                                     result += " " + next_next
                         return result
         return ""
@@ -210,6 +226,7 @@ class TaxpayerExtractor(ISectionExtractor):
                 return result
         
         # Buscar linha por linha
+        # O OCR pode separar labels dos valores - buscar nas próximas linhas
         lines = text.split('\n')
         for i, line in enumerate(lines):
             if re.search(r"Tipo\s+de\s+[Dd]eclar", line, re.IGNORECASE):
@@ -217,6 +234,18 @@ class TaxpayerExtractor(ISectionExtractor):
                 match = re.search(r"Tipo\s+de\s+[Dd]eclar[^\n:]*[:\s]+(Declar.+)", line, re.IGNORECASE)
                 if match:
                     return match.group(1).strip().upper().replace("DECLARAGAO", "DECLARACAO")
+                
+                # Buscar nas próximas 10 linhas por valor "Declaração de Ajuste Anual"
+                for j in range(i + 1, min(i + 10, len(lines))):
+                    next_line = lines[j].strip()
+                    # Buscar "Declaração de Ajuste Anual" com variações OCR
+                    match = re.match(r"^(Declar[aç]?[gç]?[ãa]o\s+de\s+Ajuste\s+Anual[^\n]*)", next_line, re.IGNORECASE)
+                    if match:
+                        result = match.group(1).strip().upper()
+                        result = result.replace("DECLARAGAO", "DECLARACAO")
+                        result = result.replace("DECLARAÇAO", "DECLARACAO")
+                        result = result.replace("DECLARAÇÃO", "DECLARACAO")
+                        return result
                 # Valor na próxima linha
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()

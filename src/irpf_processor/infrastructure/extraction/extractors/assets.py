@@ -239,7 +239,8 @@ class AssetsExtractor(ISectionExtractor):
     ) -> dict:
         raw_text = " ".join(raw_lines)
         
-        if group_code == "01":
+        # Grupos de imóveis: 01 (urbanos), 12 (casas), 13 (terrenos), 14 (rurais), 15 (atividade rural)
+        if group_code in ("01", "12", "13", "14", "15"):
             return self._extract_real_estate_info(raw_lines, raw_text, description)
         elif group_code == "02":
             return self._extract_vehicle_info(raw_lines, raw_text)
@@ -278,7 +279,11 @@ class AssetsExtractor(ISectionExtractor):
             "cib_nirf": None
         }
         
-        for line in lines:
+        # Juntar linhas consecutivas para capturar valores em linhas separadas
+        # Ex: "Área Total:" em uma linha, "82,0 ha" na próxima
+        for i, line in enumerate(lines):
+            next_line = lines[i + 1] if i + 1 < len(lines) else ""
+            
             if "Inscrição Municipal" in line:
                 m = re.search(r"Inscrição Municipal[^:]*[:\s]+([\d.-]+)", line)
                 if m:
@@ -308,23 +313,37 @@ class AssetsExtractor(ISectionExtractor):
                         info["complement"] = val
             
             if "Bairro" in line:
-                m = re.search(r"Bairro[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+UF|$)", line)
+                # Formato: "Bairro: ZONA RURAL" ou "Comp.: PROGRESSO Bairro: ZONA RURAL"
+                m = re.search(r"Bairro[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+UF|\s*$)", line)
                 if m:
                     val = m.group(1).strip()
                     if val and len(val) > 2 and val != ":":
                         info["neighborhood"] = val
             
+            # Município - formatos:
+            # 1. "Município: SORRISO UF:" (Município antes de UF)
+            # 2. "UF: MT	Município: NOVO SANTO ANTÔNIO CEP:" (UF antes de Município)
             if "Município" in line:
+                # Primeiro tenta formato com UF depois
                 m = re.search(r"Município[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+UF|$)", line)
                 if m:
                     val = m.group(1).strip()
                     if val and len(val) > 1:
                         info["city"] = val
+                else:
+                    # Formato: "UF: XX\tMunicípio: CIDADE CEP:" (UF antes, CEP depois)
+                    m = re.search(r"Município[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+CEP|\s*$)", line)
+                    if m:
+                        val = m.group(1).strip()
+                        if val and len(val) > 1:
+                            info["city"] = val
             
+            # UF - extrair de qualquer formato
             if re.search(r"\bUF\b", line):
-                m = re.search(r"\bUF[:\s]+([A-Z]{2})(?:\s|$)", line)
+                m = re.search(r"\bUF[:\s]+([A-Z]{2})(?:\s|\t|$)", line)
                 if m:
                     state_val = m.group(1)
+                    # Evitar capturar "CE" de "CEP" se estiver logo após
                     if state_val not in ("CE", "EP"):
                         info["state"] = state_val
                     elif "CEP" not in line[:line.find("UF")+5]:
@@ -335,28 +354,34 @@ class AssetsExtractor(ISectionExtractor):
                 if m:
                     info["zipcode"] = m.group(1).strip()
             
+            # Área - formatos:
+            # 1. "Área Total: 529,5 m²" (na mesma linha)
+            # 2. "Área Total:" em uma linha, valor na próxima linha
+            # 3. "Data de Aquisição: / /	82,0 ha" (área junto com data)
             if "Área" in line or "Area" in line:
-                # Ex: "Área Total: 529,5 m²", "Area Total: 1.200,0 ha"
-                m = re.search(r"[ÁA]rea[^:]*[:\s]*([\d.,]+\s*(?:m[²2]|ha)?)", line, re.IGNORECASE)
+                # Primeiro tenta na mesma linha
+                m = re.search(r"[ÁA]rea[^:]*[:\s]*([\d.,]+\s*(?:m[²2]|ha))", line, re.IGNORECASE)
                 if m:
-                    area_val = m.group(1).strip()
-                    # Adicionar unidade se não tiver
-                    if area_val and not re.search(r'(m[²2]|ha)', area_val, re.IGNORECASE):
-                        # Se é valor grande (>100), provavelmente é ha
-                        try:
-                            num = float(area_val.replace(".", "").replace(",", "."))
-                            if num > 100:
-                                area_val = f"{area_val} ha"
-                            else:
-                                area_val = f"{area_val} m²"
-                        except ValueError:
-                            pass
-                    info["area"] = area_val
+                    info["area"] = m.group(1).strip()
+                elif not info["area"]:
+                    # Área na próxima linha (formato: "Área Total:" sozinho)
+                    # A área pode estar na linha de "Data de Aquisição"
+                    for j in range(i + 1, min(i + 3, len(lines))):
+                        area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", lines[j], re.IGNORECASE)
+                        if area_m:
+                            info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
+                            break
             
+            # Capturar área de linha "Data de Aquisição: / /	82,0 ha"
             if "Data de Aquisição" in line:
                 m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
                 if m:
                     info["acquisition_date"] = m.group(1)
+                # Área pode estar nesta linha após a data
+                if not info["area"]:
+                    area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", line, re.IGNORECASE)
+                    if area_m:
+                        info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
             
             if "Registrado" in line and "Cartório" in line:
                 info["registered_at_registy_office"] = "Sim" in line
@@ -387,7 +412,7 @@ class AssetsExtractor(ISectionExtractor):
                     # Remover espaços desnecessários ao redor de separadores
                     matriculation = re.sub(r"\s*([,/])\s*", r"\1", matriculation)
                     matriculation = re.sub(r"\s+E\s+", " E ", matriculation)
-                    if matriculation and len(matriculation) > 2:
+                    if matriculation and len(matriculation) >= 1:
                         info["matriculation"] = matriculation
             
             if "CEI" in line or "CNO" in line:
@@ -403,15 +428,6 @@ class AssetsExtractor(ISectionExtractor):
                     val = m.group(1).strip()
                     if val and len(val) > 2:
                         info["cib_nirf"] = val
-        
-        # NOTA: Removida chamada a _extract_from_description().
-        # O gabarito espera que campos como city, state, matriculation, area
-        # sejam extraídos APENAS dos metadados estruturados do PDF.
-        # Quando o PDF mostra "Município:" vazio, o resultado deve ser null,
-        # mesmo que a descrição contenha "NO MUNICIPIO DE SAO FELIX...".
-        # Isso corrige 20 divergências: city(4), state(4), matriculation(6),
-        # registered_at_registry_office(6), area(1).
-        # self._extract_from_description(info, description)
         
         return info
     
