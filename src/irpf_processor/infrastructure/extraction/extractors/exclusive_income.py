@@ -86,10 +86,18 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         if others and others.get("items"):
             subsections["others_13"] = others
         
-        if not subsections:
-            return None
-        
+        # Calcular total das subsections
         total_value = sum(s.get("total_value", 0) for s in subsections.values())
+        
+        # Se não há subsections, tentar extrair o TOTAL da seção diretamente
+        # Isso acontece quando a seção existe mas está vazia (TOTAL 0,00)
+        if not subsections:
+            section_total = self._extract_section_total(context)
+            if section_total is not None:
+                total_value = section_total
+            else:
+                # Seção detectada mas não conseguimos extrair nada
+                return None
         
         return {
             "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
@@ -102,6 +110,48 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         """Verifica se a página contém a seção de tributação exclusiva."""
         upper_text = page_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
+    
+    def _extract_section_total(self, context: ExtractionContext) -> Optional[float]:
+        """Extrai o TOTAL da seção quando não há subsections (seção vazia).
+        
+        Formato típico quando vazia:
+        RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA / DEFINITIVA (Valores em Reais)
+        TOTAL 0,00
+        """
+        for page_num, page_text in sorted(context.pages_text.items()):
+            upper_page = page_text.upper()
+            
+            # Verificar se contém o marker da seção
+            has_section = any(marker in upper_page for marker in self.SECTION_MARKERS)
+            if not has_section:
+                continue
+            
+            lines = page_text.split('\n')
+            in_section = False
+            
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                
+                # Detectar início da seção
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    in_section = True
+                    continue
+                
+                if not in_section:
+                    continue
+                
+                # Detectar fim da seção (próxima seção)
+                if any(marker in upper_line for marker in self.SECTION_END_MARKERS):
+                    break
+                
+                # Buscar TOTAL logo após o marker
+                # Formato: "TOTAL 0,00" ou "TOTAL    0,00"
+                match = re.match(r"^\s*TOTAL\s+([\d.,]+)\s*$", line, re.IGNORECASE)
+                if match:
+                    value = parse_currency(match.group(1))
+                    return value
+        
+        return None
     
     def _extract_thirteenth_salary(self, context: ExtractionContext) -> Optional[dict]:
         """Extrai 01. 13º salário."""
@@ -481,8 +531,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         """Parseia item de rendimento com formato inline."""
-        # Formato: Titular/Dependente CPF CNPJ Nome Valor
-        pattern = re.match(
+        # Formato 1: Titular/Dependente CPF CNPJ Nome Valor
+        pattern1 = re.match(
             r"^(Titular|Dependente)\s+"
             r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
@@ -491,12 +541,42 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             line.strip()
         )
         
-        if pattern:
-            beneficiary = pattern.group(1)
-            cpf = pattern.group(2)
-            cnpj = pattern.group(3)
-            payer_name = pattern.group(4).strip()
-            value = parse_currency(pattern.group(5))
+        if pattern1:
+            beneficiary = pattern1.group(1)
+            cpf = pattern1.group(2)
+            cnpj = pattern1.group(3)
+            payer_name = pattern1.group(4).strip()
+            value = parse_currency(pattern1.group(5))
+            
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
+        
+        # Formato 2: CNPJ NOME	Beneficiário VALOR	CPF
+        # Ex: "40.498.539/0001-37 ITAU OPTIMUS RF LP FIC	Titular 38.204,65	169.407.738-19"
+        pattern2 = re.match(
+            r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"  # CNPJ
+            r"(.+?)\s+"                                # Nome
+            r"(Titular|Dependente)\s+"                 # Beneficiário
+            r"([\d.,]+)\s+"                            # Valor
+            r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",        # CPF
+            line.strip()
+        )
+        
+        if pattern2:
+            cnpj = pattern2.group(1)
+            payer_name = pattern2.group(2).strip()
+            beneficiary = pattern2.group(3)
+            value = parse_currency(pattern2.group(4))
+            cpf = pattern2.group(5)
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
