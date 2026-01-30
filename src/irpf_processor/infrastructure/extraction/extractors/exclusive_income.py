@@ -314,14 +314,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 in_section = True
                 logger.info(f"[FIN_INCOME] Page {page_num}: Found SECTION_MARKER, in_section=True")
             
-            # Detectar fim da seção principal
-            if in_section and any(marker in upper_page for marker in self.SECTION_END_MARKERS):
-                logger.info(f"[FIN_INCOME] Page {page_num}: Found END_MARKER, breaking")
-                in_subsection = False
-                break
-            
             if not in_section:
                 continue
+            
+            # Flag para verificar se devemos parar APÓS processar esta página
+            should_break_after_page = False
+            if any(marker in upper_page for marker in self.SECTION_END_MARKERS):
+                logger.info(f"[FIN_INCOME] Page {page_num}: Has END_MARKER, will process lines first then break")
+                should_break_after_page = True
             
             for i, line in enumerate(lines):
                 upper_line = line.upper()
@@ -381,6 +381,11 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                             seen_keys.add(key)
                             items.append(two_line_item)
                             logger.info(f"[FIN_INCOME] Found item via _parse_2line: {two_line_item.get('payer_name')}")
+            
+            # Parar APÓS processar todas as linhas da página que contém END_MARKER
+            if should_break_after_page:
+                logger.info(f"[FIN_INCOME] Page {page_num}: Breaking after processing {len(items)} items")
+                break
         
         total = round(sum(i["value"] for i in items), 2)
         
