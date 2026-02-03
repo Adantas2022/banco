@@ -293,7 +293,6 @@ class AssetItem:
     country_name: str = "BRASIL"
     previous_value: float = 0.0
     current_value: float = 0.0
-    additional_info: str = ""
 
 
 @dataclass
@@ -471,7 +470,6 @@ class AdvancedTestGenerator:
                 description=f"{home_type[2].upper()} - {decl.address['street']}, {decl.address['number']}",
                 previous_value=home_value * random.uniform(0.9, 1.0),
                 current_value=home_value,
-                additional_info=f"Matrícula: {random.randint(10000, 99999)} - Cartório: {random.randint(1, 20)}º Ofício",
             ))
             num_assets -= 1
         
@@ -491,7 +489,6 @@ class AdvancedTestGenerator:
                 description=f"{vehicle} {year}",
                 previous_value=vehicle_value * 1.1,
                 current_value=vehicle_value,
-                additional_info=f"RENAVAM: {random.randint(10000000000, 99999999999)}",
             ))
             num_assets -= 1
         
@@ -502,16 +499,13 @@ class AdvancedTestGenerator:
                 bank = random.choice(BANKS)
                 value = random.uniform(10000, base_value * 0.3)
                 description = f"{asset_type[2].upper()} - {bank[0]}"
-                additional = f"CNPJ: {bank[1]} - Agência: {random.randint(1, 9999)} - Conta: {random.randint(10000, 99999)}"
             elif asset_type[0] == "03":
                 company = random.choice(COMPANIES)
                 value = random.uniform(50000, base_value * 0.5)
                 description = f"QUOTAS DE CAPITAL - {company[0]}"
-                additional = f"CNPJ: {company[1]} - {random.randint(1, 100)}% do capital"
             else:
                 value = random.uniform(5000, base_value * 0.2)
                 description = f"{asset_type[2].upper()}"
-                additional = ""
             
             growth = random.uniform(-0.1, 0.15)
             
@@ -521,7 +515,6 @@ class AdvancedTestGenerator:
                 description=description,
                 previous_value=value * (1 - growth),
                 current_value=value,
-                additional_info=additional,
             ))
     
     def _generate_income(self, decl: TestDeclaration, config: dict, profile: str):
@@ -729,8 +722,6 @@ class TestPDFGenerator:
             prev = format_currency(asset.previous_value)
             curr = format_currency(asset.current_value)
             lines.append(f"{code:<6} {desc:<40} {prev:>15} {curr:>15}")
-            if asset.additional_info:
-                lines.append(f"       {asset.additional_info[:70]}")
         
         lines.append("-" * 80)
         lines.append(f"{'TOTAL':<46} {format_currency(decl.total_assets_previous):>15} {format_currency(decl.total_assets_current):>15}")
