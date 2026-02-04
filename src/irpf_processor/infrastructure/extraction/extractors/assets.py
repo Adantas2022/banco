@@ -67,6 +67,11 @@ class AssetsExtractor(ISectionExtractor):
                         pdf_totals = page_totals
                 break
             
+            if items:
+                orphan_lines = self._extract_orphan_address_lines(page_text)
+                if orphan_lines and items[-1].get("additional_info"):
+                    self._update_item_with_orphan_lines(items[-1], orphan_lines)
+            
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
             
@@ -160,6 +165,12 @@ class AssetsExtractor(ISectionExtractor):
         description_parts = [description_start]
         country_code = "105"
         country_name = "BRASIL"
+        raw_lines = []
+        
+        # NOTA: Removido bloco que adicionava prev_line com campos bancários.
+        # Esse bloco estava incorreto pois capturava campos do item ANTERIOR,
+        # causando desalinhamento de bank/agency/account em 28 itens.
+        # Os campos bancários são capturados corretamente no loop abaixo.
         
         j = start_idx + 1
         while j < len(lines):
@@ -189,6 +200,8 @@ class AssetsExtractor(ISectionExtractor):
             if next_line.upper().startswith("TOTAL") or next_line.upper().startswith("TOTAL DE BENS"):
                 break
             
+            raw_lines.append(next_line)
+            
             if self._is_description_continuation(next_line):
                 description_parts.append(next_line)
             
@@ -196,6 +209,10 @@ class AssetsExtractor(ISectionExtractor):
         
         full_description = " ".join(description_parts)
         full_description = re.sub(r"\s+", " ", full_description).strip()
+        
+        additional_info = self._build_additional_info(
+            group_code, raw_lines, full_description
+        )
         
         item_id = generate_item_id(f"{group_code}{asset_code}{full_description[:50]}")
         
@@ -208,14 +225,550 @@ class AssetsExtractor(ISectionExtractor):
             "current_year_asset_value": current_value,
             "country_code": country_code,
             "country_name": country_name,
+            "additional_info": additional_info,
             "country_valid": True,
             "page": page_num,
             "_next_index": j
         }
     
+    def _build_additional_info(
+        self, 
+        group_code: str, 
+        raw_lines: list[str],
+        description: str
+    ) -> dict:
+        raw_text = " ".join(raw_lines)
+        
+        # Grupos de imóveis: 01 (urbanos), 12 (casas), 13 (terrenos), 14 (rurais), 15 (atividade rural)
+        if group_code in ("01", "12", "13", "14", "15"):
+            return self._extract_real_estate_info(raw_lines, raw_text, description)
+        elif group_code == "02":
+            return self._extract_vehicle_info(raw_lines, raw_text)
+        elif group_code in ("03", "04", "05"):
+            return self._extract_participation_info(raw_lines, raw_text, description)
+        elif group_code == "06":
+            return self._extract_deposit_info(raw_lines, raw_text, description)
+        elif group_code == "07":
+            return self._extract_fund_info(raw_lines, raw_text)
+        elif group_code == "08":
+            return self._extract_crypto_info(raw_lines, raw_text)
+        else:
+            return self._extract_generic_info(raw_lines, raw_text)
+    
+    def _extract_real_estate_info(
+        self, 
+        lines: list[str], 
+        raw_text: str,
+        description: str
+    ) -> dict:
+        info = {
+            "municipal_registration": None,
+            "street_address": None,
+            "complement": None,
+            "city": None,
+            "area": None,
+            "registered_at_registy_office": False,
+            "matriculation": None,
+            "number": None,
+            "neighborhood": None,
+            "state": None,
+            "acquisition_date": None,
+            "registry_office_name": None,
+            "zipcode": None,
+            "cei_cno": None,
+            "cib_nirf": None
+        }
+        
+        # Juntar linhas consecutivas para capturar valores em linhas separadas
+        # Ex: "Área Total:" em uma linha, "82,0 ha" na próxima
+        for i, line in enumerate(lines):
+            next_line = lines[i + 1] if i + 1 < len(lines) else ""
+            
+            if "Inscrição Municipal" in line:
+                m = re.search(r"Inscrição Municipal[^:]*[:\s]+([\d.-]+)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2:
+                        info["municipal_registration"] = val
+            
+            if "Logradouro" in line:
+                m = re.search(r"Logradouro[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s.,]+?)(?:\s+Nº|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and not val.startswith("Nº"):
+                        info["street_address"] = val
+            
+            if "Nº" in line:
+                m = re.search(r"Nº[:\s]*([A-Z0-9]+)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and val != ":" and len(val) >= 1:
+                        info["number"] = val
+            
+            if "Comp" in line and ":" in line:
+                m = re.search(r"Comp[^:]*[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s.,0-9]+?)(?:\s+Bairro|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
+                        info["complement"] = val
+            
+            if "Bairro" in line:
+                # Formato: "Bairro: ZONA RURAL" ou "Comp.: PROGRESSO Bairro: ZONA RURAL"
+                m = re.search(r"Bairro[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+UF|\s*$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val != ":":
+                        info["neighborhood"] = val
+            
+            # Município - formatos:
+            # 1. "Município: SORRISO UF:" (Município antes de UF)
+            # 2. "UF: MT	Município: NOVO SANTO ANTÔNIO CEP:" (UF antes de Município)
+            if "Município" in line:
+                # Primeiro tenta formato com UF depois
+                m = re.search(r"Município[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+UF|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 1:
+                        info["city"] = val
+                else:
+                    # Formato: "UF: XX\tMunicípio: CIDADE CEP:" (UF antes, CEP depois)
+                    m = re.search(r"Município[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+CEP|\s*$)", line)
+                    if m:
+                        val = m.group(1).strip()
+                        if val and len(val) > 1:
+                            info["city"] = val
+            
+            # UF - extrair de qualquer formato
+            if re.search(r"\bUF\b", line):
+                m = re.search(r"\bUF[:\s]+([A-Z]{2})(?:\s|\t|$)", line)
+                if m:
+                    state_val = m.group(1)
+                    # Evitar capturar "CE" de "CEP" se estiver logo após
+                    if state_val not in ("CE", "EP"):
+                        info["state"] = state_val
+                    elif "CEP" not in line[:line.find("UF")+5]:
+                        info["state"] = state_val
+            
+            if "CEP" in line:
+                m = re.search(r"CEP[:\s]*([\d]{5}-?[\d]{3})", line)
+                if m:
+                    info["zipcode"] = m.group(1).strip()
+            
+            # Área - formatos:
+            # 1. "Área Total: 529,5 m²" (na mesma linha)
+            # 2. "Área Total:" em uma linha, valor na próxima linha
+            # 3. "Data de Aquisição: / /	82,0 ha" (área junto com data)
+            if "Área" in line or "Area" in line:
+                # Primeiro tenta na mesma linha
+                m = re.search(r"[ÁA]rea[^:]*[:\s]*([\d.,]+\s*(?:m[²2]|ha))", line, re.IGNORECASE)
+                if m:
+                    info["area"] = m.group(1).strip()
+                elif not info["area"]:
+                    # Área na próxima linha (formato: "Área Total:" sozinho)
+                    # A área pode estar na linha de "Data de Aquisição"
+                    for j in range(i + 1, min(i + 3, len(lines))):
+                        area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", lines[j], re.IGNORECASE)
+                        if area_m:
+                            info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
+                            break
+            
+            # Capturar área de linha "Data de Aquisição: / /	82,0 ha"
+            if "Data de Aquisição" in line:
+                m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
+                if m:
+                    info["acquisition_date"] = m.group(1)
+                # Área pode estar nesta linha após a data
+                if not info["area"]:
+                    area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", line, re.IGNORECASE)
+                    if area_m:
+                        info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
+            
+            if "Registrado" in line and "Cartório" in line:
+                info["registered_at_registy_office"] = "Sim" in line
+            
+            if "Nome Cartório" in line or "Nome Cartorio" in line:
+                # Ex: "Nome Cartório: 13 OFICIAL DE REGISTRO DE IMOVEIS DA COMARCA DE SAO PAULO"
+                m = re.search(r"Nome Cart[óo]rio[:\s]+([A-ZÀ-Ú0-9][A-Za-zÀ-ÿ\s0-9.-]+?)(?:\s+Matr[íi]cula|$)", line, re.IGNORECASE)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2:
+                        info["registry_office_name"] = val
+                else:
+                    # Formato onde cartório está depois sem matrícula
+                    m = re.search(r"Nome Cart[óo]rio[:\s]+(.+?)$", line, re.IGNORECASE)
+                    if m:
+                        val = m.group(1).strip()
+                        if val and len(val) > 2:
+                            info["registry_office_name"] = val
+            
+            if "Matrícula" in line or "Matricula" in line:
+                # Capturar matrículas completas incluindo múltiplos números
+                # Ex: "Matrícula: 15722/15723", "Matrícula: 1116, 1458, 1459, 1460, 1461 E 1462"
+                m = re.search(r"Matr[íi]cula[:\s]*([\d.,/\sE]+)", line, re.IGNORECASE)
+                if m:
+                    matriculation = m.group(1).strip()
+                    # Limpar espaços extras mas manter separadores
+                    matriculation = re.sub(r"\s+", " ", matriculation)
+                    # Remover espaços desnecessários ao redor de separadores
+                    matriculation = re.sub(r"\s*([,/])\s*", r"\1", matriculation)
+                    matriculation = re.sub(r"\s+E\s+", " E ", matriculation)
+                    if matriculation and len(matriculation) >= 1:
+                        info["matriculation"] = matriculation
+            
+            if "CEI" in line or "CNO" in line:
+                m = re.search(r"(?:CEI/?CNO|CEI|CNO)[:\s]*([\d./-]+)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2:
+                        info["cei_cno"] = val
+            
+            if "CIB" in line or "Nirf" in line:
+                m = re.search(r"(?:CIB|Nirf)[^:]*[:\s]*([\d.-]+)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2:
+                        info["cib_nirf"] = val
+        
+        return info
+    
+    def _extract_from_description(self, info: dict, description: str) -> None:
+        city_state = re.search(r"(?:EM|LOCALIZADO\s+EM|MUNICIPIO\s+DE)\s+([A-Z][A-Za-zÀ-ÿ\s]+?)[\s-]+([A-Z]{2})(?:\.|,|\s|$)", description, re.IGNORECASE)
+        if city_state:
+            if info["city"] is None:
+                info["city"] = city_state.group(1).strip().upper()
+            if info["state"] is None:
+                info["state"] = city_state.group(2).upper()
+        
+        city_slash = re.search(r"([A-Z][A-Za-zÀ-ÿ\s]+)\s*/\s*([A-Z]{2})", description)
+        if city_slash:
+            if info["state"] is None:
+                info["state"] = city_slash.group(2)
+            if info["city"] is None:
+                info["city"] = city_slash.group(1).strip()
+        
+        number_desc = re.search(r"(?:NR\.?|N\.?|NUMERO)\s*(\d+)", description, re.IGNORECASE)
+        if number_desc and info["number"] is None:
+            info["number"] = number_desc.group(1)
+        
+        street_desc = re.search(r"(?:SITO\s+(?:A|NA)\s+)?(?:RUA|AV\.?|AVENIDA|ESTRADA)\s+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s+(?:NR|N\.|NUMERO)|,|\s+\d)", description, re.IGNORECASE)
+        if street_desc and info["street_address"] is None:
+            info["street_address"] = street_desc.group(1).strip()
+        
+        mat_desc = re.search(r"(?:MAT\.?|MATR[IÍ]CULA)\s*[:\s]*(\d+[\d./]*)", description, re.IGNORECASE)
+        if mat_desc and info["matriculation"] is None:
+            info["matriculation"] = mat_desc.group(1)
+            info["registered_at_registy_office"] = True
+        
+        cri_desc = re.search(r"(?:MAT\.?\s*)?(\d+[\d.]*)\s*(?:DO\s+)?C[RI]{2}[IO]?\s+(?:DE\s+)?([A-ZÀ-Ú][A-Za-zÀ-ÿ\s]+?)(?:\s*[-–]\s*[A-Z]{2})?(?:\.|,|$)", description, re.IGNORECASE)
+        if cri_desc and info["registry_office_name"] is None:
+            office_name = f"CRI DE {cri_desc.group(2).strip().upper()}"
+            info["registry_office_name"] = office_name
+            info["registered_at_registy_office"] = True
+            if info["matriculation"] is None:
+                info["matriculation"] = cri_desc.group(1)
+        
+        area_ha = re.search(r"(?:C/?\s*|COM\s+|AREA\s+(?:DE\s+)?)([\d.,]+)\s*(?:HAS?|HECTARES?)", description, re.IGNORECASE)
+        if area_ha and info["area"] is None:
+            info["area"] = f"{area_ha.group(1)} ha"
+        
+        area_m2 = re.search(r"([\d.,]+)\s*M[²2]", description, re.IGNORECASE)
+        if area_m2 and info["area"] is None:
+            info["area"] = f"{area_m2.group(1)} m²"
+        
+        adq_date = re.search(r"ADQ\.?\s+EM\s+(\d{2}[/.-]\d{2}[/.-]\d{4})", description, re.IGNORECASE)
+        if adq_date and info["acquisition_date"] is None:
+            date_str = adq_date.group(1).replace(".", "/").replace("-", "/")
+            info["acquisition_date"] = date_str
+        
+        cei_desc = re.search(r"(?:CEI|CNO)[:\s]*([\d./-]+)", description, re.IGNORECASE)
+        if cei_desc and info["cei_cno"] is None:
+            info["cei_cno"] = cei_desc.group(1).strip()
+    
+    def _extract_vehicle_info(self, lines: list[str], raw_text: str) -> dict:
+        info = {}
+        
+        for line in lines:
+            upper_line = line.upper()
+            
+            # RENAVAM - formato: "RENAVAM: 00000110809" ou "RENAVAM 01386728052"
+            if "RENAVAM" in upper_line:
+                m = re.search(r"RENAVAM[:\s]*(\d+)", line, re.IGNORECASE)
+                if m:
+                    info["renavam"] = m.group(1)
+            
+            # Registro de Embarcação
+            elif "REGISTRO DE EMBARCAÇÃO" in upper_line or "REGISTRO DE EMBARCACAO" in upper_line:
+                m = re.search(r"Registro de Embarca[çc][ãa]o[:\s]*(.+)", line, re.IGNORECASE)
+                if m:
+                    info["vessel_registration"] = m.group(1).strip()
+            
+            # Registro de Aeronave - formato: "Registro de Aeronave: PSECD"
+            elif "REGISTRO DE AERONAVE" in upper_line:
+                m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", line, re.IGNORECASE)
+                if m:
+                    info["aircraft_registration"] = m.group(1).strip()
+        
+        # Fallback: buscar no raw_text se não encontrou nos lines
+        if "renavam" not in info:
+            m = re.search(r"RENAVAM[:\s]*(\d+)", raw_text, re.IGNORECASE)
+            if m:
+                info["renavam"] = m.group(1)
+        
+        if "aircraft_registration" not in info:
+            m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", raw_text, re.IGNORECASE)
+            if m:
+                info["aircraft_registration"] = m.group(1).strip()
+        
+        return info
+    
+    def _extract_participation_info(self, lines: list[str], raw_text: str, description: str = "") -> dict:
+        info = {
+            "beneficiary": None,
+            "cpf": None
+        }
+        
+        beneficiary = self._find_beneficiary(lines)
+        if beneficiary:
+            info["beneficiary"] = beneficiary
+        
+        # Prioriza CNPJ em linhas específicas (metadata) sobre CNPJ no texto
+        cnpj_found = None
+        for line in lines:
+            if line.strip().upper().startswith("CNPJ"):
+                m = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", line)
+                if m:
+                    cnpj_found = m.group(1)
+                    break
+        
+        if not cnpj_found:
+            cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+            if cnpj:
+                cnpj_found = cnpj.group(1)
+            else:
+                cnpj_raw = re.search(r"CNPJ[:\s]*(\d{11,14})", raw_text)
+                if cnpj_raw:
+                    cnpj_found = cnpj_raw.group(1)
+        
+        if cnpj_found:
+            info["cnpj"] = cnpj_found
+        
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        if cpf:
+            info["cpf"] = cpf.group(1)
+        
+        traded_match = re.search(r"Negociad[oa]s em Bolsa[:\s]*(Sim|Não)", raw_text)
+        if traded_match:
+            info["traded_on_stock_market"] = traded_match.group(1) == "Sim"
+        
+        trading_code_match = re.search(r"Código de Negociação[:\s]*([A-Z0-9]+)", raw_text)
+        if trading_code_match:
+            info["trading_code"] = trading_code_match.group(1)
+        
+        trading_code_desc = re.search(r"(?:TICKER|CÓDIGO)[:\s]*([A-Z]{4}\d+)", raw_text, re.IGNORECASE)
+        if trading_code_desc and "trading_code" not in info:
+            info["trading_code"] = trading_code_desc.group(1)
+        
+        bank = re.search(r"Banco[:\s]*(\d+)", raw_text)
+        if bank:
+            info["bank"] = bank.group(1)
+        
+        agency = re.search(r"Ag[êe]ncia[:\s]*(\d+[-\d]*)", raw_text)
+        if agency:
+            info["agency"] = agency.group(1)
+        
+        account = re.search(r"Conta[:\s]*([\d-]+)", raw_text)
+        if account:
+            info["account"] = account.group(1)
+        
+        # Fallback: extrair bank e account da descrição quando não existem nos metadados
+        self._extract_bank_info_from_description(info, description)
+        
+        return info
+    
+    def _extract_deposit_info(self, lines: list[str], raw_text: str, description: str = "") -> dict:
+        info = {
+            "beneficiary": "N/A",
+            "cpf": "N/A"
+        }
+        
+        beneficiary = self._find_beneficiary(lines)
+        if beneficiary:
+            info["beneficiary"] = beneficiary
+        
+        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if cnpj:
+            info["cnpj"] = cnpj.group(1)
+        
+        bank = re.search(r"Banco[:\s]*(\d+)", raw_text)
+        if bank:
+            info["bank"] = bank.group(1)
+        
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        if cpf:
+            info["cpf"] = cpf.group(1)
+        
+        agency = re.search(r"Ag[êe]ncia[:\s]*(\d+[-\d]*)", raw_text)
+        if agency:
+            info["agency"] = agency.group(1)
+        
+        account = re.search(r"Conta[:\s]*([\d-]+)", raw_text)
+        if account:
+            info["account"] = account.group(1)
+        
+        if "Conta Pagamento" in raw_text:
+            info["is_payment_account"] = "Sim" in raw_text.split("Conta Pagamento")[1][:20]
+        else:
+            info["is_payment_account"] = False
+        
+        # Fallback: extrair bank e account da descrição quando não existem nos metadados
+        self._extract_bank_info_from_description(info, description)
+        
+        return info
+    
+    def _extract_fund_info(self, lines: list[str], raw_text: str) -> dict:
+        info = {}
+        
+        beneficiary = self._find_beneficiary(lines)
+        if beneficiary:
+            info["beneficiary"] = beneficiary
+        
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        if cpf:
+            info["cpf"] = cpf.group(1)
+        
+        cnpj_fund = re.search(r"CNPJ do Fundo[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if cnpj_fund:
+            info["cnpj"] = cnpj_fund.group(1)
+        else:
+            cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+            if cnpj:
+                info["cnpj"] = cnpj.group(1)
+            else:
+                cnpj_raw = re.search(r"CNPJ[:\s]*(\d{14})", raw_text)
+                if cnpj_raw:
+                    info["cnpj"] = cnpj_raw.group(1)
+        
+        custodian_cnpj = re.search(r"CNPJ (?:do )?Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if custodian_cnpj:
+            info["custodian_cnpj"] = custodian_cnpj.group(1)
+        
+        if "Autocustodiante" in raw_text:
+            info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:20]
+        elif "Próprio Custodiante" in raw_text:
+            info["self_custodian"] = "Sim" in raw_text.split("Próprio Custodiante")[1][:20]
+        
+        if "Negociados em Bolsa" in raw_text:
+            info["traded_on_stock_market"] = "Sim" in raw_text
+        
+        trading_code = re.search(r"Código de Negociação[:\s]*([A-Z0-9]+)", raw_text)
+        if trading_code:
+            info["trading_code"] = trading_code.group(1)
+        
+        profit_loss = re.search(r"Lucro ou Prejuízo[:\s]*([\d.,]+)", raw_text)
+        tax_abroad = re.search(r"Imposto Pago no Exterior[:\s]*([\d.,]+)", raw_text)
+        
+        if profit_loss or tax_abroad:
+            info["financial_application"] = {
+                "items": {
+                    "profit_or_loss": parse_currency(profit_loss.group(1)) if profit_loss else 0.0,
+                    "tax_paid_abroad": parse_currency(tax_abroad.group(1)) if tax_abroad else 0.0
+                }
+            }
+        
+        value_received = re.search(r"Valor Recebido[:\s]*([\d.,]+)", raw_text)
+        irrf_abroad = re.search(r"Imposto Pago Exterior/IRRF Brasil[:\s]*([\d.,]+)", raw_text)
+        
+        if value_received or irrf_abroad:
+            info["profits_and_dividends"] = {
+                "items": {
+                    "value_received": parse_currency(value_received.group(1)) if value_received else 0.0,
+                    "tax_paid_abroad_irrf": parse_currency(irrf_abroad.group(1)) if irrf_abroad else 0.0
+                }
+            }
+        
+        return info
+    
+    def _extract_crypto_info(self, lines: list[str], raw_text: str) -> dict:
+        info = {}
+        
+        beneficiary = self._find_beneficiary(lines)
+        if beneficiary:
+            info["beneficiary"] = beneficiary
+        
+        cnpj = re.search(r"(?<!Custodiante[:\s])CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        info["cnpj"] = cnpj.group(1) if cnpj else "N/A"
+        
+        custodian = re.search(r"CNPJ Custodiante[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if custodian:
+            info["custodian_cnpj"] = custodian.group(1)
+        
+        if "Autocustodiante" in raw_text:
+            info["self_custodian"] = "Sim" in raw_text.split("Autocustodiante")[1][:10]
+        
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        if cpf:
+            info["cpf"] = cpf.group(1)
+        
+        return info
+    
+    def _extract_generic_info(self, lines: list[str], raw_text: str) -> dict:
+        info = {}
+        
+        cnpj = re.search(r"CNPJ[:\s]*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", raw_text)
+        if cnpj:
+            info["cnpj"] = cnpj.group(1)
+        
+        return info
+    
+    def _extract_bank_info_from_description(self, info: dict, description: str) -> None:
+        """
+        Extrai bank e account da descrição quando não existem nos metadados estruturados.
+        Usado como fallback para itens que não têm linha "Banco:", "Agência:", "Conta:".
+        """
+        if not description:
+            return
+        
+        desc_upper = description.upper()
+        
+        # Extrair account de padrões como "C/C 27509-3", "C/C 10461-2"
+        if info.get("account") is None:
+            # Padrão: C/C seguido de número com hífen
+            account_match = re.search(r"C\s*/\s*C\s*([\d]+-[\d]+)", desc_upper)
+            if account_match:
+                info["account"] = account_match.group(1)
+        
+        # Inferir bank do nome do banco na descrição
+        if info.get("bank") is None:
+            bank_patterns = [
+                (r"SICREDI|COOP\.?\s*CRED\.?\s*POUP|SICRED", "748"),
+                (r"BCO\.?\s*BRASIL|BB\s*SA|BANCO\s+DO\s+BRASIL", "001"),
+                (r"CEF|CAIXA\s*ECON[OÔ]MICA", "104"),
+                (r"BRADESCO", "237"),
+                (r"ITA[UÚ]", "341"),
+                (r"SANTANDER", "033"),
+                (r"SAFRA", "422"),
+                (r"FIBRA", "224"),
+                (r"AMAZONIA|BASA", "003"),
+                (r"RABOBANK", "747"),
+            ]
+            for pattern, bank_code in bank_patterns:
+                if re.search(pattern, desc_upper):
+                    info["bank"] = bank_code
+                    break
+    
+    def _find_beneficiary(self, lines: list[str]) -> Optional[str]:
+        for line in lines:
+            if "Bem" in line and "Titular" in line:
+                return "Titular"
+            if "Bem" in line and "Dependente" in line:
+                return "Dependente"
+        return None
+    
     def _is_description_continuation(self, line: str) -> bool:
-        """Verifica se a linha é continuação da descrição do bem."""
-        # Prefixos que indicam campos de metadados (não são continuação da descrição)
+        # NOTA: "CPF" foi removido de skip_prefixes pois linhas como
+        # "CPF 593380401-00, POR FORCA DE CONTRATO PARTICULAR DE"
+        # são parte da descrição narrativa, não metadados.
+        # Metadados de CPF são tratados separadamente abaixo.
         skip_prefixes = (
             "Bem", "Inscrição", "Logradouro", "Comp", "Município",
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
@@ -258,3 +811,105 @@ class AssetsExtractor(ISectionExtractor):
             return True
         
         return True
+    
+    def _extract_orphan_address_lines(self, page_text: str) -> list[str]:
+        lines = page_text.split("\n")
+        orphan_lines = []
+        started = False
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            if "GRUPO" in line and "CÓDIGO" in line:
+                started = True
+                continue
+            
+            if not started:
+                continue
+            
+            if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", line):
+                break
+            
+            # Inclui campos de endereço E campos bancários
+            orphan_prefixes = [
+                "Logradouro", "Comp", "Município", "Área", "Bairro", "UF", "CEP", 
+                "Data de Aquisição", "Banco", "Agência", "Conta"
+            ]
+            if any(prefix in line for prefix in orphan_prefixes):
+                orphan_lines.append(line)
+        
+        return orphan_lines
+    
+    def _update_item_with_orphan_lines(self, item: dict, orphan_lines: list[str]) -> None:
+        info = item.get("additional_info", {})
+        if not info:
+            return
+        
+        for line in orphan_lines:
+            if "Logradouro" in line:
+                m = re.search(r"Logradouro[:\s]*(.+?)(?:\s+Nº[:\s]|$)", line)
+                if m:
+                    info["street_address"] = m.group(1).strip() or "N/A"
+                
+                m = re.search(r"Nº[:\s]*(\S+)", line)
+                if m:
+                    info["number"] = m.group(1).strip() or "N/A"
+            
+            if "Comp" in line:
+                m = re.search(r"Comp[^:]*[:\s]*(.+?)(?:\s+Bairro[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val not in (":", "Bairro:", "Bairro"):
+                        info["complement"] = val
+            
+            if "Bairro" in line:
+                m = re.search(r"Bairro[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 2 and val != ":":
+                        info["neighborhood"] = val
+            
+            if "Município" in line:
+                m = re.search(r"Município[:\s]*(.+?)(?:\s+UF[:\s]|$)", line)
+                if m:
+                    val = m.group(1).strip()
+                    if val:
+                        info["city"] = val
+            
+            if "UF" in line:
+                m = re.search(r"UF[:\s]*([A-Z]{2})", line)
+                if m:
+                    info["state"] = m.group(1)
+            
+            if "CEP" in line:
+                m = re.search(r"CEP[:\s]*([\d-]+)", line)
+                if m:
+                    info["zipcode"] = m.group(1).strip()
+            
+            if "Área" in line:
+                m = re.search(r"Área[^:]*[:\s]*([\d.,]+\s*m²?)", line)
+                if m:
+                    info["area"] = m.group(1).strip()
+            
+            if "Data de Aquisição" in line:
+                m = re.search(r"Data de Aquisição[:\s]*(\d{2}/\d{2}/\d{4})", line)
+                if m:
+                    info["acquisition_date"] = m.group(1)
+            
+            # Campos bancários órfãos (quando a quebra de página separa do item)
+            if "Banco" in line:
+                m = re.search(r"Banco[:\s]*(\d+)", line)
+                if m:
+                    info["bank"] = m.group(1)
+            
+            if "Agência" in line:
+                m = re.search(r"Ag[êe]ncia[:\s]*(\d+[-\d]*)", line)
+                if m:
+                    info["agency"] = m.group(1)
+            
+            if "Conta" in line and "Conta Pagamento" not in line:
+                m = re.search(r"Conta[:\s]*([\d-]+)", line)
+                if m:
+                    info["account"] = m.group(1)
