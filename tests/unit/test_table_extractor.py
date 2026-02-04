@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from irpf_processor.infrastructure.extraction.table_extractor import (
     ExtractedTable,
     TableExtractor,
+    detect_currency_format,
     parse_currency,
     generate_item_id,
 )
@@ -202,7 +203,52 @@ class TestTableExtractor:
         assert len(result) == 1
 
 
+class TestDetectCurrencyFormat:
+    """Testes para detecção automática de formato de moeda."""
+
+    def test_detect_brazilian_format_with_comma_decimal(self):
+        """Formato brasileiro com vírgula decimal: 250.000,00"""
+        assert detect_currency_format("250.000,00") == 'BR'
+        assert detect_currency_format("1.234.567,89") == 'BR'
+        assert detect_currency_format("100,50") == 'BR'
+        assert detect_currency_format("1.000,00") == 'BR'
+
+    def test_detect_american_format_with_dot_decimal(self):
+        """Formato americano com ponto decimal: 250,000.00"""
+        assert detect_currency_format("250,000.00") == 'US'
+        assert detect_currency_format("1,234,567.89") == 'US'
+        assert detect_currency_format("100.50") == 'US'
+        assert detect_currency_format("1,000.00") == 'US'
+
+    def test_detect_brazilian_multiple_thousand_separators(self):
+        """Múltiplos separadores de milhar brasileiro"""
+        assert detect_currency_format("1.234.567,89") == 'BR'
+        assert detect_currency_format("25.040.026,18") == 'BR'
+
+    def test_detect_american_multiple_thousand_separators(self):
+        """Múltiplos separadores de milhar americano"""
+        assert detect_currency_format("1,234,567.89") == 'US'
+        assert detect_currency_format("25,040,026.18") == 'US'
+
+    def test_detect_single_digit_decimal(self):
+        """Decimal com um único dígito"""
+        assert detect_currency_format("100,5") == 'BR'
+        assert detect_currency_format("100.5") == 'US'
+
+    def test_detect_ambiguous_returns_ambiguous(self):
+        """Valores ambíguos retornam AMBIGUOUS"""
+        assert detect_currency_format("1234") == 'AMBIGUOUS'
+        assert detect_currency_format("") == 'AMBIGUOUS'
+        assert detect_currency_format(None) == 'AMBIGUOUS'
+
+    def test_detect_with_currency_symbols(self):
+        """Detecta formato mesmo com símbolos de moeda"""
+        assert detect_currency_format("R$ 1.234,56") == 'BR'
+        assert detect_currency_format("$ 1,234.56") == 'US'
+
+
 class TestParseCurrency:
+    """Testes para parsing de valores monetários."""
 
     def test_parse_currency_simple(self):
         assert parse_currency("100") == 100.0
@@ -227,6 +273,76 @@ class TestParseCurrency:
 
     def test_parse_currency_negative(self):
         assert parse_currency("-1.234,56") == -1234.56
+
+
+class TestParseCurrencyAmericanFormat:
+    """Testes para parsing de valores em formato americano (invertido)."""
+
+    def test_parse_american_format_basic(self):
+        """Formato americano básico: 250,000.00"""
+        assert parse_currency("250,000.00") == 250000.0
+
+    def test_parse_american_format_large_value(self):
+        """Formato americano com valor grande"""
+        assert parse_currency("1,234,567.89") == 1234567.89
+
+    def test_parse_american_format_with_symbol(self):
+        """Formato americano com símbolo de moeda"""
+        assert parse_currency("$ 250,000.00") == 250000.0
+
+    def test_parse_american_format_thousands(self):
+        """Formato americano com milhares"""
+        assert parse_currency("10,000.00") == 10000.0
+        assert parse_currency("15,000.00") == 15000.0
+        assert parse_currency("2,000.00") == 2000.0
+
+    def test_parse_american_format_from_irpf_image(self):
+        """Valores reais da imagem IRPF com formato invertido"""
+        # Da imagem: BOTICARIO - REND. RECEBIDOS
+        assert parse_currency("250,000.00") == 250000.0
+        # Da imagem: CONTR. PREVID. OFICIAL
+        assert parse_currency("10,000.00") == 10000.0
+        # Da imagem: IMPOSTO RETIDO NA FONTE
+        assert parse_currency("15,000.00") == 15000.0
+        # Da imagem: 13º SALÁRIO
+        assert parse_currency("30,000.00") == 30000.0
+        # Da imagem: IRRF SOBRE 13º SALÁRIO
+        assert parse_currency("3,000.00") == 3000.0
+        # Da imagem: Prefeitura - valor IRRF
+        assert parse_currency("2,000.00") == 2000.0
+
+    def test_parse_american_small_values(self):
+        """Formato americano com valores pequenos"""
+        assert parse_currency("100.50") == 100.50
+        assert parse_currency("99.99") == 99.99
+
+    def test_parse_currency_with_format_hint_br(self):
+        """Parsing com dica de formato brasileiro"""
+        assert parse_currency("1.234,56", format_hint='BR') == 1234.56
+
+    def test_parse_currency_with_format_hint_us(self):
+        """Parsing com dica de formato americano"""
+        assert parse_currency("1,234.56", format_hint='US') == 1234.56
+
+    def test_parse_mixed_documents_consistency(self):
+        """Garante que ambos os formatos funcionam no mesmo documento"""
+        # Formato brasileiro
+        br_values = [
+            ("250.000,00", 250000.0),
+            ("10.000,00", 10000.0),
+            ("15.000,00", 15000.0),
+        ]
+        for value, expected in br_values:
+            assert parse_currency(value) == expected, f"BR: {value}"
+        
+        # Formato americano
+        us_values = [
+            ("250,000.00", 250000.0),
+            ("10,000.00", 10000.0),
+            ("15,000.00", 15000.0),
+        ]
+        for value, expected in us_values:
+            assert parse_currency(value) == expected, f"US: {value}"
 
 
 class TestGenerateItemId:
