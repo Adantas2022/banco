@@ -142,6 +142,67 @@ sections:
         required: false
         description: "Página de origem no PDF"
 
+    subsections:
+      - name: "Informações Adicionais"
+        code: "additional_info"
+        description: "Campos específicos por tipo de bem"
+        fields:
+          - name: beneficiary
+            type: string
+            description: "Titular ou Dependente"
+          - name: cnpj
+            type: cnpj
+          - name: cpf
+            type: cpf
+          - name: bank
+            type: string
+          - name: agency
+            type: string
+          - name: account
+            type: string
+          - name: renavam
+            type: string
+          - name: matriculation
+            type: string
+          - name: registry_office_name
+            type: string
+          - name: municipal_registration
+            type: string
+          - name: street_address
+            type: string
+          - name: complement
+            type: string
+          - name: city
+            type: string
+          - name: neighborhood
+            type: string
+          - name: state
+            type: string
+          - name: zipcode
+            type: string
+          - name: area
+            type: string
+          - name: number
+            type: string
+          - name: acquisition_date
+            type: string
+          - name: registered_at_registy_office
+            type: boolean
+          - name: cei_cno
+            type: string
+          - name: vessel_registration
+            type: string
+          - name: traded_on_stock_market
+            type: boolean
+          - name: trading_code
+            type: string
+          - name: custodian_cnpj
+            type: cnpj
+          - name: self_custodian
+            type: boolean
+          - name: is_payment_account
+            type: boolean
+
   # ============================================
   # DÍVIDAS E ÔNUS REAIS
   # ============================================
