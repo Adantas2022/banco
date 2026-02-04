@@ -5,9 +5,12 @@ from unittest.mock import MagicMock
 from irpf_processor.infrastructure.extraction.table_extractor import (
     ExtractedTable,
     TableExtractor,
+    generate_item_id,
+)
+from irpf_processor.infrastructure.extraction.currency_utils import (
+    CurrencyFormat,
     detect_currency_format,
     parse_currency,
-    generate_item_id,
 )
 
 
