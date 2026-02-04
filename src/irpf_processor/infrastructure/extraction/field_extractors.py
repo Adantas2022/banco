@@ -4,7 +4,7 @@ import re
 from decimal import Decimal
 from typing import Optional
 
-from .table_extractor import parse_currency, detect_currency_format
+from .currency_utils import parse_currency, detect_currency_format
 
 
 CPF_PATTERN = re.compile(r"\d{3}\.?\d{3}\.?\d{3}-?\d{2}")

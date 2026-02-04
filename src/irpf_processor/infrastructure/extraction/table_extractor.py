@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import Optional, Union
 from pathlib import Path
 
-from .field_extractors import normalize_cpf, normalize_cnpj
-
 # Re-exporta funções de currency_utils para manter compatibilidade retroativa
 from .currency_utils import (
     CurrencyFormat,
