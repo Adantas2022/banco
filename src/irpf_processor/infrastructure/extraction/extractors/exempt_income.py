@@ -49,6 +49,16 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "name": "Transferências patrimoniais - doações e heranças",
             "keywords": ["transferências patrimoniais", "doações", "heranças", "doação", "herança"]
         },
+        "exempt_portion_from_rural_activity": {
+            "code": "15",
+            "name": "Parcela não tributável correspondente à atividade rural",
+            "keywords": ["parcela não tributável", "atividade rural", "rural"]
+        },
+        "capital_reserves_incorporation": {
+            "code": "18",
+            "name": "Incorporação de reservas ao capital",
+            "keywords": ["incorporação", "reservas", "capital"]
+        },
         "income_tax_refund_from_previous_years": {
             "code": "25",
             "name": "Restituição do imposto sobre a renda de anos-calendário anteriores",
