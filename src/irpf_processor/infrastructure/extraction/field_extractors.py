@@ -4,6 +4,8 @@ import re
 from decimal import Decimal
 from typing import Optional
 
+from .table_extractor import parse_currency, detect_currency_format
+
 
 CPF_PATTERN = re.compile(r"\d{3}\.?\d{3}\.?\d{3}-?\d{2}")
 CNPJ_PATTERN = re.compile(r"\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}")
@@ -24,16 +26,20 @@ def extract_cnpj(text: str) -> Optional[str]:
 
 
 def extract_currency(text: str) -> Optional[Decimal]:
-    """Extrai valor monetário do texto."""
+    """Extrai valor monetário do texto.
+    
+    Suporta tanto formato brasileiro (1.234,56) quanto americano (1,234.56).
+    """
     match = CURRENCY_PATTERN.search(text)
     if not match:
         return None
     
     value_str = match.group(1)
-    value_str = value_str.replace(".", "").replace(",", ".")
+    # Usa parse_currency com detecção automática de formato (BR/US)
+    value_float = parse_currency(value_str)
     
     try:
-        return Decimal(value_str)
+        return Decimal(str(value_float))
     except Exception:
         return None
 
