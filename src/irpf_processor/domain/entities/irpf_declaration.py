@@ -36,7 +36,6 @@ class AssetItem:
     country_name: str
     country_valid: bool
     page: int
-    additional_info: Optional[dict[str, Any]] = None
 
 
 @dataclass
