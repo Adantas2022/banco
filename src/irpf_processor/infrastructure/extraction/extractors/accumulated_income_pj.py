@@ -136,7 +136,35 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        # Formato com 4 valores: NOME REND_ACUM CONTRIB_PREV IRRF DESP_JUDICIAL
+        # Formato 1: NOME CNPJ VALORES (CNPJ inline) - MAIS COMUM
+        # Ex: "CAIXA ECONOMICA FEDERAL 00.360.305/0001-04 674.716,23 0,00 0,00 20.241"
+        pattern_cnpj_inline = re.match(
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)",
+            line.strip()
+        )
+        
+        if pattern_cnpj_inline:
+            return self._parse_cnpj_inline(pattern_cnpj_inline, lines, idx, page_num)
+        
+        # Formato 2: NOME CNPJ 3 VALORES (sem despesas judiciais)
+        pattern_cnpj_inline_3v = re.match(
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)\s+"
+            r"([\d]+[.,][\d]+[.,]?\d*)",
+            line.strip()
+        )
+        
+        if pattern_cnpj_inline_3v:
+            return self._parse_cnpj_inline_3v(pattern_cnpj_inline_3v, lines, idx, page_num)
+        
+        # Formato 3 (legado): NOME VALORES (CNPJ em linhas seguintes)
         pattern = re.match(
             r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -149,7 +177,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         if pattern:
             return self._parse_4_values(pattern, lines, idx, page_num)
         
-        # Formato alternativo com 3 valores
+        # Formato 4 (legado): 3 valores
         pattern_alt = re.match(
             r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -162,6 +190,96 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             return self._parse_3_values(pattern_alt, lines, idx, page_num)
         
         return None
+    
+    def _parse_cnpj_inline(
+        self,
+        match: re.Match,
+        lines: list[str],
+        idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        """Parse formato: NOME CNPJ REND CONTRIB IRRF DESP"""
+        payer_name = match.group(1).strip()
+        cnpj = match.group(2)
+        
+        if self._should_skip_line(payer_name):
+            return None
+        
+        item_id = generate_item_id(f"{cnpj}{payer_name}")
+        
+        # Extrair metadados adicionais das linhas seguintes (meses, opção tributação, etc)
+        months_count = None
+        tax_option = None
+        tax_due_rra = None
+        
+        for j in range(idx + 1, min(idx + 5, len(lines))):
+            next_line = lines[j].strip()
+            
+            # Extrair opção de tributação e meses
+            option_match = re.search(r"OPÇÃO DE TRIBUTAÇÃO:\s*(\w+)", next_line, re.IGNORECASE)
+            if option_match:
+                tax_option = option_match.group(1)
+            
+            months_match = re.search(r"(?:NÚM\.?\s*MESES|MESES)[:\s]*(\d+)", next_line, re.IGNORECASE)
+            if months_match:
+                months_count = int(months_match.group(1))
+            
+            # Imposto devido RRA
+            rra_match = re.search(r"IMPOSTO DEVIDO RRA[:\s]*([\d.,]+)", next_line, re.IGNORECASE)
+            if rra_match:
+                tax_due_rra = parse_currency(rra_match.group(1))
+            
+            # Parar se encontrar início de outro item ou seção
+            if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+\s+\d{2}\.\d{3}\.\d{3}", next_line):
+                break
+            if "TOTAL" in next_line.upper():
+                break
+        
+        result = {
+            "payer_name": payer_name,
+            "cpf_cnpj": cnpj,
+            "accumulated_income": parse_currency(match.group(3)),
+            "social_security_contribution": parse_currency(match.group(4)),
+            "alimony": parse_currency(match.group(5)),
+            "tax_withheld_at_source": parse_currency(match.group(6)),
+            "id": item_id,
+            "page": page_num
+        }
+        
+        if months_count:
+            result["months_count"] = months_count
+        if tax_option:
+            result["tax_option"] = tax_option
+        if tax_due_rra:
+            result["tax_due_rra"] = tax_due_rra
+        
+        return result
+    
+    def _parse_cnpj_inline_3v(
+        self,
+        match: re.Match,
+        lines: list[str],
+        idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        """Parse formato: NOME CNPJ REND CONTRIB IRRF (3 valores)"""
+        payer_name = match.group(1).strip()
+        cnpj = match.group(2)
+        
+        if self._should_skip_line(payer_name):
+            return None
+        
+        item_id = generate_item_id(f"{cnpj}{payer_name}")
+        
+        return {
+            "payer_name": payer_name,
+            "cpf_cnpj": cnpj,
+            "accumulated_income": parse_currency(match.group(3)),
+            "social_security_contribution": parse_currency(match.group(4)),
+            "tax_withheld_at_source": parse_currency(match.group(5)),
+            "id": item_id,
+            "page": page_num
+        }
     
     def _parse_4_values(
         self,
