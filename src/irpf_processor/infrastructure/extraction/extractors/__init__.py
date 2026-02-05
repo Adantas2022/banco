@@ -13,13 +13,21 @@ from .exclusive_income import ExclusiveIncomeExtractor
 from .receipt import ReceiptExtractor, is_receipt_document
 from .payments import PaymentsExtractor
 from .donations import DonationsExtractor
+from .income_suspended import IncomeSuspendedHolderExtractor
 from .rural import (
+    # Brasil
     RuralPropertiesExtractor,
     RuralIncomeExpenditureExtractor,
     RuralResultsExtractor,
     RuralAssetsExtractor,
     RuralDebtsExtractor,
     LivestockMovementExtractor,
+    # Exterior (BUGs #81768, #81770, #81781, #81784, #81788)
+    RuralPropertiesAbroadExtractor,
+    RuralIncomeExpenditureAbroadExtractor,
+    RuralResultsAbroadExtractor,
+    RuralDebtsAbroadExtractor,
+    LivestockMovementAbroadExtractor,
 )
 
 __all__ = [
@@ -38,10 +46,18 @@ __all__ = [
     "is_receipt_document",
     "PaymentsExtractor",
     "DonationsExtractor",
+    "IncomeSuspendedHolderExtractor",
+    # Rural Brasil
     "RuralPropertiesExtractor",
     "RuralIncomeExpenditureExtractor",
     "RuralResultsExtractor",
     "RuralAssetsExtractor",
     "RuralDebtsExtractor",
     "LivestockMovementExtractor",
+    # Rural Exterior
+    "RuralPropertiesAbroadExtractor",
+    "RuralIncomeExpenditureAbroadExtractor",
+    "RuralResultsAbroadExtractor",
+    "RuralDebtsAbroadExtractor",
+    "LivestockMovementAbroadExtractor",
 ]
