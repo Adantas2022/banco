@@ -45,6 +45,17 @@ class RuralResultsExtractor(ISectionExtractor):
         "calculation_of_exempt_result": "APURAÇÃO DO RESULTADO NÃO TRIBUTÁVEL"
     }
     
+    # BUG #81762 fix: Marcadores que indicam FIM da seção de Apuração do Resultado
+    # Quando encontrar esses marcadores, parar de processar linhas
+    SECTION_END_MARKERS = [
+        "MOVIMENTAÇÃO DO REBANHO",
+        "MOVIMENTACAO DO REBANHO",
+        "BENS DA ATIVIDADE RURAL",
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL",
+        "DIVIDAS VINCULADAS A ATIVIDADE RURAL",
+        "DÍVIDAS VINCULADAS A ATIVIDADE RURAL",
+    ]
+    
     @property
     def section_name(self) -> str:
         return "calculation_of_rural_results_in_brazil"
@@ -137,6 +148,14 @@ class RuralResultsExtractor(ISectionExtractor):
         
         for line in lines:
             upper = line.strip().upper()
+            
+            # BUG #81762 fix: Verificar se chegamos ao fim da seção de Apuração
+            # Se encontrar marcador de fim, parar de processar esta página
+            if any(end_marker in upper for end_marker in self.SECTION_END_MARKERS):
+                # Chegamos em outra seção (ex: MOVIMENTAÇÃO DO REBANHO)
+                # Parar de processar linhas desta página para esta seção
+                current_section = None
+                break  # Parar completamente o processamento desta página
             
             # Check if line is a section marker (must start with the marker, not just contain it)
             is_marker = False
