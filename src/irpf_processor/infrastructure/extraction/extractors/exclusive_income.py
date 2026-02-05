@@ -60,7 +60,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         if thirteenth_dependents:
             subsections["thirteen_salary_received_by_dependents"] = thirteenth_dependents
         
-        # 03. Participação nos lucros ou resultados (PLR) - BUG #81758 fix
+        # 11. Participação nos lucros ou resultados (PLR) - BUG #81758 fix
         plr = self._extract_profit_sharing(context)
         if plr:
             subsections["profit_or_results_sharing"] = plr
@@ -81,7 +81,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         if accumulated:
             subsections["accumulated_income_received"] = accumulated
         
-        # 08. Rendimentos recebidos acumuladamente (dependentes) - BUG #81758 fix
+        # 09. Rendimentos recebidos acumuladamente (dependentes) - BUG #81758 fix
         accumulated_dependents = self._extract_accumulated_income_dependents(context)
         if accumulated_dependents:
             subsections["accumulated_income_received_by_dependents"] = accumulated_dependents
@@ -284,9 +284,9 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_profit_sharing(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 03. Participação nos lucros ou resultados (PLR).
+        """Extrai 11. Participação nos lucros ou resultados (PLR).
         
-        BUG #81758 fix: Adicionar extração para subseção de PLR.
+        BUG #81758 fix: Corrigido código de 03 para 11 (código correto conforme IRPF).
         """
         in_section = False
         for page_num, page_text in sorted(context.pages_text.items()):
@@ -303,12 +303,12 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if not in_section:
                 continue
             
-            # Patterns para PLR (Participação nos Lucros ou Resultados)
+            # Patterns para PLR (Participação nos Lucros ou Resultados) - código 11
             patterns = [
-                r"03[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS\s+(?:OU\s+)?RESULTADOS[^\d]*([\d.,]+)",
-                r"03[.\s]+PLR[^\d]*([\d.,]+)",
-                r"03[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES\s+NOS\s+LUCROS[^\d]*([\d.,]+)",
-                r"03[.\s]+(?:participa[çc][ãa]o\s+)?(?:nos\s+)?lucros[^\d]*([\d.,]+)",
+                r"11[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS\s+(?:OU\s+)?RESULTADOS[^\d]*([\d.,]+)",
+                r"11[.\s]+PLR[^\d]*([\d.,]+)",
+                r"11[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES\s+NOS\s+LUCROS[^\d]*([\d.,]+)",
+                r"11[.\s]+(?:participa[çc][ãa]o\s+)?(?:nos\s+)?lucros[^\d]*([\d.,]+)",
             ]
             
             for pattern in patterns:
@@ -316,8 +316,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 if match:
                     value = parse_currency(match.group(1))
                     return {
-                        "name": "03. Participação nos lucros ou resultados",
-                        "code": "03",
+                        "name": "11. Participação nos lucros ou resultados",
+                        "code": "11",
                         "total_value": value,
                         "valid_total": True,
                         "items": None
@@ -534,9 +534,9 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_accumulated_income_dependents(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 08. Rendimentos recebidos acumuladamente pelos dependentes.
+        """Extrai 09. Rendimentos recebidos acumuladamente pelos dependentes.
         
-        BUG #81758 fix: Adicionar extração para subseção de dependentes.
+        BUG #81758 fix: Corrigido código de 08 para 09 (código correto conforme IRPF).
         """
         in_section = False
         for page_num, page_text in sorted(context.pages_text.items()):
@@ -553,11 +553,11 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if not in_section:
                 continue
             
-            # Patterns para rendimentos acumulados de dependentes
+            # Patterns para rendimentos acumulados de dependentes (código 09)
             patterns = [
-                r"08[.\s]+Rendimentos\s+recebidos\s+acumuladamente\s+(?:pelos?\s+)?dependentes?[^\d]*([\d.,]+)",
-                r"08[.\s]+RENDIMENTOS\s+RECEBIDOS\s+ACUMULADAMENTE\s+(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
-                r"08[.\s]+(?:rend\.?\s+)?(?:rec\.?\s+)?acumulad(?:os|amente)\s+(?:pelos?\s+)?dep(?:endentes?)?[^\d]*([\d.,]+)",
+                r"09[.\s]+Rendimentos\s+recebidos\s+acumuladamente\s+(?:pelos?\s+)?dependentes?[^\d]*([\d.,]+)",
+                r"09[.\s]+RENDIMENTOS\s+RECEBIDOS\s+ACUMULADAMENTE\s+(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
+                r"09[.\s]+(?:rend\.?\s+)?(?:rec\.?\s+)?acumulad(?:os|amente)\s+(?:pelos?\s+)?dep(?:endentes?)?[^\d]*([\d.,]+)",
             ]
             
             for pattern in patterns:
@@ -565,8 +565,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 if match:
                     value = parse_currency(match.group(1))
                     return {
-                        "name": "08. Rendimentos recebidos acumuladamente pelos dependentes",
-                        "code": "08",
+                        "name": "09. Rendimentos recebidos acumuladamente pelos dependentes",
+                        "code": "09",
                         "total_value": value,
                         "valid_total": True,
                         "items": []
@@ -644,25 +644,44 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         }
     
     def _extract_financial_abroad(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior."""
-        for page_text in context.pages_text.values():
-            if not self._is_in_exclusive_section(page_text):
-                continue
+        """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior.
+        
+        BUG #81758 fix: Corrigido pattern para capturar o valor correto (não a Lei).
+        O texto tem formato: "12. Aplicações Financeiras... (Lei 14.754/2023) 3.580,00"
+        O pattern antigo capturava 14.754 (número da Lei) em vez de 3.580,00.
+        """
+        in_section = False
+        for page_num, page_text in sorted(context.pages_text.items()):
+            upper_text = page_text.upper()
             
-            pattern = re.search(
-                r"12[.\s]+Aplica[çc][õo]es\s+Financeiras\s+e\s+Lucros[^\d]+([\d.,]+)",
-                page_text,
-                re.IGNORECASE
-            )
-            if pattern:
-                value = parse_currency(pattern.group(1))
-                return {
-                    "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
-                    "code": "12",
-                    "total_value": value,
-                    "valid_total": True,
-                    "items": []
-                }
+            # Detectar início da seção
+            if any(marker in upper_text for marker in self.SECTION_MARKERS):
+                in_section = True
+            
+            # Para esta subseção, procurar mesmo se já passou o marcador de fim
+            # pois pode estar em outra página ainda dentro da seção
+            
+            # Procurar linha com item 12
+            lines = page_text.split('\n')
+            for line in lines:
+                # Pattern para linha completa com item 12
+                # Formato: "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00"
+                # Precisamos capturar o ÚLTIMO valor monetário da linha (após a Lei)
+                match = re.search(
+                    r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
+                    line,
+                    re.IGNORECASE
+                )
+                if match:
+                    value = parse_currency(match.group(1))
+                    if value > 0:
+                        return {
+                            "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                            "code": "12",
+                            "total_value": value,
+                            "valid_total": True,
+                            "items": None
+                        }
         return None
     
     def _extract_others(self, context: ExtractionContext) -> dict:

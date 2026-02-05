@@ -14,6 +14,10 @@ from .receipt import ReceiptExtractor, is_receipt_document
 from .payments import PaymentsExtractor
 from .donations import DonationsExtractor
 from .income_suspended import IncomeSuspendedHolderExtractor
+# Extractors de Dependentes (BUGs #81767, #81773, #81775)
+from .income_pf_dependents import IncomePFDependentsExtractor
+from .accumulated_income_pj_dependents import AccumulatedIncomePJDependentsExtractor
+from .income_suspended_dependents import IncomeSuspendedDependentsExtractor
 from .rural import (
     # Brasil
     RuralPropertiesExtractor,
@@ -22,12 +26,13 @@ from .rural import (
     RuralAssetsExtractor,
     RuralDebtsExtractor,
     LivestockMovementExtractor,
-    # Exterior (BUGs #81768, #81770, #81781, #81784, #81788)
+    # Exterior (BUGs #81768, #81770, #81781, #81783, #81784, #81788)
     RuralPropertiesAbroadExtractor,
     RuralIncomeExpenditureAbroadExtractor,
     RuralResultsAbroadExtractor,
     RuralDebtsAbroadExtractor,
     LivestockMovementAbroadExtractor,
+    RuralAssetsAbroadExtractor,
 )
 
 __all__ = [
@@ -47,6 +52,10 @@ __all__ = [
     "PaymentsExtractor",
     "DonationsExtractor",
     "IncomeSuspendedHolderExtractor",
+    # Dependentes (BUGs #81767, #81773, #81775)
+    "IncomePFDependentsExtractor",
+    "AccumulatedIncomePJDependentsExtractor",
+    "IncomeSuspendedDependentsExtractor",
     # Rural Brasil
     "RuralPropertiesExtractor",
     "RuralIncomeExpenditureExtractor",
@@ -60,4 +69,5 @@ __all__ = [
     "RuralResultsAbroadExtractor",
     "RuralDebtsAbroadExtractor",
     "LivestockMovementAbroadExtractor",
+    "RuralAssetsAbroadExtractor",
 ]
