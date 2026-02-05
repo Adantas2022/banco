@@ -11,7 +11,10 @@ class RuralPropertiesExtractor(ISectionExtractor):
     """Extrai dados de imoveis rurais explorados."""
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
+    # BUG #81760 fix: Adicionar marcadores com sufixo "- BRASIL" (formato Gilberto Rech)
     SECTION_MARKERS = [
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL",
+        "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO - BRASIL",
         "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO",
         "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO",
         "DADOS E IDENTIFICAGAO DO IMOVEL EXPLORADO",  # OCR: Ç -> G
@@ -130,12 +133,27 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
             
             # Skip cabeçalhos - incluindo variações OCR sem acentos
+            # BUG #81760 fix: Só considerar header se a linha COMEÇA com keyword
+            # Não ignorar linhas que contêm keywords no meio (ex: "IMOVEL COM AREA DE...")
             header_keywords = [
                 "CÓDIGO", "CODIGO", "ATIVIDADE", "PARTICIPAÇÃO", "PARTICIPACAO",
-                "CONDIÇÃO", "CONDICAO", "ÁREA", "AREA", "CIB", "NOME E", "(HA)",
+                "CONDIÇÃO", "CONDICAO", "NOME E", "(HA)",
                 "EXPLORAÇÃO", "EXPLORACAO", "NIRF"
             ]
-            if any(h in upper_line for h in header_keywords):
+            # Verificar se linha É um cabeçalho (começa com keyword ou é linha de header)
+            is_header = False
+            stripped_upper = upper_line.strip()
+            for h in header_keywords:
+                if stripped_upper.startswith(h) or stripped_upper == h:
+                    is_header = True
+                    break
+            # Linha com "ÁREA" e "CIB" juntos é header
+            if "ÁREA" in upper_line and "CIB" in upper_line:
+                is_header = True
+            if "AREA" in upper_line and "CIB" in upper_line:
+                is_header = True
+            
+            if is_header:
                 in_section = True
                 i += 1
                 continue
@@ -190,7 +208,12 @@ class RuralPropertiesExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Tenta parsear propriedade em formato inline."""
+        """Tenta parsear propriedade em formato inline.
+        
+        BUG #81760 fix: Melhorar captura de nomes/localizações multilinhas.
+        O nome da propriedade pode se estender por múltiplas linhas antes de
+        área e CIB aparecerem.
+        """
         # Normalizar linha para OCR (espaços antes da vírgula)
         line = re.sub(r'(\d)\s+,', r'\1,', line.strip())
         
@@ -235,22 +258,27 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 area = float(area_str)
                 cib = area_cib_match.group(2)
             else:
-                # Buscar nas linhas seguintes
+                # BUG #81760 fix: Buscar agressivamente nas linhas seguintes
+                # Nomes de propriedades rurais frequentemente são muito longos e
+                # se estendem por 2-4 linhas antes de área/CIB aparecerem
                 name_parts = [remaining]
                 area = 0.0
                 cib = ""
+                found_area_cib = False
                 
-                for j in range(idx + 1, min(idx + 8, len(lines))):
+                # Aumentar range de busca para capturar nomes longos (até 12 linhas)
+                for j in range(idx + 1, min(idx + 12, len(lines))):
                     next_line = re.sub(r'(\d)\s+,', r'\1,', lines[j].strip())
                     upper_next = next_line.upper()
                     
-                    # Parar em participantes
+                    # Parar em participantes (mas já devemos ter área/CIB)
                     if "PARTICIPANTE" in upper_next:
                         break
                     
                     # Parar em novo item (formato código participação condição)
                     if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
                         break
+                    # Parar se encontrar apenas código (início de novo item multiline)
                     if re.match(r"^\d{1,2}$", next_line):
                         break
                     
@@ -258,7 +286,14 @@ class RuralPropertiesExtractor(ISectionExtractor):
                     if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                         break
                     
-                    # Tentar extrair area e cib
+                    # Skip cabeçalhos repetidos
+                    header_keywords = ["CÓDIGO", "CODIGO", "ATIVIDADE", "PARTICIPAÇÃO",
+                                       "ÁREA", "AREA", "CIB", "(HA)", "EXPLORAÇÃO"]
+                    if any(h in upper_next for h in header_keywords):
+                        continue
+                    
+                    # Tentar extrair area e cib da linha atual
+                    # Pattern 1: "nome parcial 1.200,0 4.695.449-0"
                     area_cib_end = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
                     if area_cib_end:
                         name_part = next_line[:area_cib_end.start()].strip()
@@ -267,10 +302,29 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         area_str = area_cib_end.group(1).replace(".", "").replace(",", ".")
                         area = float(area_str)
                         cib = area_cib_end.group(2)
+                        found_area_cib = True
                         break
                     
-                    # Pode ser continuação do nome
-                    if next_line and not re.match(r"^[\d.-]+$", next_line):
+                    # Pattern 2: Área sozinha na linha (ex: "1.200,0")
+                    if re.match(r"^[\d.]+,\d+$", next_line):
+                        area_str = next_line.replace(".", "").replace(",", ".")
+                        area = float(area_str)
+                        # Próxima linha pode ser CIB
+                        if j + 1 < len(lines):
+                            cib_line = lines[j + 1].strip()
+                            if re.match(r"^[\d.-]+$", cib_line) and "-" in cib_line:
+                                cib = cib_line
+                        found_area_cib = True
+                        break
+                    
+                    # Pattern 3: CIB sozinho (sem área - improvável mas possível)
+                    if re.match(r"^[\d.-]+$", next_line) and "-" in next_line:
+                        cib = next_line
+                        found_area_cib = True
+                        break
+                    
+                    # Se linha não vazia e não é numérica pura, é parte do nome
+                    if next_line and not re.match(r"^[\d.,\s-]+$", next_line):
                         name_parts.append(next_line)
                 
                 name_location = " ".join(name_parts)
@@ -332,7 +386,11 @@ class RuralPropertiesExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Tenta parsear propriedade em formato multiline."""
+        """Tenta parsear propriedade em formato multiline.
+        
+        BUG #81760 fix: Melhorar captura de nomes multilinhas no formato
+        onde código, participação, condição vêm em linhas separadas.
+        """
         line = lines[idx].strip()
         
         if not re.match(r"^\d{1,2}$", line):
@@ -362,33 +420,58 @@ class RuralPropertiesExtractor(ISectionExtractor):
         exploration = int(exploration_str)
         j += 1
         
-        # Nome, área e CIB
+        # Nome, área e CIB - BUG #81760 fix: buscar mais agressivamente
         name_parts = []
         area = 0.0
         cib = ""
         
-        while j < len(lines):
+        # Aumentar limite para capturar nomes longos
+        max_lines = min(j + 15, len(lines))
+        
+        while j < max_lines:
             next_line = lines[j].strip()
             upper_next = next_line.upper()
             
             if "PARTICIPANTE" in upper_next:
                 break
             
+            # Novo item começando
             if re.match(r"^\d{1,2}$", next_line):
                 break
             
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
             
-            # Área (formato: 123,4)
+            # Skip cabeçalhos repetidos
+            header_keywords = ["CÓDIGO", "CODIGO", "ATIVIDADE", "PARTICIPAÇÃO",
+                               "ÁREA", "AREA", "CIB", "(HA)", "EXPLORAÇÃO"]
+            if any(h in upper_next for h in header_keywords):
+                j += 1
+                continue
+            
+            # Linha com área e CIB juntos: "nome 1.200,0 4.695.449-0"
+            area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
+            if area_cib_match:
+                name_part = next_line[:area_cib_match.start()].strip()
+                if name_part:
+                    name_parts.append(name_part)
+                area_str = area_cib_match.group(1).replace(".", "").replace(",", ".")
+                area = float(area_str)
+                cib = area_cib_match.group(2)
+                j += 1
+                break
+            
+            # Área sozinha (formato: 123,4 ou 1.200,0)
             if re.match(r"^[\d.]+,\d+$", next_line):
                 area_str = next_line.replace(".", "").replace(",", ".")
                 area = float(area_str)
                 j += 1
                 # Próximo deve ser CIB
-                if j < len(lines) and re.match(r"^[\d.-]+$", lines[j].strip()):
-                    cib = lines[j].strip()
-                    j += 1
+                if j < len(lines):
+                    cib_line = lines[j].strip()
+                    if re.match(r"^[\d.-]+$", cib_line) and "-" in cib_line:
+                        cib = cib_line
+                        j += 1
                 break
             
             # CIB sozinho
@@ -397,8 +480,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 j += 1
                 break
             
-            # Nome
-            if next_line and not upper_next.startswith("CÓDIGO"):
+            # Nome - se não é numérico puro e não é cabeçalho
+            if next_line and not re.match(r"^[\d.,\s-]+$", next_line):
                 name_parts.append(next_line)
             j += 1
         
