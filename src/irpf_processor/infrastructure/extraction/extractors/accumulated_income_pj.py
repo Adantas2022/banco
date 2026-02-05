@@ -14,9 +14,14 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
     SECTION_MARKERS = [
         "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELO TITULAR",
         "RENDIMENTOS TRIBUTÁVEIS DE PJ RECEBIDOS ACUMULADAMENTE PELO TITULAR",
-        "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE"
+        "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE",
+        # Markers parciais para títulos quebrados em múltiplas linhas
+        "RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+        "ACUMULADAMENTE PELO TITULAR",
     ]
     HOLDER_MARKER = "PELO TITULAR"
+    # Markers que indicam seção de dependentes (não do titular)
+    DEPENDENTS_MARKERS = ["PELOS DEPENDENTES", "DEPENDENTES"]
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",
@@ -31,7 +36,12 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
     
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
-        return any(marker in upper_text for marker in self.SECTION_MARKERS)
+        # Verificar se há marker do titular
+        has_marker = any(marker in upper_text for marker in self.SECTION_MARKERS)
+        if not has_marker:
+            return False
+        # Verificar se PELO TITULAR existe (para distinguir de DEPENDENTES)
+        return self.HOLDER_MARKER in upper_text
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -46,15 +56,37 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
             
-            # Entrar na seção
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                if self.HOLDER_MARKER in upper_page:
-                    in_section = True
+            # Entrar na seção - verificar se é seção do TITULAR
+            if not in_section:
+                # Verificar markers completos primeiro
+                for marker in self.SECTION_MARKERS:
+                    if marker in upper_page:
+                        # Verificar se este marker é do titular e não dos dependentes
+                        # Encontrar posição do marker e verificar contexto próximo
+                        marker_pos = upper_page.find(marker)
+                        context_around = upper_page[max(0, marker_pos-50):marker_pos+len(marker)+50]
+                        
+                        # Se "PELO TITULAR" está no marker ou próximo, é a seção correta
+                        if self.HOLDER_MARKER in marker or self.HOLDER_MARKER in context_around:
+                            # Verificar se NÃO está imediatamente seguido de "DEPENDENTES"
+                            if "PELOS DEPENDENTES" not in context_around:
+                                in_section = True
+                                break
+                        # Se é marker parcial sem "DEPENDENTES"
+                        elif "DEPENDENTES" not in marker and "DEPENDENTES" not in context_around:
+                            in_section = True
+                            break
             
             if not in_section:
                 continue
             
             if section_ended:
+                break
+            
+            # BUG FIX: Verificar se esta página é da seção de DEPENDENTES
+            # O título pode estar quebrado em múltiplas linhas
+            if self._is_dependents_section(upper_page):
+                section_ended = True
                 break
             
             # Extrair itens
@@ -94,32 +126,73 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 return True
         return False
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
+    def _is_dependents_section(self, upper_text: str) -> bool:
+        """Verifica se o texto contém a seção de DEPENDENTES.
+        
+        BUG FIX: O título pode estar quebrado em múltiplas linhas:
+        - "RECEBIDOS ACUMULADAMENTE PELOS (Valores em Reais)"
+        - "DEPENDENTES"
+        
+        Detecta tanto o marker completo quanto o padrão quebrado.
+        """
+        # Marker completo
+        if "RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES" in upper_text:
+            return True
+        
+        # Padrão quebrado: "ACUMULADAMENTE PELOS" seguido de "DEPENDENTES" em linhas próximas
+        lines = upper_text.split("\n")
+        for i, line in enumerate(lines):
+            if "ACUMULADAMENTE PELOS" in line and "PELO TITULAR" not in line:
+                # Verificar se "DEPENDENTES" aparece nas próximas 3 linhas
+                for j in range(1, 4):
+                    if i + j < len(lines):
+                        next_line = lines[i + j].strip()
+                        if next_line.startswith("DEPENDENTES"):
+                            return True
+        
+        return False
+    
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set, already_in_section: bool = False) -> list[dict]:
+        """Extrai itens de uma página.
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            seen_ids: Set de IDs já vistos
+            already_in_section: Se True, considera que já estamos na seção
+        """
         items = []
         lines = page_text.split("\n")
         
-        in_section = False
+        in_section = already_in_section
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
             # Detectar início da seção
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                if self.HOLDER_MARKER in upper_line:
-                    in_section = True
-                elif "PELOS DEPENDENTES" in upper_line:
-                    break
-                continue
+            if not in_section:
+                for marker in self.SECTION_MARKERS:
+                    if marker in upper_line:
+                        # Verificar se é do TITULAR e não DEPENDENTES
+                        if self.HOLDER_MARKER in upper_line or self.HOLDER_MARKER in marker:
+                            if "PELOS DEPENDENTES" not in upper_line:
+                                in_section = True
+                                break
+                        elif "DEPENDENTES" not in upper_line:
+                            in_section = True
+                            break
+                if not in_section:
+                    continue
             
             # Detectar fim da seção
             if in_section:
+                # Se encontrar seção de DEPENDENTES, parar
+                if "RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES" in upper_line:
+                    break
                 if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
                 if "SEM INFORMAÇÕES" in upper_line:
                     continue
-            
-            if not in_section:
-                continue
             
             # Tentar parsear item
             item = self._try_parse_income_line(line, lines, i, page_num)

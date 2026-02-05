@@ -153,7 +153,64 @@ class VersionDetector:
         "dependents": [
             "RELAÇÃO DE DEPENDENTES",
             "RELACAO DE DEPENDENTES"  # OCR sem acentos
-        ]
+        ],
+        # Seções ABROAD (Exterior) - Adicionadas para BUGs 81770, 81781, 81783, 81784
+        "calculation_of_rural_results_abroad": [
+            "APURAÇÃO DO RESULTADO - EXTERIOR",
+            "APURACAO DO RESULTADO - EXTERIOR",
+            "APURAGAO DO RESULTADO - EXTERIOR",  # OCR: Ç -> G
+        ],
+        "livestock_movement_abroad": [
+            "MOVIMENTAÇÃO DO REBANHO - EXTERIOR",
+            "MOVIMENTACAO DO REBANHO - EXTERIOR",
+            "MOVIMENTAGAO DO REBANHO - EXTERIOR",  # OCR: Ç -> G
+        ],
+        "rural_activity_assets_abroad": [
+            "BENS DA ATIVIDADE RURAL - EXTERIOR",
+        ],
+        "rural_activity_debts_abroad": [
+            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - EXTERIOR",
+            "DIVIDAS VINCULADAS A ATIVIDADE RURAL - EXTERIOR",
+            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL – EXTERIOR",  # En-dash
+            "DIVIDAS VINCULADAS A ATIVIDADE RURAL – EXTERIOR",  # En-dash
+            "DÍVIDAS VINCULADAS - EXTERIOR",
+            "DIVIDAS VINCULADAS - EXTERIOR",
+        ],
+        "rural_income_and_expenditure_abroad": [
+            "RECEITAS E DESPESAS - EXTERIOR",
+            "DEMONSTRATIVO DE ATIVIDADE RURAL - EXTERIOR",
+        ],
+        "exploited_rural_properties_abroad": [
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - EXTERIOR",
+            "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO - EXTERIOR",
+            "IMÓVEL EXPLORADO - EXTERIOR",
+        ],
+        # Seções de DEPENDENTES - Adicionadas para BUGs 81767, 81773, 81775
+        "income_from_individual_to_dependents": [
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA E DO EXTERIOR PELOS DEPENDENTES",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA FISICA E DO EXTERIOR PELOS DEPENDENTES",
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA FÍSICA PELOS DEPENDENTES",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA FISICA PELOS DEPENDENTES",
+        ],
+        "accumulated_income_from_legal_person_to_dependents": [
+            "RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",  # Marker parcial (título quebrado em 2 linhas)
+            "ACUMULADAMENTE PELOS DEPENDENTES",
+        ],
+        "income_from_legal_person_to_dependents_with_suspended_requirements": [
+            "PELOS DEPENDENTES (IMPOSTO COM",  # Marker parcial (título quebrado em 2 linhas)
+            "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
+            "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELOS DEPENDENTES (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
+        ],
+        # Seções adicionais de rendimentos
+        "accumulated_income_from_legal_person_to_holder": [
+            "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+            "RENDIMENTOS TRIBUTAVEIS DE PESSOA JURIDICA RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+            "RECEBIDOS ACUMULADAMENTE PELO TITULAR",
+        ],
+        "income_from_legal_person_to_holder_with_suspended_requirements": [
+            "IMPOSTO COM EXIGIBILIDADE SUSPENSA",
+            "EXIGIBILIDADE SUSPENSA",
+        ],
     }
     
     VERSION_PATTERNS = {
@@ -244,11 +301,19 @@ class VersionDetector:
                     break
     
     def _section_has_data(self, text_upper: str, marker_upper: str) -> bool:
+        """Verifica se a seção tem dados (não está marcada como 'Sem Informações').
+        
+        A verificação é feita em duas etapas:
+        1. Verificar se "Sem Informações" aparece IMEDIATAMENTE após o marker (dentro de 100 chars)
+        2. Se aparecer depois de 100 chars, verificar se há outra seção antes (indicando que
+           o "Sem Informações" pertence a outra seção, não a esta)
+        
+        BUG FIX: A janela anterior era muito grande e encontrava "Sem Informações" de seções
+        adjacentes, causando falsos negativos.
+        """
         idx = text_upper.find(marker_upper)
         if idx == -1:
             return False
-        
-        context_after = text_upper[idx + len(marker_upper):idx + len(marker_upper) + 100]
         
         no_data_markers = [
             "SEM INFORMAÇÕES",
@@ -258,8 +323,42 @@ class VersionDetector:
             "NÃO HÁ DADOS",
         ]
         
+        # Janela imediata (100 chars) - se "Sem Informações" aqui, seção está vazia
+        immediate_context = text_upper[idx + len(marker_upper):idx + len(marker_upper) + 100]
         for no_data in no_data_markers:
-            if no_data in context_after:
+            if no_data in immediate_context:
+                return False
+        
+        # Janela estendida (300 chars) - verificar se há outra seção antes do "Sem Informações"
+        extended_context = text_upper[idx + len(marker_upper):idx + len(marker_upper) + 400]
+        
+        # Markers que indicam início de outra seção
+        other_section_markers = [
+            "DEMONSTRATIVO",
+            "APURAÇÃO",
+            "APURACAO",
+            "RECEITAS E DESPESAS",
+            "MOVIMENTAÇÃO",
+            "MOVIMENTACAO",
+            "BENS DA ATIVIDADE",
+            "DÍVIDAS VINCULADAS",
+            "DIVIDAS VINCULADAS",
+            "RENDIMENTOS",
+            "PAGAMENTOS",
+            "DOAÇÕES",
+            "DOACOES",
+        ]
+        
+        for no_data in no_data_markers:
+            no_data_pos = extended_context.find(no_data)
+            if no_data_pos != -1:
+                # Verificar se há outra seção ANTES do "Sem Informações"
+                context_before_no_data = extended_context[:no_data_pos]
+                for other_marker in other_section_markers:
+                    if other_marker in context_before_no_data:
+                        # "Sem Informações" pertence a outra seção, não a esta
+                        return True
+                # "Sem Informações" provavelmente pertence a esta seção
                 return False
         
         return True
