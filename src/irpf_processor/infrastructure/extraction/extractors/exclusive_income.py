@@ -251,39 +251,32 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_thirteenth_salary_dependents(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 02. 13º salário recebido pelos dependentes.
+        """Extrai 08. 13º salário recebido pelos dependentes.
         
         BUG #81758 fix: Adicionar extração para subseção de dependentes.
+        NOTA: O código correto é 08, não 02 (conforme padrão IRPF).
+        
+        IMPORTANTE: Procura em TODAS as páginas que contêm a seção de tributação
+        exclusiva, mesmo que a página também contenha marcadores de fim.
+        O 13º dependentes pode estar na mesma página que "PAGAMENTOS EFETUADOS".
         """
-        in_section = False
+        # Patterns para 13º salário de dependentes (código 08)
+        patterns = [
+            r"08[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+(?:recebido\s+)?(?:pelos?\s+)?(?:dependentes?)[^\d]*([\d.,]+)",
+            r"08[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)\s+(?:RECEBIDO\s+)?(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
+            r"08[.\s]+13[º°]?\s*sal[aá]rio\s+dependentes?\s+([\d.,]+)",
+        ]
+        
+        # Buscar em TODAS as páginas (não parar no fim da seção)
+        # porque o 13º pode estar na mesma página que o marcador de fim
         for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
-            
-            # Detectar início da seção
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            # Detectar fim da seção
-            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if not in_section:
-                continue
-            
-            # Patterns para 13º salário de dependentes
-            patterns = [
-                r"02[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+(?:recebido\s+)?(?:pelos?\s+)?(?:dependentes?)[^\d]*([\d.,]+)",
-                r"02[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)\s+(?:RECEBIDO\s+)?(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
-                r"02[.\s]+13[º°]?\s*sal[aá]rio\s+dependentes?\s+([\d.,]+)",
-            ]
-            
             for pattern in patterns:
                 match = re.search(pattern, page_text, re.IGNORECASE)
                 if match:
                     value = parse_currency(match.group(1))
                     return {
-                        "name": "02. 13º salário recebido pelos dependentes",
-                        "code": "02",
+                        "name": "08. 13º salário recebido pelos dependentes",
+                        "code": "08",
                         "total_value": value,
                         "valid_total": True,
                         "items": None

@@ -11,7 +11,10 @@ class RuralPropertiesExtractor(ISectionExtractor):
     """Extrai dados de imoveis rurais explorados."""
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
+    # BUG #81760 fix: Adicionar marcadores com sufixo "- BRASIL" (formato Gilberto Rech)
     SECTION_MARKERS = [
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL",
+        "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO - BRASIL",
         "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO",
         "DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO",
         "DADOS E IDENTIFICAGAO DO IMOVEL EXPLORADO",  # OCR: Ç -> G
@@ -130,12 +133,27 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
             
             # Skip cabeçalhos - incluindo variações OCR sem acentos
+            # BUG #81760 fix: Só considerar header se a linha COMEÇA com keyword
+            # Não ignorar linhas que contêm keywords no meio (ex: "IMOVEL COM AREA DE...")
             header_keywords = [
                 "CÓDIGO", "CODIGO", "ATIVIDADE", "PARTICIPAÇÃO", "PARTICIPACAO",
-                "CONDIÇÃO", "CONDICAO", "ÁREA", "AREA", "CIB", "NOME E", "(HA)",
+                "CONDIÇÃO", "CONDICAO", "NOME E", "(HA)",
                 "EXPLORAÇÃO", "EXPLORACAO", "NIRF"
             ]
-            if any(h in upper_line for h in header_keywords):
+            # Verificar se linha É um cabeçalho (começa com keyword ou é linha de header)
+            is_header = False
+            stripped_upper = upper_line.strip()
+            for h in header_keywords:
+                if stripped_upper.startswith(h) or stripped_upper == h:
+                    is_header = True
+                    break
+            # Linha com "ÁREA" e "CIB" juntos é header
+            if "ÁREA" in upper_line and "CIB" in upper_line:
+                is_header = True
+            if "AREA" in upper_line and "CIB" in upper_line:
+                is_header = True
+            
+            if is_header:
                 in_section = True
                 i += 1
                 continue
