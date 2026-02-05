@@ -50,10 +50,20 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         subsections = {}
         
-        # 01. 13º salário
+        # 01. 13º salário (titular)
         thirteenth = self._extract_thirteenth_salary(context)
         if thirteenth:
             subsections["thirteenth_salary"] = thirteenth
+        
+        # 02. 13º salário (dependentes) - BUG #81758 fix
+        thirteenth_dependents = self._extract_thirteenth_salary_dependents(context)
+        if thirteenth_dependents:
+            subsections["thirteen_salary_received_by_dependents"] = thirteenth_dependents
+        
+        # 03. Participação nos lucros ou resultados (PLR) - BUG #81758 fix
+        plr = self._extract_profit_sharing(context)
+        if plr:
+            subsections["profit_or_results_sharing"] = plr
         
         # 05. Ganhos líquidos em renda variável
         variable_income = self._extract_variable_income_gains(context)
@@ -66,10 +76,15 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         if financial and (financial.get("items") or financial.get("total_value", 0) > 0):
             subsections["income_from_financial_investments"] = financial
         
-        # 07. Rendimentos recebidos acumuladamente
+        # 07. Rendimentos recebidos acumuladamente (titular)
         accumulated = self._extract_accumulated_income(context)
         if accumulated:
             subsections["accumulated_income_received"] = accumulated
+        
+        # 08. Rendimentos recebidos acumuladamente (dependentes) - BUG #81758 fix
+        accumulated_dependents = self._extract_accumulated_income_dependents(context)
+        if accumulated_dependents:
+            subsections["accumulated_income_received_by_dependents"] = accumulated_dependents
         
         # 10. Juros sobre capital próprio
         interest = self._extract_interest_on_capital(context)
@@ -229,6 +244,87 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     return {
                         "name": "01. 13º salário",
                         "code": "01",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": None
+                    }
+        return None
+    
+    def _extract_thirteenth_salary_dependents(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 02. 13º salário recebido pelos dependentes.
+        
+        BUG #81758 fix: Adicionar extração para subseção de dependentes.
+        """
+        in_section = False
+        for page_num, page_text in sorted(context.pages_text.items()):
+            upper_text = page_text.upper()
+            
+            # Detectar início da seção
+            if any(marker in upper_text for marker in self.SECTION_MARKERS):
+                in_section = True
+            
+            # Detectar fim da seção
+            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
+                break
+            
+            if not in_section:
+                continue
+            
+            # Patterns para 13º salário de dependentes
+            patterns = [
+                r"02[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+(?:recebido\s+)?(?:pelos?\s+)?(?:dependentes?)[^\d]*([\d.,]+)",
+                r"02[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)\s+(?:RECEBIDO\s+)?(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
+                r"02[.\s]+13[º°]?\s*sal[aá]rio\s+dependentes?\s+([\d.,]+)",
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, page_text, re.IGNORECASE)
+                if match:
+                    value = parse_currency(match.group(1))
+                    return {
+                        "name": "02. 13º salário recebido pelos dependentes",
+                        "code": "02",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": None
+                    }
+        return None
+    
+    def _extract_profit_sharing(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 03. Participação nos lucros ou resultados (PLR).
+        
+        BUG #81758 fix: Adicionar extração para subseção de PLR.
+        """
+        in_section = False
+        for page_num, page_text in sorted(context.pages_text.items()):
+            upper_text = page_text.upper()
+            
+            # Detectar início da seção
+            if any(marker in upper_text for marker in self.SECTION_MARKERS):
+                in_section = True
+            
+            # Detectar fim da seção
+            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
+                break
+            
+            if not in_section:
+                continue
+            
+            # Patterns para PLR (Participação nos Lucros ou Resultados)
+            patterns = [
+                r"03[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS\s+(?:OU\s+)?RESULTADOS[^\d]*([\d.,]+)",
+                r"03[.\s]+PLR[^\d]*([\d.,]+)",
+                r"03[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES\s+NOS\s+LUCROS[^\d]*([\d.,]+)",
+                r"03[.\s]+(?:participa[çc][ãa]o\s+)?(?:nos\s+)?lucros[^\d]*([\d.,]+)",
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, page_text, re.IGNORECASE)
+                if match:
+                    value = parse_currency(match.group(1))
+                    return {
+                        "name": "03. Participação nos lucros ou resultados",
+                        "code": "03",
                         "total_value": value,
                         "valid_total": True,
                         "items": None
@@ -442,6 +538,46 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     "valid_total": True,
                     "items": []
                 }
+        return None
+    
+    def _extract_accumulated_income_dependents(self, context: ExtractionContext) -> Optional[dict]:
+        """Extrai 08. Rendimentos recebidos acumuladamente pelos dependentes.
+        
+        BUG #81758 fix: Adicionar extração para subseção de dependentes.
+        """
+        in_section = False
+        for page_num, page_text in sorted(context.pages_text.items()):
+            upper_text = page_text.upper()
+            
+            # Detectar início da seção
+            if any(marker in upper_text for marker in self.SECTION_MARKERS):
+                in_section = True
+            
+            # Detectar fim da seção
+            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
+                break
+            
+            if not in_section:
+                continue
+            
+            # Patterns para rendimentos acumulados de dependentes
+            patterns = [
+                r"08[.\s]+Rendimentos\s+recebidos\s+acumuladamente\s+(?:pelos?\s+)?dependentes?[^\d]*([\d.,]+)",
+                r"08[.\s]+RENDIMENTOS\s+RECEBIDOS\s+ACUMULADAMENTE\s+(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
+                r"08[.\s]+(?:rend\.?\s+)?(?:rec\.?\s+)?acumulad(?:os|amente)\s+(?:pelos?\s+)?dep(?:endentes?)?[^\d]*([\d.,]+)",
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, page_text, re.IGNORECASE)
+                if match:
+                    value = parse_currency(match.group(1))
+                    return {
+                        "name": "08. Rendimentos recebidos acumuladamente pelos dependentes",
+                        "code": "08",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": []
+                    }
         return None
     
     def _extract_interest_on_capital(self, context: ExtractionContext) -> dict:

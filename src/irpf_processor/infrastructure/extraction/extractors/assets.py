@@ -27,6 +27,11 @@ class AssetsExtractor(ISectionExtractor):
         "DOACOES EFETUADAS",
     ]
     
+    def __init__(self):
+        """Inicializa o extractor com rastreamento de estado da seção."""
+        self._section_started = False
+        self._section_start_page = -1
+    
     @property
     def section_name(self) -> str:
         return "assets_declaration"
@@ -39,6 +44,10 @@ class AssetsExtractor(ISectionExtractor):
         items = []
         pdf_totals = []  # Totais do PDF
         
+        # Resetar estado para nova extração
+        self._section_started = False
+        self._section_start_page = -1
+        
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
@@ -48,11 +57,17 @@ class AssetsExtractor(ISectionExtractor):
             # Verificar todos os marcadores de seção (incluindo variações OCR)
             if any(marker in upper_text for marker in self.SECTION_MARKERS):
                 in_section = True
+                # Rastrear página onde a seção iniciou (BUG #81620 fix)
+                if not self._section_started:
+                    self._section_started = True
+                    self._section_start_page = page_num
             
             if not in_section:
                 continue
             
-            if self._has_section_end_heading(page_text):
+            # BUG #81620 fix: Verificar fim de seção apenas após a seção ter iniciado
+            # e não na mesma página que iniciou (evita falsos positivos)
+            if self._has_section_end_heading(page_text, page_num):
                 page_items = self._extract_from_page(page_text, page_num)
                 items.extend(page_items)
                 
@@ -108,7 +123,58 @@ class AssetsExtractor(ISectionExtractor):
             "pages_with_problems": []
         }
     
-    def _has_section_end_heading(self, page_text: str) -> bool:
+    def _has_section_end_heading(self, page_text: str, page_num: int = 0) -> bool:
+        """
+        Verifica se há marcador de fim de seção na página.
+        
+        BUG #81620 fix: Só considera fim válido se:
+        1. A seção já foi iniciada
+        2. O marcador de fim está DEPOIS do marcador de início na página
+           OU está em uma página posterior
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página atual
+            
+        Returns:
+            True se encontrar marcador de fim válido
+        """
+        # Só verificar fim se a seção já iniciou
+        if not self._section_started:
+            return False
+        
+        upper_text = page_text.upper()
+        
+        # Se estamos na mesma página que a seção iniciou,
+        # verificar se o marcador de fim vem DEPOIS do marcador de início
+        if page_num == self._section_start_page:
+            # Encontrar posição do marcador de início
+            section_start_pos = -1
+            for marker in self.SECTION_MARKERS:
+                pos = upper_text.find(marker)
+                if pos != -1:
+                    section_start_pos = pos
+                    break
+            
+            if section_start_pos == -1:
+                return False
+            
+            # Verificar marcadores de fim apenas APÓS o início da seção
+            for marker in self.SECTION_END_MARKERS:
+                end_pos = upper_text.find(marker)
+                if end_pos != -1 and end_pos > section_start_pos:
+                    # Confirmar que é início de nova seção (tem headers)
+                    lines = page_text.split("\n")
+                    for i, line in enumerate(lines):
+                        if marker in line.upper():
+                            next_lines = " ".join(lines[i+1:i+4]).upper()
+                            if "CÓDIGO" in next_lines or "DISCRIMINAÇÃO" in next_lines:
+                                return True
+                            if re.search(r"^\d{2}\s+", line.strip().upper()[len(marker):].strip()):
+                                return True
+            return False
+        
+        # Para páginas posteriores, usar lógica original
         lines = page_text.split("\n")
         for i, line in enumerate(lines):
             stripped = line.strip().upper()
