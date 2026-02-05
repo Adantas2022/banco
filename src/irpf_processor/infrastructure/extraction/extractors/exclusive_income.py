@@ -287,42 +287,117 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         """Extrai 11. Participação nos lucros ou resultados (PLR).
         
         BUG #81758 fix: Corrigido código de 03 para 11 (código correto conforme IRPF).
+        BUG #81758 fix v2: Adicionada extração de items detalhados (beneficiary, cpf, cnpj, etc.)
         """
+        items = []
+        seen_keys = set()
+        total_value = 0.0
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_section = False
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
+        in_subsection = False
+        
+        # Patterns para detectar início da subseção 11
+        subsection_11_patterns = [
+            r"11[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS",
+            r"11[.\s]+PLR",
+            r"11[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES",
+        ]
+        
+        for page_num, page_text in sorted_pages:
+            lines = page_text.split("\n")
+            upper_page = page_text.upper()
             
-            # Detectar início da seção
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
+            # Detectar início da seção principal
+            if any(marker in upper_page for marker in self.SECTION_MARKERS):
                 in_section = True
-            
-            # Detectar fim da seção
-            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                break
             
             if not in_section:
                 continue
             
-            # Patterns para PLR (Participação nos Lucros ou Resultados) - código 11
-            patterns = [
-                r"11[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS\s+(?:OU\s+)?RESULTADOS[^\d]*([\d.,]+)",
-                r"11[.\s]+PLR[^\d]*([\d.,]+)",
-                r"11[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES\s+NOS\s+LUCROS[^\d]*([\d.,]+)",
-                r"11[.\s]+(?:participa[çc][ãa]o\s+)?(?:nos\s+)?lucros[^\d]*([\d.,]+)",
-            ]
+            # Flag para verificar se devemos parar APÓS processar esta página
+            should_break_after_page = False
+            if any(marker in upper_page for marker in self.SECTION_END_MARKERS):
+                should_break_after_page = True
             
-            for pattern in patterns:
-                match = re.search(pattern, page_text, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return {
-                        "name": "11. Participação nos lucros ou resultados",
-                        "code": "11",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
-        return None
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                
+                # Detectar início da subseção 11 e extrair total
+                for pattern in subsection_11_patterns:
+                    if re.search(pattern, upper_line, re.IGNORECASE):
+                        in_subsection = True
+                        # Extrair total da mesma linha
+                        total_match = re.search(r"([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", line)
+                        if total_match:
+                            total_value = parse_currency(total_match.group(1))
+                        break
+                
+                # Detectar fim da subseção (próximo código)
+                if re.match(r"^(?:12|13)[.\s]+[A-Z]", line.strip()):
+                    in_subsection = False
+                    continue
+                
+                # Detectar TOTAL como fim
+                if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
+                    in_subsection = False
+                    continue
+                
+                # Pular linha de cabeçalho
+                if "Beneficiário" in line and "CPF" in line and "CNPJ" in line:
+                    continue
+                
+                if in_subsection:
+                    # Tentar parsear item inline
+                    item = self._parse_income_item(line, lines, i, page_num)
+                    if item:
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(item)
+                    
+                    # Tentar parsear item multiline (CNPJ na linha sozinho)
+                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
+                    if multiline_item:
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(multiline_item)
+                    
+                    # Tentar parsear item de 5 linhas
+                    five_line_item = self._parse_5line_income_item(lines, i, page_num)
+                    if five_line_item:
+                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(five_line_item)
+                    
+                    # Tentar parsear item de 2 linhas
+                    two_line_item = self._parse_2line_income_item(lines, i, page_num)
+                    if two_line_item:
+                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        if key not in seen_keys:
+                            seen_keys.add(key)
+                            items.append(two_line_item)
+            
+            if should_break_after_page:
+                break
+        
+        # Se não encontrou total, calcular a partir dos items
+        if total_value == 0 and items:
+            total_value = round(sum(i["value"] for i in items), 2)
+        
+        # Se não encontrou nada, retornar None
+        if total_value == 0 and not items:
+            return None
+        
+        return {
+            "name": "11. Participação nos lucros ou resultados",
+            "code": "11",
+            "total_value": total_value,
+            "valid_total": True,
+            "items": items if items else None
+        }
     
     def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
         """Extrai 05. Ganhos líquidos em renda variável."""
