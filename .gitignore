@@ -83,6 +83,7 @@ PLAN-TEST.pdf
 spec.md
 batch_results*.json
 docs/
+scripts/
 
 # Business confidential
 business/

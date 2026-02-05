@@ -18,9 +18,13 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
         "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELOS DEPENDENTES (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
         "PELOS DEPENDENTES (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
+        # Markers parciais para headers quebrados em múltiplas linhas
+        "PELOS DEPENDENTES (IMPOSTO COM",  # Quando "EXIGIBILIDADE SUSPENSA)" está na próxima linha
     ]
     
-    DEPENDENTS_MARKER = "PELOS DEPENDENTES"
+    # Marker para validar que é a seção de DEPENDENTES com EXIGIBILIDADE SUSPENSA
+    DEPENDENTS_MARKER = "DEPENDENTES"
+    SUSPENDED_MARKER = "EXIGIBILIDADE SUSPENSA"
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE",
@@ -35,8 +39,32 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         return "income_from_legal_person_to_dependents_with_suspended_requirements"
     
     def can_extract(self, context: ExtractionContext) -> bool:
+        """Verifica se a seção está presente no documento.
+        
+        Lida com headers que podem estar quebrados em múltiplas linhas.
+        """
+        # Verificar markers completos primeiro
         upper_text = context.full_text.upper()
-        return any(marker in upper_text for marker in self.SECTION_MARKERS)
+        for marker in self.SECTION_MARKERS:
+            if marker in upper_text:
+                # Se o marker inclui "EXIGIBILIDADE SUSPENSA" ou "DEPENDENTES", é válido
+                if "EXIGIBILIDADE SUSPENSA" in marker or "(IMPOSTO COM" in marker:
+                    return True
+        
+        # Verificar se existe a seção com header quebrado em múltiplas linhas
+        for page_text in context.pages_text.values():
+            lines = page_text.split("\n")
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                # Detectar "PELOS DEPENDENTES (IMPOSTO COM" seguido de "EXIGIBILIDADE SUSPENSA)"
+                if "PELOS DEPENDENTES (IMPOSTO COM" in upper_line and "PELO TITULAR" not in upper_line:
+                    # Verificar se EXIGIBILIDADE SUSPENSA está na mesma linha ou próxima
+                    if "EXIGIBILIDADE SUSPENSA" in upper_line:
+                        return True
+                    if i + 1 < len(lines) and "EXIGIBILIDADE SUSPENSA" in lines[i + 1].upper():
+                        return True
+        
+        return False
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -51,10 +79,9 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
             
-            # Entrar na seção - apenas DEPENDENTES
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                if self.DEPENDENTS_MARKER in upper_page and "PELO TITULAR" not in upper_page:
-                    in_section = True
+            # Entrar na seção - detectar headers que podem estar quebrados
+            if not in_section:
+                in_section = self._is_section_start(page_text)
             
             if not in_section:
                 continue
@@ -72,8 +99,12 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
                             if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
                                 return None
             
+            # Verificar se a seção começa nesta página
+            section_starts_here = self._is_section_start(page_text)
+            already_in_section = in_section and not section_starts_here
+            
             # Extrair itens
-            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section)
             items.extend(page_items)
             
             # Extrair total
@@ -97,6 +128,32 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
             "total_values": totals
         }
     
+    def _is_section_start(self, page_text: str) -> bool:
+        """Verifica se esta página contém o início da seção de dependentes com exigibilidade suspensa.
+        
+        Lida com headers quebrados em múltiplas linhas.
+        """
+        lines = page_text.split("\n")
+        for i, line in enumerate(lines):
+            upper_line = line.upper()
+            
+            # Verificar markers completos
+            for marker in self.SECTION_MARKERS:
+                if marker in upper_line:
+                    if "DEPENDENTES" in marker and "PELO TITULAR" not in upper_line:
+                        return True
+            
+            # Detectar header quebrado em múltiplas linhas
+            if "PELOS DEPENDENTES (IMPOSTO COM" in upper_line and "PELO TITULAR" not in upper_line:
+                # Verificar se EXIGIBILIDADE SUSPENSA está na mesma linha
+                if self.SUSPENDED_MARKER in upper_line:
+                    return True
+                # Verificar na próxima linha
+                if i + 1 < len(lines) and self.SUSPENDED_MARKER in lines[i + 1].upper():
+                    return True
+        
+        return False
+    
     def _is_section_end(self, page_text: str) -> bool:
         """Verifica se a página marca o fim da seção."""
         upper_text = page_text.upper()
@@ -105,19 +162,44 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
                 return True
         return False
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
+    def _extract_from_page(
+        self, 
+        page_text: str, 
+        page_num: int, 
+        seen_ids: set,
+        already_in_section: bool = False
+    ) -> list[dict]:
+        """Extrai itens de rendimentos com exigibilidade suspensa de uma página.
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            seen_ids: Set de IDs já vistos (para evitar duplicatas)
+            already_in_section: Se True, considera que já estamos dentro da seção
+        """
         items = []
         lines = page_text.split("\n")
         
-        in_section = False
+        in_section = already_in_section
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            # Detectar início - apenas DEPENDENTES
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                if self.DEPENDENTS_MARKER in upper_line and "PELO TITULAR" not in upper_line:
-                    in_section = True
+            # Detectar início da seção (headers podem estar quebrados)
+            if not in_section:
+                # Verificar markers completos
+                for marker in self.SECTION_MARKERS:
+                    if marker in upper_line:
+                        if "DEPENDENTES" in marker and "PELO TITULAR" not in upper_line:
+                            in_section = True
+                            continue
+                
+                # Detectar header quebrado
+                if "PELOS DEPENDENTES (IMPOSTO COM" in upper_line and "PELO TITULAR" not in upper_line:
+                    if self.SUSPENDED_MARKER in upper_line:
+                        in_section = True
+                    elif i + 1 < len(lines) and self.SUSPENDED_MARKER in lines[i + 1].upper():
+                        in_section = True
                 continue
             
             # Detectar fim
@@ -127,7 +209,10 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
                 if "SEM INFORMAÇÕES" in upper_line or "SEM INFORMACOES" in upper_line:
                     continue
             
-            if not in_section:
+            # Pular linhas de header e continuação
+            if self.SUSPENDED_MARKER in upper_line and ")" in upper_line:
+                continue
+            if "(VALORES EM REAIS)" in upper_line:
                 continue
             
             # Tentar parsear item

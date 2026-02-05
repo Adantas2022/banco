@@ -18,8 +18,12 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
         "RENDIMENTOS TRIBUTÁVEIS DE PESSOA JURÍDICA RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",
         "RENDIMENTOS TRIBUTÁVEIS DE PJ RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",
         "RENDIMENTOS TRIBUTAVEIS DE PESSOA JURIDICA RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES",
+        # Markers parciais para headers quebrados em múltiplas linhas
+        "RECEBIDOS ACUMULADAMENTE PELOS",  # Quando "DEPENDENTES" está na próxima linha
+        "ACUMULADAMENTE PELOS DEPENDENTES",
     ]
-    DEPENDENTS_MARKER = "PELOS DEPENDENTES"
+    # Marker para validar que é a seção de DEPENDENTES (pode estar na mesma ou próxima linha)
+    DEPENDENTS_MARKER = "DEPENDENTES"
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS ISENTOS",
@@ -33,8 +37,34 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
         return "accumulated_income_from_legal_person_to_dependents"
     
     def can_extract(self, context: ExtractionContext) -> bool:
+        """Verifica se a seção está presente no documento.
+        
+        Lida com headers que podem estar quebrados em múltiplas linhas.
+        """
+        # Verificar markers completos primeiro
         upper_text = context.full_text.upper()
-        return any(marker in upper_text for marker in self.SECTION_MARKERS)
+        for marker in self.SECTION_MARKERS:
+            if marker in upper_text:
+                # Precisa ter PESSOA JURÍDICA para ser o título da seção
+                if "PESSOA JURÍDICA" in marker or "PESSOA JURIDICA" in marker:
+                    return True
+        
+        # Verificar se existe a seção com header quebrado em múltiplas linhas
+        for page_text in context.pages_text.values():
+            lines = page_text.split("\n")
+            for i, line in enumerate(lines):
+                upper_line = line.upper()
+                # Precisa ter "PESSOA JURÍDICA" ou "TRIBUTÁVEIS" para distinguir do resumo
+                if ("PESSOA JURÍDICA" in upper_line or "PESSOA JURIDICA" in upper_line or 
+                    "TRIBUTÁVEIS" in upper_line or "TRIBUTAVEIS" in upper_line):
+                    if "RECEBIDOS ACUMULADAMENTE PELOS" in upper_line and "PELO TITULAR" not in upper_line:
+                        # Verificar se DEPENDENTES está na mesma linha ou próxima
+                        if "DEPENDENTES" in upper_line:
+                            return True
+                        if i + 1 < len(lines) and "DEPENDENTES" in lines[i + 1].upper():
+                            return True
+        
+        return False
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -49,10 +79,9 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
             
-            # Entrar na seção - apenas DEPENDENTES
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                if self.DEPENDENTS_MARKER in upper_page:
-                    in_section = True
+            # Entrar na seção - detectar headers que podem estar quebrados
+            if not in_section:
+                in_section = self._is_section_start(page_text)
             
             if not in_section:
                 continue
@@ -70,8 +99,13 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
                             if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
                                 return None
             
+            # Verificar se a seção começa nesta página
+            section_starts_here = self._is_section_start(page_text)
+            # Se já estamos na seção mas ela não começa aqui, é continuação
+            already_in_section = in_section and not section_starts_here
+            
             # Extrair itens
-            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section)
             items.extend(page_items)
             
             # Extrair total do PDF
@@ -99,6 +133,35 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
             "total_values": totals
         }
     
+    def _is_section_start(self, page_text: str) -> bool:
+        """Verifica se esta página contém o início da seção de dependentes.
+        
+        Lida com headers quebrados em múltiplas linhas.
+        """
+        lines = page_text.split("\n")
+        for i, line in enumerate(lines):
+            upper_line = line.upper()
+            
+            # Verificar markers completos (precisam ter PESSOA JURÍDICA para ser o título)
+            for marker in self.SECTION_MARKERS:
+                if marker in upper_line:
+                    if "PESSOA JURÍDICA" in marker or "PESSOA JURIDICA" in marker:
+                        return True
+            
+            # Detectar header quebrado em múltiplas linhas
+            # Precisa ter "PESSOA JURÍDICA" ou "TRIBUTÁVEIS" para distinguir do resumo
+            if ("PESSOA JURÍDICA" in upper_line or "PESSOA JURIDICA" in upper_line or 
+                "TRIBUTÁVEIS" in upper_line or "TRIBUTAVEIS" in upper_line):
+                if "RECEBIDOS ACUMULADAMENTE PELOS" in upper_line and "PELO TITULAR" not in upper_line:
+                    # Verificar se DEPENDENTES está na mesma linha
+                    if "DEPENDENTES" in upper_line:
+                        return True
+                    # Verificar na próxima linha
+                    if i + 1 < len(lines) and "DEPENDENTES" in lines[i + 1].upper():
+                        return True
+        
+        return False
+    
     def _is_definitive_section_end(self, page_text: str) -> bool:
         """Verifica se a página marca o fim da seção."""
         upper_text = page_text.upper()
@@ -107,29 +170,57 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
                 return True
         return False
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
+    def _extract_from_page(
+        self, 
+        page_text: str, 
+        page_num: int, 
+        seen_ids: set,
+        already_in_section: bool = False
+    ) -> list[dict]:
+        """Extrai itens de rendimentos acumulados de uma página.
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            seen_ids: Set de IDs já vistos (para evitar duplicatas)
+            already_in_section: Se True, considera que já estamos dentro da seção
+        """
         items = []
         lines = page_text.split("\n")
         
-        in_section = False
+        in_section = already_in_section
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            # Detectar início da seção
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                if self.DEPENDENTS_MARKER in upper_line:
-                    in_section = True
+            # Detectar início da seção (headers podem estar quebrados)
+            if not in_section:
+                # Verificar markers completos (precisam ter PESSOA JURÍDICA)
+                for marker in self.SECTION_MARKERS:
+                    if marker in upper_line:
+                        if "PESSOA JURÍDICA" in marker or "PESSOA JURIDICA" in marker:
+                            in_section = True
+                            continue
+                
+                # Detectar header quebrado - precisa ter PESSOA JURÍDICA ou TRIBUTÁVEIS
+                if ("PESSOA JURÍDICA" in upper_line or "PESSOA JURIDICA" in upper_line or 
+                    "TRIBUTÁVEIS" in upper_line or "TRIBUTAVEIS" in upper_line):
+                    if "RECEBIDOS ACUMULADAMENTE PELOS" in upper_line and "PELO TITULAR" not in upper_line:
+                        if "DEPENDENTES" in upper_line:
+                            in_section = True
+                        elif i + 1 < len(lines) and "DEPENDENTES" in lines[i + 1].upper():
+                            in_section = True
                 continue
             
             # Detectar fim da seção
             if in_section:
                 if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
-                if "SEM INFORMAÇÕES" in upper_line:
+                if "SEM INFORMAÇÕES" in upper_line or "SEM INFORMACOES" in upper_line:
                     continue
             
-            if not in_section:
+            # Pular linhas de header
+            if "DEPENDENTES" == upper_line.strip() or "(VALORES EM REAIS)" in upper_line:
                 continue
             
             # Tentar parsear item
