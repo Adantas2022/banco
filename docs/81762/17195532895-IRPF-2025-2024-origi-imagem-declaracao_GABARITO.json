@@ -1,0 +1,2474 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": null,
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "171.955.328-95",
+                    "normalized_cpf": "17195532895",
+                    "name": "MARCELO SILVA DE AZEVEDO",
+                    "exercise_year": "2025",
+                    "calendar_year": "2024",
+                    "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                    "main_occupation": "212 ANALISTA DE SISTEMAS, DESENVOLVEDOR DE SOFTWARE, ADMINISTRADOR DE REDES E BANCOS DE",
+                    "contact_and_address": {
+                        "street_address": "AVENIDA PAULISTA",
+                        "number": "1000",
+                        "complement": "AP 11",
+                        "neighborhood": "JARDIM PAULISTA",
+                        "city": "SAO PAULO",
+                        "uf": "SP",
+                        "zip_code": "04109-010",
+                        "phone": "(11) 5555-5555",
+                        "email": "FJCARDO@GMAIL.COM",
+                        "cell_phone": "(11) 55555-5555"
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL ORIGINAL"
+                },
+                "total_value": 3555400,
+                "valid_total": true,
+                "equity_evolution": 192400,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "23bbab5c480754011db9af3c0ea73b0e",
+                            "asset_group_code": "01",
+                            "asset_code": "01",
+                            "asset_description": "APARTAMENTO RESIDENCIAL EM SAO PAULO",
+                            "before_year_asset_value": 150000.0,
+                            "current_year_asset_value": 160000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "354654654643563",
+                                "street_address": "AVENIDA PAULISTA",
+                                "complement": "AP 150",
+                                "city": "SAO PAULO",
+                                "area": "200,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "1234578",
+                                "number": "1500",
+                                "neighborhood": "JARDIM PAULISTA",
+                                "state": "SP",
+                                "acquisition_date": "01/02/2000",
+                                "registry_office_name": "CARTORIO JARDIM PAULISTA",
+                                "zipcode": "04109-010"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "ac606a5ffc81889bd59a4eeb45cf5af5",
+                            "asset_group_code": "01",
+                            "asset_code": "14",
+                            "asset_description": "UMA FAZENDA NO MATO GROSSO DO SUL .",
+                            "before_year_asset_value": 500000.0,
+                            "current_year_asset_value": 502000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cib_nirf": "23454350",
+                                "street_address": "ESTRADA",
+                                "complement": null,
+                                "city": "SAO PAULO",
+                                "area": "500,0 ha",
+                                "registered_at_registy_office": false,
+                                "number": null,
+                                "neighborhood": "HOLAMBRA",
+                                "state": "SP",
+                                "acquisition_date": "10/01/1998",
+                                "zipcode": "0"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "dcb2478091c084270b57caca1a99687f",
+                            "asset_group_code": "01",
+                            "asset_code": "16",
+                            "asset_description": "IMOVEL EM CONSTRUCAO EM MARILIA",
+                            "before_year_asset_value": 45000.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cei_cno": "00.828.26528/30",
+                                "street_address": "RUA CARLOS MARTINS",
+                                "complement": null,
+                                "city": "SAO PAULO",
+                                "area": "1.000,0 m²",
+                                "number": "1234",
+                                "neighborhood": "BAIRRO CENTRAL",
+                                "state": "SP",
+                                "acquisition_date": null,
+                                "zipcode": "04109-010"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "04609d0c1a4e0362e13c2c9ac4db1965",
+                            "asset_group_code": "01",
+                            "asset_code": "18",
+                            "asset_description": "LOJA EM SAO PAULO",
+                            "before_year_asset_value": 180000.0,
+                            "current_year_asset_value": 180000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "34556543",
+                                "street_address": "AVENIA PAULISTA",
+                                "complement": "AP 40",
+                                "city": "SAO PAULO",
+                                "area": "90,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "43545432",
+                                "number": "2000",
+                                "neighborhood": "JARDIM PAULISTA",
+                                "state": "SP",
+                                "acquisition_date": "01/01/2000",
+                                "registry_office_name": "CARTORIO JARDIM PAULISTA",
+                                "zipcode": "04109-010"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "fd7fb941f36e750ec292a990f4e6f5cf",
+                            "asset_group_code": "01",
+                            "asset_code": "19",
+                            "asset_description": "UMA GARAGEM AVULSA EM SAO PAULO",
+                            "before_year_asset_value": 49000.0,
+                            "current_year_asset_value": 55000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "243543251",
+                                "street_address": "AVENIDA PAULISTA",
+                                "complement": null,
+                                "city": "AGUAS DE SAO PEDRO",
+                                "area": "400,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "345234",
+                                "number": "1500",
+                                "neighborhood": "JARDIM PAULISTA",
+                                "state": "SP",
+                                "acquisition_date": "02/10/1989",
+                                "registry_office_name": "CARTORIO JARDIM PAULISTA",
+                                "zipcode": "04109-010"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "c68d5040503cc5f118c0687434e70455",
+                            "asset_group_code": "01",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS IMOVEIS EM GOIAS",
+                            "before_year_asset_value": 180000.0,
+                            "current_year_asset_value": 190000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "64563465",
+                                "street_address": "AV PARQUE NOVO MUNDO",
+                                "complement": null,
+                                "city": "SAO PAULO",
+                                "area": "0,0",
+                                "registered_at_registy_office": true,
+                                "matriculation": "4354352435",
+                                "number": "456",
+                                "neighborhood": "CENTRO",
+                                "state": "SP",
+                                "acquisition_date": "01/02/1995",
+                                "registry_office_name": "CARTORIO DE GOIAS",
+                                "zipcode": "04109-010"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "e0ba2b3a04ff695c84b0dbf5a149f9f9",
+                            "asset_group_code": "02",
+                            "asset_code": "01",
+                            "asset_description": "UM VEICULO AUTOMOTOR 2025",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 49000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "renavam": "00054654637"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "ab92adfe0b36b3c8100564a981e2f17e",
+                            "asset_group_code": "02",
+                            "asset_code": "01",
+                            "asset_description": "UM VEICULO VW GOL",
+                            "before_year_asset_value": 80000.0,
+                            "current_year_asset_value": 75000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "renavam": "00012345660"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "83ed4ce0b98bf14633e58448be29d52b",
+                            "asset_group_code": "02",
+                            "asset_code": "02",
+                            "asset_description": "AERONAVE",
+                            "before_year_asset_value": 400000.0,
+                            "current_year_asset_value": 410000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "airship_registration": "43543523"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "4dd4ed5f834e74864ea4cbe0a9c63558",
+                            "asset_group_code": "02",
+                            "asset_code": "02",
+                            "asset_description": "AERONAVE",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "airship_registration": "12343241"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "9d0eee54a7f8b8488b40212097728783",
+                            "asset_group_code": "02",
+                            "asset_code": "03",
+                            "asset_description": "EMBARCACAO",
+                            "before_year_asset_value": 450000.0,
+                            "current_year_asset_value": 460000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "vessel_registration": "4353425"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "319edca26313009f03db9949b5e75656",
+                            "asset_group_code": "02",
+                            "asset_code": "04",
+                            "asset_description": "BEM UTILIZADO PARA EXERCICIO DE ATIVIDADE AUTONOMA",
+                            "before_year_asset_value": 40000.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "0c9aea9a1cf205e9cfa016ecbb2ab225",
+                            "asset_group_code": "02",
+                            "asset_code": "05",
+                            "asset_description": "OBRA DE ARTE",
+                            "before_year_asset_value": 600000.0,
+                            "current_year_asset_value": 650000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "27e18c0b25a0fa1a3e5fcc30941e2937",
+                            "asset_group_code": "02",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS BENS MOVEIS",
+                            "before_year_asset_value": 20000.0,
+                            "current_year_asset_value": 25000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "514a3de4f75d74c290b6ba42c5b22791",
+                            "asset_group_code": "03",
+                            "asset_code": "01",
+                            "asset_description": "ACOES NEGOCIADAS EM BOLSA",
+                            "before_year_asset_value": 40000.0,
+                            "current_year_asset_value": 45000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "72.574.862/0001-39",
+                                "traded_on_stock_market": true,
+                                "cpf": "171.955.328-95",
+                                "trading_code": "3465465"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "76a47b6a477f6a5cd76b5fa7fbf5f8fb",
+                            "asset_group_code": "03",
+                            "asset_code": "03",
+                            "asset_description": "PARTICIPACOES EM SOCIEDADES NO BRASIL",
+                            "before_year_asset_value": 60000.0,
+                            "current_year_asset_value": 70000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "81.404.723/0001-58",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "3a186ad3d2971122c3a13ddbea379683",
+                            "asset_group_code": "03",
+                            "asset_code": "03",
+                            "asset_description": "PARTIIPACAO SOCIETARIA",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 60000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "59.106.377/0001-72",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "9b89235ff3e8f1f0ac0256045044f9f0",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "BANCO ABN",
+                            "before_year_asset_value": 6000.0,
+                            "current_year_asset_value": 7000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "23.143.755/0001-40",
+                                "bank": "075",
+                                "cpf": "171.955.328-95",
+                                "agency": "2000",
+                                "account": "3242342-1"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "f7d8220cb34e3cf419bd1cc76dab421c",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "INVESTIMENTO EM CDB",
+                            "before_year_asset_value": 12000.0,
+                            "current_year_asset_value": 14000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "45.454.868/0001-08",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "12e31544bdcbf5d6bdf3891d68c8f86f",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "APLICACAO EM LCA",
+                            "before_year_asset_value": 3000.0,
+                            "current_year_asset_value": 20000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "45.454.868/0001-08",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "51547173278ff94ca6d662dea727d199",
+                            "asset_group_code": "04",
+                            "asset_code": "04",
+                            "asset_description": "APLICACAO EM BDR",
+                            "before_year_asset_value": 11000.0,
+                            "current_year_asset_value": 16000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "traded_on_stock_market": true,
+                                "cpf": "171.955.328-95",
+                                "trading_code": "5756765"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "bd52dc835853ef6d4f6e0ee4a6bc99db",
+                            "asset_group_code": "04",
+                            "asset_code": "05",
+                            "asset_description": "INVESTIMENTOS EM OURO",
+                            "before_year_asset_value": 40000.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "47ce55249d510995efd2d0e3e5b863bc",
+                            "asset_group_code": "04",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS INVESTIMENTOS",
+                            "before_year_asset_value": 2000.0,
+                            "current_year_asset_value": 3000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "45.454.868/0001-08",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "81443d3cfa1847b52bdee3880bf29513",
+                            "asset_group_code": "04",
+                            "asset_code": "99",
+                            "asset_description": "OUTRAS APLICACOES E INVESTIMENTOS",
+                            "before_year_asset_value": 20000.0,
+                            "current_year_asset_value": 25000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "59.106.377/0001-72",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "d13477d99e49fdac41062c802278d210",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMOS CONCEDIDOS",
+                            "before_year_asset_value": 23000.0,
+                            "current_year_asset_value": 22000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "32.577.486/0001-11",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "36c0c65f7e446d0e91fb4cd8f5be847a",
+                            "asset_group_code": "06",
+                            "asset_code": "10",
+                            "asset_description": "DINHEIRO EM MOEDA NACIONAL",
+                            "before_year_asset_value": 500.0,
+                            "current_year_asset_value": 900.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "c1dfd90af72ec71fd12766d189a53cde",
+                            "asset_group_code": "06",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS DEPOSIOS A VISTA",
+                            "before_year_asset_value": 5000.0,
+                            "current_year_asset_value": 6000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "55.816.723/0001-55",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "a7a45bbd1a485dab14bc2bc83fdcf8c3",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "FUNDOS DE INVESTIMENTOS COME - COTAS",
+                            "before_year_asset_value": 16000.0,
+                            "current_year_asset_value": 16000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "55.816.723/0001-55",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "126b2ecef8bf8b71e61db1a2e6f30d55",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "FUNDOS DE INVESTIMENTO EM ACOES",
+                            "before_year_asset_value": 34000.0,
+                            "current_year_asset_value": 33000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "55.816.723/0001-55",
+                                "traded_on_stock_market": true,
+                                "cpf": "171.955.328-95",
+                                "trading_code": "35634663"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "754d748943c9ee2edc3bfe008f0911d9",
+                            "asset_group_code": "07",
+                            "asset_code": "99",
+                            "asset_description": "FUNDO DE INVESTIMENTOS NO CHILE",
+                            "before_year_asset_value": 23000.0,
+                            "current_year_asset_value": 26000.0,
+                            "country_code": "158",
+                            "country_name": "CHILE",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "traded_on_stock_market": true,
+                                "financial_application": {
+                                    "items": {
+                                        "profit_or_loss": 2000.0,
+                                        "tax_paid_abroad": 200.0
+                                    }
+                                },
+                                "cpf": "171.955.328-95",
+                                "profits_and_dividends": {
+                                    "items": {
+                                        "value_received": 2000.0,
+                                        "tax_paid_abroad_irrf": 220.0
+                                    }
+                                },
+                                "trading_code": "3456543"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "446e090dbbcb3861ba4d569523be95fa",
+                            "asset_group_code": "08",
+                            "asset_code": "01",
+                            "asset_description": "INVESTIMENTO EM BITCOIN",
+                            "before_year_asset_value": 11000.0,
+                            "current_year_asset_value": 12000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": null,
+                                "custodian_cnpj": "33.569.265/0001-64",
+                                "self_custodian": false,
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "8b71deae5725325508ff462c33154510",
+                            "asset_group_code": "08",
+                            "asset_code": "02",
+                            "asset_description": "INVESTIMENTO EM OUTRAS CRIPTOMOEDAS",
+                            "before_year_asset_value": 3000.0,
+                            "current_year_asset_value": 4000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": null,
+                                "custodian_cnpj": "76.954.404/0001-86",
+                                "self_custodian": false,
+                                "cpf": "171.955.328-95",
+                                "alt_coin_code": "AVAX"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "886326a1dce08a74bc2b79dc609502e8",
+                            "asset_group_code": "08",
+                            "asset_code": "03",
+                            "asset_description": "STABLECOINS",
+                            "before_year_asset_value": 4000.0,
+                            "current_year_asset_value": 5000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": null,
+                                "custodian_cnpj": "76.954.404/0001-86",
+                                "self_custodian": false,
+                                "cpf": "171.955.328-95",
+                                "stable_coin_code": "BUSD"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "487f5e27bb41e9c8d081fdbc1f046b58",
+                            "asset_group_code": "08",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS CRIPTOATIVOS",
+                            "before_year_asset_value": 1000.0,
+                            "current_year_asset_value": 2000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "171.955.328-95"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "a8b8499f27b46915e73af831b490788d",
+                            "asset_group_code": "99",
+                            "asset_code": "01",
+                            "asset_description": "LICENCA",
+                            "before_year_asset_value": 5000.0,
+                            "current_year_asset_value": 6000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "ea634e5f4066c759d88cb4618adbd8b3",
+                            "asset_group_code": "99",
+                            "asset_code": "05",
+                            "asset_description": "CONSORCIO NAO CONTEMPLADO",
+                            "before_year_asset_value": 12500.0,
+                            "current_year_asset_value": 16500.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "03.351.323/0001-18"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "fa5447e59419f0253cb74d288f46ee1b",
+                            "asset_group_code": "99",
+                            "asset_code": "06",
+                            "asset_description": "VGBL",
+                            "before_year_asset_value": 14000.0,
+                            "current_year_asset_value": 15000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "31.371.955/0001-89"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "bb744bab2ed7d797ace41ab0a293a5a1",
+                            "asset_group_code": "99",
+                            "asset_code": "08",
+                            "asset_description": "CONTRATO DE LEASING",
+                            "before_year_asset_value": 6000.0,
+                            "current_year_asset_value": 7000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "761c3039d260868e39f59e3c4e634685",
+                            "asset_group_code": "99",
+                            "asset_code": "99",
+                            "asset_description": "OUTROS BENS E DIREITOS",
+                            "before_year_asset_value": 17000.0,
+                            "current_year_asset_value": 18000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 15
+                        }
+                    ],
+                    "last_year_total_value": 3363000.0,
+                    "current_year_total_value": 3555400.0,
+                    "pages_with_problems": []
+                },
+                "debts_and_encumbrances": {
+                    "section_name": "Dívidas e Ônus Reais",
+                    "items": [
+                        {
+                            "id": "3fc49d27101809fd98c4f45504c7a1f2",
+                            "debt_code": "11",
+                            "debt_description": "FINANCIAMENTO IMOBILIARIO",
+                            "year_before_last_value": 15000.0,
+                            "last_year_value": 10000.0,
+                            "current_year_value": 5000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "75ffd1efd34ce575e7610ccc092367b8",
+                            "debt_code": "12",
+                            "debt_description": "FINANCIAMENTO DE MOVEIS",
+                            "year_before_last_value": 250000.0,
+                            "last_year_value": 200000.0,
+                            "current_year_value": 50000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "49b9b6f47baf157a81d746496bb311c6",
+                            "debt_code": "15",
+                            "debt_description": "EMPRESTIMOS EXTERIOR",
+                            "year_before_last_value": 120000.0,
+                            "last_year_value": 110000.0,
+                            "current_year_value": 10000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "e0d3cc34ea8e21d036e1b5983990dd87",
+                            "debt_code": "14",
+                            "debt_description": "EMPRESTIMOS PESSOA FISICA",
+                            "year_before_last_value": 50000.0,
+                            "last_year_value": 40000.0,
+                            "current_year_value": 10000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "d968db31f3574340a83b19ecdf216d5c",
+                            "debt_code": "11",
+                            "debt_description": "FIANCIAMENTO IMOBILIARIO",
+                            "year_before_last_value": 100000.0,
+                            "last_year_value": 95000.0,
+                            "current_year_value": 5000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "47941dece7348c253af52aab7c3693cb",
+                            "debt_code": "12",
+                            "debt_description": "FINANCIAMENTO AUTOMOVEL",
+                            "year_before_last_value": 20000.0,
+                            "last_year_value": 18000.0,
+                            "current_year_value": 2000.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "19458110e1402359f7f240aa27cec16c",
+                            "debt_code": "14",
+                            "debt_description": "OUTROS EMPRESTIMOS PF",
+                            "year_before_last_value": 2000.0,
+                            "last_year_value": 1500.0,
+                            "current_year_value": 500.0,
+                            "page": 15
+                        },
+                        {
+                            "id": "9d568b3064447c99c77f00e967fdab03",
+                            "debt_code": "15",
+                            "debt_description": "NOVOS EMPRESTIMOS EXTERIOIR",
+                            "year_before_last_value": 2000.0,
+                            "last_year_value": 1600.0,
+                            "current_year_value": 400.0,
+                            "page": 15
+                        }
+                    ],
+                    "amount_of_codes_equal_to_amount_of_values": true,
+                    "year_before_last_total_value": 559000.0,
+                    "last_year_total_value": 476100.0,
+                    "current_year_total_value": 82900.0,
+                    "pages_with_problems": []
+                },
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 289500.0,
+                    "valid_total": true,
+                    "subsections": {
+                        "scholarships_and_grants_without_donor_compensation": {
+                            "name": "01. Bolsas de estudo e de pesquisa caracterizadas como doação, exceto médico-residente ou Pronatec, exclusivamente para proceder a estudos ou pesquisas e desde que os resultados dessas atividades não representem vantagem para o doador, nem importem contraprestação de serviços",
+                            "code": "01",
+                            "total_value": 40000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "98.717.737/0001-24",
+                                    "payer_name": "UNIVERSIDADE DE SERGIPE",
+                                    "value": 40000.0,
+                                    "id": "e58b18bb2d49dab9261d03c5927c9d03",
+                                    "page": 4
+                                }
+                            ]
+                        },
+                        "insurance_payouts_for_death_or_permanent_disability": {
+                            "name": "03. Capital das apólices de seguro ou pecúlio pago por morte do segurado, prêmio de seguro restituído em qualquer caso e pecúlio recebido de entidades de previdência privada em decorrência de morte ou invalidez permanente",
+                            "code": "03",
+                            "total_value": 70000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "termination_and_work_accident_compensation_including_fgts": {
+                            "name": "04. Indenizações por rescisão de contrato de trabalho, inclusive a título de PDV, e por acidente de trabalho; e FGTS",
+                            "code": "04",
+                            "total_value": 7000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "cpf": "171.955.328-95",
+                                    "payer_cpf_cnpj": "63.236.558/0001-90",
+                                    "payer_name": "GOVERNO DO ESTADO DE SAO PAULO",
+                                    "value": 7000.0,
+                                    "id": "5f8326ed90f699eadfd3df81748d3237",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "capital_gains_on_asset_sale_in_the_same_month": {
+                            "name": "05. Ganho de capital na alienação de bem, direito ou conjunto de bens ou direitos da mesma natureza, alienados em um mesmo mês, de valor total de alienação até R$ 20.000,00, para ações alienadas no mercado de balcão, e R$ 35.000,00, nos demais casos",
+                            "code": "05",
+                            "total_value": 4500.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "capital_gains_from_sale_of_only_property_within_5_years": {
+                            "name": "06. Ganho de capital na alienação do único imóvel por valor igual ou inferior a R$ 440.000,00 e que, nos últimos 5 anos, não tenha efetuado nenhuma outra alienação de imóvel",
+                            "code": "06",
+                            "total_value": 50000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "profits_and_dividends": {
+                            "name": "09. Lucros e dividendos recebidos",
+                            "code": "09",
+                            "total_value": 3000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "39.560.594/0001-20",
+                                    "payer_name": "EMPRESA PAGADORA DE DIVIDENDOS",
+                                    "value": 3000.0,
+                                    "id": "44bb76a27a40058652f9b52d00de8db7",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "tax_free_retirement_income_for_seniors_age_65_and_over": {
+                            "name": "10. Parcela isenta de proventos de aposentadoria, reserva remunerada, reforma e pensão de declarante com 65 anos ou mais",
+                            "code": "10",
+                            "total_value": 10500.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "49.503.607/0001-83",
+                                    "payer_name": "PREFEITURA DE SAO PAULO",
+                                    "value": 10000.0,
+                                    "thirteenth_salary": 500.0,
+                                    "id": "ab6f3a1a1023840fce2a6f7bd890a2f1",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "pension_or_retirement_income_due_to_severe_illness_or_work_accident": {
+                            "name": "11. Pensão, proventos de aposentadoria ou reforma por moléstia grave ou aposentadoria ou reforma por acidente em serviço",
+                            "code": "11",
+                            "total_value": 20600.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "income": 20000.0,
+                                    "irrf": 500.0,
+                                    "thirteenth_salary": 600.0,
+                                    "irrf_on_thirteenth_salary": 60.0,
+                                    "official_social_security_contribution": 400.0,
+                                    "payer_cpf_cnpj": "95.946.573/0001-19",
+                                    "payer_name": "PREFEITURA DO MUNICIPIO DE ATIBAIA",
+                                    "id": "187b221a365e77087601cd467ecdf98c",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "income_of_small_business_partner_or_owner": {
+                            "name": "13. Rendimento de sócio ou titular de microempresa ou empresa de pequeno porte optante pelo Simples Nacional, exceto pro labore, aluguéis e serviços prestados",
+                            "code": "13",
+                            "total_value": 7000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "65.116.261/0001-17",
+                                    "payer_name": "XYZ PRESTADORA DE SERVICOS",
+                                    "value": 7000.0,
+                                    "id": "653a3d4fb4e7d8556625d1a4134f7a33",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "asset_transfers_donations_and_inheritances": {
+                            "name": "14. Transferências patrimoniais - doações e heranças",
+                            "code": "14",
+                            "total_value": 4000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "50.200.548/0001-53",
+                                    "payer_name": "FJK PARTICIPACOES",
+                                    "value": 4000.0,
+                                    "id": "87f641cb8c11a01e8c2e5628b1da8c47",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "incorporation_reserves_into_capital_or_share_bonuses": {
+                            "name": "18. Incorporação de reservas ao capital / Bonificações em ações",
+                            "code": "18",
+                            "total_value": 8000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "49.227.645/0001-50",
+                                    "payer_name": "ABC INCORPORADORA DE BENS",
+                                    "value": 8000.0,
+                                    "id": "6ae9a37eeb8e458e3b23f0ec4c72c79c",
+                                    "page": 6
+                                }
+                            ]
+                        },
+                        "net_gains_from_operations_in_the_spot_market": {
+                            "name": "20. Ganhos líquidos em operações no mercado à vista de ações negociadas em bolsas de valores nas alienações realizadas até R$ 20.000,00, em cada mês, para o conjunto de ações",
+                            "code": "20",
+                            "total_value": 6000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "value": 6000.0,
+                                    "id": "13aabe9b88760a37a533cdb431ac74ff",
+                                    "page": 6
+                                }
+                            ]
+                        },
+                        "net_gains_from_gold_sales_under_20000_per_month": {
+                            "name": "21. Ganhos líquidos em operações com ouro, ativo financeiro, nas alienações realizadas até R$ 20.000,00, em cada mês",
+                            "code": "21",
+                            "total_value": 15000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "value": 15000.0,
+                                    "id": "c370d7af59362e3c334c3252636fec85",
+                                    "page": 6
+                                }
+                            ]
+                        },
+                        "gross_income_up_to_90_from_freight_services": {
+                            "name": "23. Rendimento bruto, até o máximo de 90%, da prestação de serviços decorrente do transporte de carga e com trator, máquina de terraplenagem, colheitadeira e assemelhados",
+                            "code": "23",
+                            "total_value": 12000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "income_tax_refund_from_previous_years": {
+                            "name": "25. Restituição do imposto sobre a renda de anos-calendário anteriores",
+                            "code": "25",
+                            "total_value": 7000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "interest_on_accumulated_income_received": {
+                            "name": "27. Juros referentes aos Rendimentos Recebidos Acumuladamente",
+                            "code": "27",
+                            "total_value": 20000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "others_99": {
+                            "name": "99. Outros",
+                            "code": "99",
+                            "total_value": 4900.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cpf_cnpj": "45.266.048/0001-84",
+                                    "payer_name": "FUNDO DE INVESTIMENTOS DELTA",
+                                    "description": "OUTROS RENDIMENTOS ISENTOS E NAO TRIBUTAVEIS",
+                                    "value": 4900.0,
+                                    "id": "3aac15efc53e512f2b42775d63db6dab",
+                                    "page": 6
+                                }
+                            ]
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 179780.0,
+                    "valid_total": true,
+                    "subsections": {
+                        "profit_or_results_sharing": {
+                            "name": "11. Participação nos lucros ou resultados",
+                            "code": "11",
+                            "total_value": 50000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "36.373.714/0001-92",
+                                    "payer_name": "INDUSTRIA DE INSUMOS AGROPECUARIOS",
+                                    "value": 50000.0,
+                                    "id": "49c2e80541c11ee787ebad607e929715",
+                                    "page": 6
+                                }
+                            ]
+                        },
+                        "financial_investments_and_profits_and_dividends_abroad": {
+                            "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                            "code": "12",
+                            "total_value": 3580.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "others_13": {
+                            "name": "13. Outros",
+                            "code": "13",
+                            "total_value": 11000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cpf_cnpj": "51.572.102/0001-12",
+                                    "payer_name": "FINACNEIRA XYZ",
+                                    "description": "OUTROS RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA",
+                                    "value": 11000.0,
+                                    "id": "6b5fc7af6573598fc9be8840bf888967",
+                                    "page": 7
+                                }
+                            ]
+                        },
+                        "thirteenth_salary": {
+                            "name": "01. 13º salário",
+                            "code": "01",
+                            "total_value": 32000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "income_from_financial_investments": {
+                            "name": "06. Rendimentos de aplicações financeiras",
+                            "code": "06",
+                            "total_value": 8700.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "15.148.412/0001-40",
+                                    "payer_name": "BANCO XPTO",
+                                    "value": 8700.0,
+                                    "id": "e7bd3cc9126267cc247f4347e1084d6b",
+                                    "page": 6
+                                }
+                            ]
+                        },
+                        "accumulated_income_received": {
+                            "name": "07. Rendimentos recebidos acumuladamente",
+                            "code": "07",
+                            "total_value": 39000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "thirteen_salary_received_by_dependents": {
+                            "name": "08. 13º salário recebido pelos dependentes",
+                            "code": "08",
+                            "total_value": 2500.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "accumulated_income_received_by_dependents": {
+                            "name": "09. Rendimentos recebidos acumuladamente pelos dependentes",
+                            "code": "09",
+                            "total_value": 31000.0,
+                            "valid_total": true,
+                            "items": null
+                        },
+                        "interest_on_own_capital": {
+                            "name": "10. Juros sobre capital próprio",
+                            "code": "10",
+                            "total_value": 2000.0,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "171.955.328-95",
+                                    "payer_cnpj": "75.657.379/0001-06",
+                                    "payer_name": "CONSTRUTORA E INCORPORADORA",
+                                    "value": 2000.0,
+                                    "id": "4ace78ea6cf565ac69b8e342241365ec",
+                                    "page": 6
+                                }
+                            ]
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular",
+                    "items": [
+                        {
+                            "nit_pis_pasep": "000.45678.90-1",
+                            "income": {
+                                "jan": {
+                                    "unwaged_work": 9000.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "fev": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mar": {
+                                    "unwaged_work": 7000.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "abr": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mai": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jun": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jul": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "ago": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "set": {
+                                    "unwaged_work": 5000.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "out": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "nov": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "dez": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "total": {
+                                    "unwaged_work": {
+                                        "amount": 21000.0,
+                                        "valid": true
+                                    },
+                                    "rental": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "others": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "income_from_abroad": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "deductions": {
+                                "jan": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "fev": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mar": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "abr": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mai": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jun": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jul": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "ago": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "set": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "out": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "nov": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "dez": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "total": {
+                                    "official_social_security": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "alimony": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "cashbook": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "lion_carnet": {
+                                "jan": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "fev": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mar": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "abr": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mai": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jun": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jul": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "ago": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "set": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "out": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "nov": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "dez": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "total": {
+                                    "paid_darf_code_0190": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "page": 3
+                        }
+                    ]
+                },
+                "income_from_individual_to_dependents": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelos Dependentes",
+                    "items": [
+                        {
+                            "dependent_cpf": "303.216.120-78",
+                            "nit_pis_pasep": "000.12345.67-9",
+                            "income": {
+                                "jan": {
+                                    "unwaged_work": 5000.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "fev": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mar": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "abr": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mai": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jun": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jul": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "ago": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "set": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "out": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "nov": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "dez": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 0.0,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "total": {
+                                    "unwaged_work": {
+                                        "amount": 5000.0,
+                                        "valid": true
+                                    },
+                                    "rental": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "others": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "income_from_abroad": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "deductions": {
+                                "jan": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "fev": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mar": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "abr": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mai": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jun": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jul": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "ago": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "set": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "out": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "nov": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "dez": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "total": {
+                                    "official_social_security": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "alimony": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "cashbook": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "lion_carnet": {
+                                "jan": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "fev": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mar": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "abr": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mai": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jun": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jul": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "ago": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "set": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "out": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "nov": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "dez": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "total": {
+                                    "paid_darf_code_0190": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "page": 4
+                        }
+                    ]
+                },
+                "income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "BOTICARIO",
+                            "income_from_legal_person": 250000.0,
+                            "official_social_security_contribution": 10000.0,
+                            "tax_withheld_at_source": 15000.0,
+                            "thirteenth_salary": 30000.0,
+                            "irrf_on_thirteenth_salary": 3000.0,
+                            "cpf_cnpj": "31.917.823/0001-00",
+                            "id": "536a6f9d2ac64dc3a94f061fca03b3bf",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "PREFEITURA DO MUNICIPIO DE SANTOS",
+                            "income_from_legal_person": 20000.0,
+                            "official_social_security_contribution": 5000.0,
+                            "tax_withheld_at_source": 4000.0,
+                            "thirteenth_salary": 2000.0,
+                            "irrf_on_thirteenth_salary": 500.0,
+                            "cpf_cnpj": "73.068.813/0001-97",
+                            "id": "55e0c41443885937d8447a717106bd71",
+                            "page": 1
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 270000.0,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 15000.0,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 19000.0,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 32000.0,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 3500.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoas Jurídicas pelos Dependentes",
+                    "items": [
+                        {
+                            "payer_name": "NEXUS PARTICIPACOES",
+                            "income_from_legal_person": 25000.0,
+                            "official_social_security_contribution": 1000.0,
+                            "tax_withheld_at_source": 1100.0,
+                            "thirteenth_salary": 2500.0,
+                            "irrf_on_thirteenth_salary": 250.0,
+                            "cpf_cnpj": "92.062.936/0001-65",
+                            "dependent_cpf": "303.216.120-78",
+                            "id": "f3fede3a2a602f87c32c32bfb00bff33",
+                            "page": 2
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 25000.0,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 1000.0,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 1100.0,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 2500.0,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 250.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_holder_with_suspended_requirements": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular (Imposto com Exigibilidade Suspensa)",
+                    "items": [
+                        {
+                            "payer_name": "EMPREENDIMENTOS IMOBILIARIOS - EXIGIBILIDADE SUSPENSA",
+                            "cpf_cnpj": "45.102.663/0001-55",
+                            "taxable_income_with_suspended_requirements": 9900.0,
+                            "court_deposits_of_the_tax": 3000.0,
+                            "id": "b230a42421205fb8337ee1f57d5e3163",
+                            "page": 7
+                        },
+                        {
+                            "payer_name": "GOVERNO DO ESTADO DO MATO GROSSO",
+                            "cpf_cnpj": "41.573.021/0001-83",
+                            "taxable_income_with_suspended_requirements": 40000.0,
+                            "court_deposits_of_the_tax": 20000.0,
+                            "id": "25043173df9c0c2d44ac0029cbc3957e",
+                            "page": 7
+                        }
+                    ],
+                    "total_values": {
+                        "taxable_income_with_suspended_requirements": {
+                            "amount": 49900.0,
+                            "valid": true
+                        },
+                        "court_deposits_of_the_tax": {
+                            "amount": 23000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents_with_suspended_requirements": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelos Dependentes (Imposto com Exigibilidade Suspensa)",
+                    "items": [
+                        {
+                            "payer_name": "GOVERNO DO ESTADO DA PARAIBA",
+                            "cpf_cnpj": "59.154.260/0001-64",
+                            "taxable_income_with_suspended_requirements": 10000.0,
+                            "court_deposits_of_the_tax": 2000.0,
+                            "dependent_cpf": "303.216.120-78",
+                            "id": "00b9379d67d89776d2b4d2d2ccad04cb",
+                            "page": 7
+                        }
+                    ],
+                    "total_values": {
+                        "taxable_income_with_suspended_requirements": {
+                            "amount": 10000.0,
+                            "valid": true
+                        },
+                        "court_deposits_of_the_tax": {
+                            "amount": 2000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "accumulated_income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis de Pessoa Jurídica Recebidos Acumuladamente pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "GOVERNO DO ESTATO DE MINAS GERAIS",
+                            "cpf_cnpj": "58.538.174/0001-92",
+                            "taxable_income_total": 46000.0,
+                            "official_social_security_contribution": 3000.0,
+                            "alimony": 0.0,
+                            "tax_withheld_at_source": 4000.0,
+                            "tax_option": "Exclusiva",
+                            "month_of_receipt": "Mar.",
+                            "amount_received_related_to_interest": 20000.0,
+                            "number_of_months": 180.0,
+                            "tax_due_rra": 0.0,
+                            "exempt_portion_65_years": null,
+                            "feeding": null,
+                            "id": "2479654d8f16628193f975d8aef06cb1",
+                            "page": 7
+                        }
+                    ],
+                    "total_values": {
+                        "taxable_income_total": {
+                            "amount": 46000.0,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 3000.0,
+                            "valid": true
+                        },
+                        "alimony": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 4000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "accumulated_income_from_legal_person_to_dependents": {
+                    "section_name": "Rendimentos Tributáveis de Pessoa Jurídica Recebidos Acumuladamente pelos Dependentes",
+                    "items": [
+                        {
+                            "payer_name": "GOVERNO DO ESTADO DO AMAZONAS",
+                            "cpf_cnpj": "04.572.100/0001-43",
+                            "taxable_income_total": 40000.0,
+                            "official_social_security_contribution": 8000.0,
+                            "alimony": 0.0,
+                            "tax_withheld_at_source": 1000.0,
+                            "tax_option": "Exclusiva",
+                            "month_of_receipt": "Mar.",
+                            "amount_received_related_to_interest": 0.0,
+                            "number_of_months": 120.0,
+                            "tax_due_rra": 0.0,
+                            "exempt_portion_65_years": null,
+                            "dependent_cpf": "303.216.120-78",
+                            "feeding": null,
+                            "id": "2cbdaff0c6ab3f1420a6b8ec83c9c233",
+                            "page": 8
+                        }
+                    ],
+                    "total_values": {
+                        "taxable_income_total": {
+                            "amount": 40000.0,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 8000.0,
+                            "valid": true
+                        },
+                        "alimony": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 1000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "exploited_rural_properties_in_brazil": {
+                    "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
+                    "items": [
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 1,
+                            "name_and_location": "MAQUINAS DE CULTURA DE SOLO, MATO GROSSO",
+                            "area": 800.0,
+                            "cib": "2.345.566-7",
+                            "participants": null,
+                            "id": "279b671ad89bba2e8c33e6b77e5584d5",
+                            "page": 16
+                        },
+                        {
+                            "code": 13,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "EXPLORACAO DE AVES, SANTA CATARINA",
+                            "area": 400.0,
+                            "cib": "3.456.435-7",
+                            "participants": null,
+                            "id": "3a463c559951b1d336eecffed6729b4c",
+                            "page": 16
+                        }
+                    ]
+                },
+                "rural_income_and_expenditure_in_brazil": {
+                    "section_name": "Receitas e Despesas - Brasil",
+                    "items": [
+                        {
+                            "month": "Janeiro",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "ab93c71fb7089dabb817d65020610e39",
+                            "page": 16
+                        },
+                        {
+                            "month": "Fevereiro",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "97d061e2d3b10a6ea52cc3624711410a",
+                            "page": 16
+                        },
+                        {
+                            "month": "Março",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "c30a56583b4e37d0637a4bd06d4796d8",
+                            "page": 16
+                        },
+                        {
+                            "month": "Abril",
+                            "gross_revenue": 20000.0,
+                            "funding_expenses": 10000.0,
+                            "id": "6e0a78fa2175d2c56bed5ad5c5596beb",
+                            "page": 16
+                        },
+                        {
+                            "month": "Maio",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "03ed7dc9f99400fdf87bc576042d76fd",
+                            "page": 16
+                        },
+                        {
+                            "month": "Junho",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "c15c1cfd3accef34e5104b37206a1dcb",
+                            "page": 16
+                        },
+                        {
+                            "month": "Julho",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "fba5d95a1451c0fed90a7802011fedd7",
+                            "page": 16
+                        },
+                        {
+                            "month": "Agosto",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "1a5d85e98878ede69818c6d593704842",
+                            "page": 16
+                        },
+                        {
+                            "month": "Setembro",
+                            "gross_revenue": 90000.0,
+                            "funding_expenses": 30000.0,
+                            "id": "3947a7d11b9af03167255d5bbb203f49",
+                            "page": 16
+                        },
+                        {
+                            "month": "Outubro",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "4745cc67440abec7b687d23274cb7d16",
+                            "page": 16
+                        },
+                        {
+                            "month": "Novembro",
+                            "gross_revenue": 0.0,
+                            "funding_expenses": 0.0,
+                            "id": "a4ab77f2c93c1eda14fc62938d8db825",
+                            "page": 16
+                        },
+                        {
+                            "month": "Dezembro",
+                            "gross_revenue": 90000.0,
+                            "funding_expenses": 0.0,
+                            "id": "ed3ec7ca6367fd228ab6ff35093d27db",
+                            "page": 16
+                        }
+                    ],
+                    "total_values": {
+                        "gross_revenue": {
+                            "amount": 200000.0,
+                            "valid": true
+                        },
+                        "funding_expenses": {
+                            "amount": 40000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "calculation_of_rural_results_in_brazil": {
+                    "section_name": "Apuração do Resultado - Brasil",
+                    "subsections": {
+                        "previous_exercise_info": {
+                            "subsection_name": "INFORMAÇÃO DO EXERCÍCIO ANTERIOR",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar de exercício(s) anterior(es)",
+                                    "value": 0.0,
+                                    "id": "be1b284e0e27e8a0c520f28ff770f369"
+                                }
+                            ],
+                            "page": 16
+                        },
+                        "calculation_of_taxable_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Receita bruta total",
+                                    "value": 200000.0,
+                                    "id": "d021c8e2e9142dce3e27006d3cdca293"
+                                },
+                                {
+                                    "description": "Despesa de custeio e investimento total",
+                                    "value": 40000.0,
+                                    "id": "a80b47900e268183c5c4789a0e59dd4b"
+                                },
+                                {
+                                    "description": "Resultado",
+                                    "value": 160000.0,
+                                    "id": "fc49fe652c5d4e0124ea510892a976b1"
+                                },
+                                {
+                                    "description": "Limite de 20% sobre a receita bruta total",
+                                    "value": 40000.0,
+                                    "id": "109c52fdc9ed3602ff2798e56762362b"
+                                },
+                                {
+                                    "description": "Opção pela forma de apuração do resultado tributável",
+                                    "value": "Pelo resultado",
+                                    "id": "3424033e3a3ee67a21185580ab73329f"
+                                },
+                                {
+                                    "description": "Compensação de prejuízo(s) de exercício(s) anterior(es)",
+                                    "value": 0.0,
+                                    "id": "f37cd10b01551849a0b7b2c3ee0ca88c"
+                                },
+                                {
+                                    "description": "RESULTADO TRIBUTÁVEL",
+                                    "value": 160000.0,
+                                    "id": "3d6c829ba6059eeeae638766eb17984f"
+                                }
+                            ],
+                            "page": 16
+                        },
+                        "next_exercise_info": {
+                            "subsection_name": "INFORMAÇÕES PARA O EXERCÍCIO SEGUINTE",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar",
+                                    "value": 0.0,
+                                    "id": "940b0e8caaff5894ff6e5149f35b80b4"
+                                }
+                            ],
+                            "page": 16
+                        },
+                        "calculation_of_exempt_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO NÃO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Adiantamento(s) recebido(s) em 2024 por conta de venda para entrega futura",
+                                    "value": 0.0,
+                                    "id": "76209b53b3e232536ffd4c973ca9deed"
+                                },
+                                {
+                                    "description": "Adiantamento(s) recebido(s) até 2023 a ser(em) informado(s) como receita(s) de produto(s) entregue(s) em 2024",
+                                    "value": 0.0,
+                                    "id": "7f2efc962103a6fcf01913b096e6c486"
+                                },
+                                {
+                                    "description": "RESULTADO NÃO TRIBUTÁVEL",
+                                    "value": 0.0,
+                                    "id": "87b534d340f4099c19c6967b167c7568"
+                                }
+                            ],
+                            "page": 16
+                        }
+                    }
+                },
+                "livestock_movement_in_brazil": {
+                    "section_name": "Movimentação do Rebanho - Brasil",
+                    "items": [
+                        {
+                            "species": "Bovinos e bufalinos",
+                            "initial_stock": 20000.0,
+                            "acquisitions": 10000.0,
+                            "births": 1000.0,
+                            "consumption_and_losses": 2000.0,
+                            "sales": 20000.0,
+                            "final_stock": 9000.0,
+                            "id": "53098f2c214d82cec7b77aa1f5121a91",
+                            "page": 16
+                        },
+                        {
+                            "species": "Suínos",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "e0e40dea8049e1c98b596f977b551b22",
+                            "page": 16
+                        },
+                        {
+                            "species": "Caprinos e ovinos",
+                            "initial_stock": 800000.0,
+                            "acquisitions": 200000.0,
+                            "births": 2000.0,
+                            "consumption_and_losses": 15000.0,
+                            "sales": 400000.0,
+                            "final_stock": 587000.0,
+                            "id": "4fc5512ab8fe82f01017bafd10db3706",
+                            "page": 16
+                        },
+                        {
+                            "species": "Asininos, equinos e muares",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "cdb73280964737842df8c2e877ff09e1",
+                            "page": 16
+                        },
+                        {
+                            "species": "Outros",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "165943c67db81353e0884e84c039623f",
+                            "page": 17
+                        }
+                    ]
+                },
+                "rural_activity_assets_in_brazil": {
+                    "section_name": "Bens da Atividade Rural - Brasil",
+                    "items": [
+                        {
+                            "code": "11",
+                            "description": "GALPOES",
+                            "year_before_last_value": 200000.0,
+                            "last_year_value": 300000.0,
+                            "id": "1785e6f21e6c43e69986c861070c8360",
+                            "page": 17
+                        },
+                        {
+                            "code": "16",
+                            "description": "TRATORES",
+                            "year_before_last_value": 200000.0,
+                            "last_year_value": 250000.0,
+                            "id": "53a3a0bca0464af358fb3c1b76614983",
+                            "page": 17
+                        },
+                        {
+                            "code": "99",
+                            "description": "OUTROS BENS VINCULADOS A ATIVIDADE RURAL",
+                            "year_before_last_value": 400000.0,
+                            "last_year_value": 450000.0,
+                            "id": "6470b6d290bdd2dda550b2273d7a060f",
+                            "page": 17
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 800000.0,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 1000000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "rural_activity_debts_in_brazil": {
+                    "section_name": "Dívidas Vinculadas à Atividade Rural - Brasil",
+                    "items": [
+                        {
+                            "item": 1,
+                            "description": "DIVIDAS VINCULADAS A ATIVIDADE RURAL",
+                            "year_before_last_value": 100000.0,
+                            "last_year_value": 120000.0,
+                            "paid_value_in_last_year": 20000.0,
+                            "id": "e87d814858557a5bc6ebc453f7960ef8",
+                            "page": 17
+                        },
+                        {
+                            "item": 2,
+                            "description": "RECEITA DE VENDA DE BOVINOS",
+                            "year_before_last_value": 400000.0,
+                            "last_year_value": 200000.0,
+                            "paid_value_in_last_year": 200000.0,
+                            "id": "4587254c86a60b67a67a57ad9a17c573",
+                            "page": 17
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 500000.0,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 320000.0,
+                            "valid": true
+                        },
+                        "paid_value_in_last_year": {
+                            "amount": 220000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "exploited_rural_properties_abroad": {
+                    "section_name": "Dados e Identificação do Imóvel Explorado - Exterior",
+                    "items": [
+                        {
+                            "code": 10,
+                            "participation": 80.0,
+                            "exploration_condition": 2,
+                            "name_and_location": "AGRICULTURA NO EXTERIOR, ESTADOS UNIDOS",
+                            "area": 400.0,
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "PARTICIPANTE (31.371.955/0001-89)",
+                                        "foreigner": true,
+                                        "id": "d308e99dacd8f2f4ebce8fd79f3e2730"
+                                    }
+                                ]
+                            },
+                            "id": "2da3ea4100a301907207b0697bc15058",
+                            "page": 18
+                        }
+                    ]
+                },
+                "rural_income_and_expenditure_abroad": {
+                    "section_name": "Receitas e Despesas - Exterior",
+                    "items": [
+                        {
+                            "country_code": 23,
+                            "country_name": "ALEMANHA",
+                            "total_gross_revenue_original_currency": 400000.0,
+                            "total_cost_investment_expenses_original_currency": 200000.0,
+                            "result_original_currency": 200000.0,
+                            "result_in_dollars": 50000.0,
+                            "id": "23e6775df6d255e982489c52064b2204",
+                            "page": 18
+                        },
+                        {
+                            "country_code": 63,
+                            "country_name": "ARGENTINA",
+                            "total_gross_revenue_original_currency": 300000.0,
+                            "total_cost_investment_expenses_original_currency": 150000.0,
+                            "result_original_currency": 150000.0,
+                            "result_in_dollars": 20000.0,
+                            "id": "e37f5fbd3940dfeeeaf98fc707e6168f",
+                            "page": 18
+                        }
+                    ],
+                    "total_values": {
+                        "amount": 70000.0,
+                        "valid": true
+                    }
+                },
+                "calculation_of_rural_results_abroad": {
+                    "section_name": "Apuração do Resultado - Exterior",
+                    "subsections": {
+                        "previous_exercise_info": {
+                            "subsection_name": "INFORMAÇÃO DO EXERCÍCIO ANTERIOR",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar de exercício(s) anterior(es) - R$",
+                                    "value": 0.0,
+                                    "id": "d62a76ec164b8715e8ef2563cff1fc83"
+                                }
+                            ],
+                            "page": 18
+                        },
+                        "calculation_of_taxable_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Resultado total - US$",
+                                    "value": 70000.0,
+                                    "id": "b89062eb91a1942ada7516eea2687ad6"
+                                },
+                                {
+                                    "description": "Resultado total (R$) (Resultado total - US$ multiplicado por 6,1917)",
+                                    "value": 433419.0,
+                                    "id": "4b9c153a7aa90458df2178fcf93efdcd"
+                                },
+                                {
+                                    "description": "Opção pela forma de apuração do resultado tributável",
+                                    "value": "Pelo resultado",
+                                    "id": "3910ad099aac0a44877627d75baed517"
+                                },
+                                {
+                                    "description": "Limite de 20% sobre a receita bruta total - R$",
+                                    "value": 0.0,
+                                    "id": "fbf4ee19abf33ac23d9f85fa9319b7b1"
+                                },
+                                {
+                                    "description": "Compensação de prejuízo(s) de exercício(s) anterior(es) - R$",
+                                    "value": 0.0,
+                                    "id": "32ba49d834f9d706b8404ca6e6cfecd1"
+                                },
+                                {
+                                    "description": "RESULTADO TRIBUTÁVEL - R$",
+                                    "value": 433419.0,
+                                    "id": "7e5074b2c65962402869489369414580"
+                                }
+                            ],
+                            "page": 18
+                        },
+                        "next_exercise_info": {
+                            "subsection_name": "INFORMAÇÕES PARA O EXERCÍCIO SEGUINTE",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar - R$",
+                                    "value": 0.0,
+                                    "id": "046bfb059b88a584c2721dc80be91776"
+                                }
+                            ],
+                            "page": 18
+                        },
+                        "calculation_of_exempt_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO NÃO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Adiantamento(s) recebido(s) em 2024 por conta de venda para entrega futura - R$",
+                                    "value": 0.0,
+                                    "id": "7b7f5bfb89353e7752eb49ef398200a3"
+                                },
+                                {
+                                    "description": "Adiantamento(s) recebido(s) até 2023 a ser(em) informado(s) como receita(s) de produto(s) entregue(s) em 2024 - R$",
+                                    "value": 0.0,
+                                    "id": "4bcfd01e5c8eb30407ca5a6927ff6192"
+                                },
+                                {
+                                    "description": "RESULTADO NÃO TRIBUTÁVEL - R$",
+                                    "value": 0.0,
+                                    "id": "bee03d0542b3a5a9942e4287ec0f2b7f"
+                                }
+                            ],
+                            "page": 18
+                        }
+                    }
+                },
+                "rural_activity_assets_abroad": {
+                    "section_name": "Bens da Atividade Rural - Exterior",
+                    "items": [
+                        {
+                            "code": "16",
+                            "description": "TRATORES NO EXTERIOR 149 CANADÁ",
+                            "year_before_last_value": 200000.0,
+                            "last_year_value": 190000.0,
+                            "id": "d685ae9ddf12cecb2cac7eb1d03f35e5",
+                            "page": 19
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 200000.0,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 190000.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "rural_activity_debts_abroad": {
+                    "section_name": "Dívidas Vinculadas à Atividade Rural - Exterior",
+                    "items": [
+                        {
+                            "item": 1,
+                            "description": "DIVIDAS VINCULADAS A ATIVIDADE RURAL (EXTERIOR)",
+                            "year_before_last_value": 300000.0,
+                            "last_year_value": 250000.0,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "eb432cbfdad6ae6f0557a925ced3e315",
+                            "page": 19
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 300000.0,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 250000.0,
+                            "valid": true
+                        },
+                        "paid_value_in_last_year": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "livestock_movement_abroad": {
+                    "section_name": "Movimentação do Rebanho - Exterior",
+                    "items": [
+                        {
+                            "species": "Bovinos e bufalinos",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "2780120b5d82e0701071542204217f8c",
+                            "page": 18
+                        },
+                        {
+                            "species": "Suínos",
+                            "initial_stock": 500000.0,
+                            "acquisitions": 300000.0,
+                            "births": 200000.0,
+                            "consumption_and_losses": 100000.0,
+                            "sales": 400000.0,
+                            "final_stock": 500000.0,
+                            "id": "a56336b8ee9a6ce2d5a4d8c85b8a1702",
+                            "page": 18
+                        },
+                        {
+                            "species": "Caprinos e ovinos",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "35516ac8b27bccf37326a903d3f3f205",
+                            "page": 18
+                        },
+                        {
+                            "species": "Asininos, equinos e muares",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "13d22c88a2760d9decee9e109944c9ec",
+                            "page": 18
+                        },
+                        {
+                            "species": "Outros",
+                            "initial_stock": 0.0,
+                            "acquisitions": 0.0,
+                            "births": 0.0,
+                            "consumption_and_losses": 0.0,
+                            "sales": 0.0,
+                            "final_stock": 0.0,
+                            "id": "ec0ba0e0dccbe9adcee0839d70d5943d",
+                            "page": 18
+                        }
+                    ]
+                },
+                "total_pages": 23
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": "https://rpg-ir-analyzer-staging.s3.sa-east-1.amazonaws.com/temp/b98802570d0a5f170568ed5df9e9a5.csv",
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}
