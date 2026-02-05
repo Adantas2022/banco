@@ -39,6 +39,19 @@ from .extractors import (
     PaymentsExtractor,
     DonationsExtractor,
     ReceiptExtractor,
+    # Extractors holder suspended
+    IncomeSuspendedHolderExtractor,
+    # Extractors dependentes (BUGs #81767, #81773, #81775)
+    IncomePFDependentsExtractor,
+    AccumulatedIncomePJDependentsExtractor,
+    IncomeSuspendedDependentsExtractor,
+    # Extractors rural exterior (BUGs #81768, #81770, #81781, #81783, #81784, #81788)
+    RuralPropertiesAbroadExtractor,
+    RuralIncomeExpenditureAbroadExtractor,
+    RuralResultsAbroadExtractor,
+    RuralDebtsAbroadExtractor,
+    LivestockMovementAbroadExtractor,
+    RuralAssetsAbroadExtractor,
 )
 from .version_detector import VersionDetector, DocumentProfile
 from .validation_executor import ValidationExecutor
@@ -177,6 +190,19 @@ class IRPFParser:
         "livestock_movement_in_brazil": LivestockMovementExtractor,
         "payments_made": PaymentsExtractor,
         "donations_made": DonationsExtractor,
+        # Holder with suspended requirements (BUG #81776)
+        "income_from_legal_person_to_holder_with_suspended_requirements": IncomeSuspendedHolderExtractor,
+        # Dependentes (BUGs #81767, #81773, #81775)
+        "income_from_individual_to_dependents": IncomePFDependentsExtractor,
+        "accumulated_income_from_legal_person_to_dependents": AccumulatedIncomePJDependentsExtractor,
+        "income_from_legal_person_to_dependents_with_suspended_requirements": IncomeSuspendedDependentsExtractor,
+        # Rural Exterior (BUGs #81768, #81770, #81781, #81783, #81784, #81788)
+        "exploited_rural_properties_abroad": RuralPropertiesAbroadExtractor,
+        "rural_income_and_expenditure_abroad": RuralIncomeExpenditureAbroadExtractor,
+        "calculation_of_rural_results_abroad": RuralResultsAbroadExtractor,
+        "rural_activity_assets_abroad": RuralAssetsAbroadExtractor,
+        "rural_activity_debts_abroad": RuralDebtsAbroadExtractor,
+        "livestock_movement_abroad": LivestockMovementAbroadExtractor,
     }
     
     def __init__(
