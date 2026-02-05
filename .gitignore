@@ -82,6 +82,7 @@ PLAN-TEST.md
 PLAN-TEST.pdf
 spec.md
 batch_results*.json
+docs/
 
 # Business confidential
 business/
@@ -95,4 +96,3 @@ docs/PROPOSTA_AGENTES_V1.md
 
 # Generated PDFs
 *.pdf
-!docs/**/*.pdf
