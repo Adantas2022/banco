@@ -62,11 +62,21 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
                             if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
                                 return None
             
-            # Encontrar limite de extração
-            end_line_index = self._find_end_marker_line(page_text)
+            # Encontrar onde começa a seção nesta página
+            section_start_line = self._find_section_start_line(page_text)
+            
+            # Se a seção NÃO começa nesta página, considerar que já estamos dentro
+            already_in_section = section_start_line is None and in_section
+            
+            start_after = section_start_line if section_start_line is not None else 0
+            
+            # Encontrar limite de extração (só end markers DEPOIS do início)
+            end_line_index = self._find_end_marker_line(page_text, start_after)
             
             # Extrair itens
-            page_items = self._extract_from_page(page_text, page_num, end_line_index)
+            page_items = self._extract_from_page(
+                page_text, page_num, end_line_index, already_in_section
+            )
             items.extend(page_items)
             
             # Extrair total
@@ -100,10 +110,28 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
             "total_values": totals
         }
     
-    def _find_end_marker_line(self, page_text: str) -> Optional[int]:
-        """Encontra o índice da linha onde aparece um marcador de fim de seção."""
+    def _find_section_start_line(self, page_text: str) -> Optional[int]:
+        """Encontra o índice da linha onde começa a seção."""
         lines = page_text.split("\n")
         for i, line in enumerate(lines):
+            upper_line = line.upper()
+            for marker in self.SECTION_MARKERS:
+                if marker in upper_line:
+                    return i
+        return None
+    
+    def _find_end_marker_line(self, page_text: str, start_after: int = 0) -> Optional[int]:
+        """Encontra o índice da linha onde aparece um marcador de fim de seção.
+        
+        Args:
+            page_text: Texto da página
+            start_after: Só considerar end markers que aparecem DEPOIS desta linha
+        """
+        lines = page_text.split("\n")
+        for i, line in enumerate(lines):
+            # Só considerar linhas depois do início da seção
+            if i <= start_after:
+                continue
             upper_line = line.upper()
             for marker in self.SECTION_END_MARKERS:
                 if marker in upper_line:
@@ -114,15 +142,24 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
         self, 
         page_text: str, 
         page_num: int, 
-        end_line_index: Optional[int] = None
+        end_line_index: Optional[int] = None,
+        already_in_section: bool = False
     ) -> list[dict]:
-        """Extrai itens de uma página."""
+        """Extrai itens de uma página.
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            end_line_index: Índice da linha onde termina a seção (opcional)
+            already_in_section: Se True, considera que já estamos dentro da seção
+                               (útil quando o header está na página anterior)
+        """
         items = []
         lines = page_text.split("\n")
         
         max_line = end_line_index if end_line_index is not None else len(lines)
         
-        in_section = False
+        in_section = already_in_section
         i = 0
         while i < max_line:
             line = lines[i].strip()
@@ -138,7 +175,8 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
                 i += 1
                 continue
             
-            # Padrão: CÓDIGO DESCRIÇÃO VALOR_ANT VALOR_ATUAL
+            # Padrão 1: CÓDIGO DESCRIÇÃO VALOR_ANT VALOR_ATUAL
+            # Ex: "16 TRATORES NO EXTERIOR 149 CANADÁ 200.000,00 190.000,00"
             pattern = re.match(
                 r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
@@ -150,6 +188,34 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
                     continue
+            
+            # Padrão 2: CÓDIGO DESCRIÇÃO em linhas separadas dos valores
+            # BUG FIX: Alguns PDFs têm valores em linhas separadas
+            pattern_alt = re.match(r"^(\d{1,3})\s+(.+)$", line)
+            if pattern_alt and "CÓDIGO" not in upper_line and "TOTAL" not in upper_line:
+                code = pattern_alt.group(1)
+                desc = pattern_alt.group(2).strip()
+                
+                # Verificar se a próxima linha tem os valores
+                if i + 1 < max_line:
+                    next_line = lines[i + 1].strip()
+                    values_match = re.match(r"^([\d.,]+)\s+([\d.,]+)\s*$", next_line)
+                    if values_match:
+                        before_val = parse_currency(values_match.group(1))
+                        current_val = parse_currency(values_match.group(2))
+                        
+                        item_id = generate_item_id(f"abroad_{code}{desc[:30]}")
+                        item = {
+                            "code": code,
+                            "description": desc,
+                            "year_before_last_value": before_val,
+                            "last_year_value": current_val,
+                            "id": item_id,
+                            "page": page_num,
+                        }
+                        items.append(item)
+                        i += 2
+                        continue
             
             i += 1
         

@@ -16,9 +16,18 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELO TITULAR (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
         "RENDIMENTOS TRIBUTÁVEIS DE PJ PELO TITULAR (IMPOSTO COM EXIGIBILIDADE SUSPENSA)",
         "IMPOSTO COM EXIGIBILIDADE SUSPENSA",
+        # Markers parciais para títulos quebrados em múltiplas linhas
+        "PELO TITULAR (IMPOSTO COM",  # Início do título quebrado
+        "EXIGIBILIDADE SUSPENSA)",  # Continuação do título
     ]
     
     HOLDER_MARKER = "PELO TITULAR"
+    
+    # Padrões que indicam início de seção quando encontrados juntos
+    PARTIAL_MARKERS = [
+        ("PELO TITULAR", "IMPOSTO COM"),
+        ("IMPOSTO COM", "EXIGIBILIDADE SUSPENSA"),
+    ]
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELOS DEPENDENTES",
@@ -53,8 +62,15 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
             upper_page = page_text.upper()
             
             # Entrar na seção - apenas TITULAR, não DEPENDENTES
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                if self.HOLDER_MARKER in upper_page and "PELOS DEPENDENTES" not in upper_page:
+            if not in_section:
+                # Verificar markers completos
+                if any(marker in upper_page for marker in self.SECTION_MARKERS):
+                    if self.HOLDER_MARKER in upper_page and "PELOS DEPENDENTES" not in upper_page:
+                        in_section = True
+                
+                # Verificar título quebrado em múltiplas linhas
+                # Padrão: "PELO TITULAR (IMPOSTO COM" seguido de "EXIGIBILIDADE SUSPENSA)"
+                if not in_section and self._has_holder_section_marker(upper_page):
                     in_section = True
             
             if not in_section:
@@ -110,6 +126,43 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
                 return True
         return False
     
+    def _has_holder_section_marker(self, upper_text: str) -> bool:
+        """Detecta se o texto contém a seção de exigibilidade suspensa do TITULAR.
+        
+        BUG FIX: O título pode estar quebrado em múltiplas linhas:
+        - "PELO TITULAR (IMPOSTO COM"
+        - "EXIGIBILIDADE SUSPENSA)"
+        
+        Também verifica que NÃO é seção de dependentes.
+        """
+        # Se contém "PELOS DEPENDENTES", não é a seção do titular
+        if "PELOS DEPENDENTES" in upper_text:
+            # Verificar se há seção do titular ANTES da seção de dependentes
+            holder_pos = upper_text.find("PELO TITULAR")
+            dependents_pos = upper_text.find("PELOS DEPENDENTES")
+            
+            if holder_pos == -1 or holder_pos > dependents_pos:
+                return False
+        
+        lines = upper_text.split("\n")
+        for i, line in enumerate(lines):
+            # Padrão 1: Título quebrado - "PELO TITULAR (IMPOSTO COM" em uma linha
+            if "PELO TITULAR" in line and "(IMPOSTO COM" in line:
+                # Verificar se é a seção correta (não dependentes)
+                if "PELOS DEPENDENTES" not in line:
+                    # Verificar se próxima linha tem "EXIGIBILIDADE SUSPENSA"
+                    if i + 1 < len(lines):
+                        next_line = lines[i + 1]
+                        if "EXIGIBILIDADE SUSPENSA" in next_line:
+                            return True
+            
+            # Padrão 2: Título completo em uma linha
+            if "PELO TITULAR" in line and "EXIGIBILIDADE SUSPENSA" in line:
+                if "PELOS DEPENDENTES" not in line:
+                    return True
+        
+        return False
+    
     def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
         items = []
         lines = page_text.split("\n")
@@ -119,14 +172,30 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            # Detectar início - apenas TITULAR
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                if self.HOLDER_MARKER in upper_line and "PELOS DEPENDENTES" not in upper_line:
-                    in_section = True
-                continue
+            # Detectar início - apenas TITULAR (com suporte a título quebrado)
+            if not in_section:
+                # Padrão 1: Marker completo
+                if any(marker in upper_line for marker in self.SECTION_MARKERS):
+                    if self.HOLDER_MARKER in upper_line and "PELOS DEPENDENTES" not in upper_line:
+                        in_section = True
+                        continue
+                
+                # Padrão 2: Título quebrado - "PELO TITULAR (IMPOSTO COM" seguido de "EXIGIBILIDADE SUSPENSA"
+                if "PELO TITULAR" in upper_line and "(IMPOSTO COM" in upper_line:
+                    if "PELOS DEPENDENTES" not in upper_line:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].upper()
+                            if "EXIGIBILIDADE SUSPENSA" in next_line:
+                                in_section = True
+                                continue
             
             # Detectar fim
             if in_section:
+                # Se encontrar seção de DEPENDENTES, parar
+                if "PELOS DEPENDENTES" in upper_line and "EXIGIBILIDADE SUSPENSA" in upper_line:
+                    break
+                if "PELOS DEPENDENTES" in upper_line and "(IMPOSTO COM" in upper_line:
+                    break
                 if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
                 if "SEM INFORMAÇÕES" in upper_line or "SEM INFORMACOES" in upper_line:
@@ -157,8 +226,10 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         """
         # Padrão: NOME CNPJ RENDIMENTOS IMPOSTO
         # Ex: "EMPRESA ABC LTDA 12.345.678/0001-90 50.000,00 10.000,00"
+        # BUG FIX: Incluir hífen no padrão do nome para capturar nomes como
+        # "EMPREENDIMENTOS IMOBILIARIOS - EXIGIBILIDADE SUSPENSA"
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
@@ -187,7 +258,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         
         # Padrão alternativo: NOME + valores (CNPJ na próxima linha)
         pattern_alt = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-]+?)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
             line.strip()
