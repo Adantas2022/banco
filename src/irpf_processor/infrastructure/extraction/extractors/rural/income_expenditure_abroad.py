@@ -75,17 +75,17 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
             return None
         
         # Calcular total
-        sum_result_usd = sum(i.get("result_usd", 0) for i in items)
+        sum_result_in_dollars = sum(i.get("result_in_dollars", 0) for i in items)
         
-        # total_values diretamente (sem subseção result_usd)
+        # total_values diretamente (sem subseção)
         total_values = {
-            "amount": sum_result_usd,
+            "amount": sum_result_in_dollars,
             "valid": True
         }
         
         if pdf_total_usd is not None:
             total_values["pdf_total"] = pdf_total_usd
-            total_values["difference"] = abs(sum_result_usd - pdf_total_usd)
+            total_values["difference"] = abs(sum_result_in_dollars - pdf_total_usd)
             total_values["valid"] = total_values["difference"] < 0.01
         
         return {
@@ -175,13 +175,13 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
             item_id = generate_item_id(f"income_abroad_{country_code}_{country_name}")
             
             return {
-                "id": item_id,
                 "country_code": country_code,
                 "country_name": country_name,
-                "gross_revenue_local_currency": gross_revenue,
-                "expenses_local_currency": expenses,
-                "result_local_currency": result_local,
-                "result_usd": result_usd,
+                "total_gross_revenue_original_currency": gross_revenue,
+                "total_cost_investment_expenses_original_currency": expenses,
+                "result_original_currency": result_local,
+                "result_in_dollars": result_usd,
+                "id": item_id,
                 "page": page_num
             }
         
@@ -199,10 +199,10 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
             item_id = generate_item_id(f"income_abroad_{country_code}_{country_name}")
             
             return {
-                "id": item_id,
                 "country_code": country_code,
                 "country_name": country_name,
-                "result_usd": result_usd,
+                "result_in_dollars": result_usd,
+                "id": item_id,
                 "page": page_num
             }
         
