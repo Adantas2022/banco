@@ -380,7 +380,8 @@ class LivestockMovementExtractor(ISectionExtractor):
         """
         lines = page_text.split("\n")
         in_section = False
-        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        # Pattern unificado BR/US - BUG #81321 fix
+        num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for line in lines:
             upper_line = line.upper()

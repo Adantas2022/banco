@@ -290,7 +290,8 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
         """Extrai o TOTAL específico da seção."""
         lines = page_text.split("\n")
         in_section = False
-        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        # Pattern unificado BR/US - BUG #81321 fix
+        num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         max_line = end_line_index if end_line_index is not None else len(lines)
         
