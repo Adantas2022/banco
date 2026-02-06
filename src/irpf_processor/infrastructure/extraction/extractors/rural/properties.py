@@ -82,7 +82,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         if not items:
             return {
                 "section_name": "Dados e Identificacao do Imovel Explorado - Brasil",
-                "items": [],
+                "items": None,
                 "total_properties": 0,
                 "total_area": 0.0
             }
