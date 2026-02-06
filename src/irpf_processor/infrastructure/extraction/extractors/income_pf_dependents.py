@@ -109,11 +109,12 @@ class IncomePFDependentsExtractor(ISectionExtractor):
             if not in_section:
                 break
             
-            # CPF do dependente (BUG FIX: capturar dependent_cpf)
-            cpf_match = re.search(r"CPF[:\s]*(\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2})", line, re.IGNORECASE)
-            if cpf_match and not dependent_cpf:
-                dependent_cpf = cpf_match.group(1).strip()
-                continue
+            # CPF do dependente - regex específico para "CPF do dependente:" ou "CPF DO DEPENDENTE:"
+            # Não usar regex genérico para evitar capturar CPF do titular
+            cpf_dep_match = re.search(r"CPF\s*(?:do|DO)\s*(?:dependente|DEPENDENTE)[:\s]*([\d.-]+)", line, re.IGNORECASE)
+            if cpf_dep_match and not dependent_cpf:
+                dependent_cpf = cpf_dep_match.group(1).strip()
+                # Não usar continue aqui pois a mesma linha pode ter NIT/PIS/PASEP
             
             # NIT/PIS/PASEP
             if "NIT/PIS/PASEP" in upper_line:
@@ -188,14 +189,14 @@ class IncomePFDependentsExtractor(ISectionExtractor):
         # Calcular totais
         income_data["total"] = self._calculate_income_totals(income_data, income_totals_pdf)
         
-        item = {
-            "nit_pis_pasep": nit_pis_pasep,
-            "income": income_data,
-        }
+        # Construir item com dependent_cpf primeiro (conforme gabarito)
+        item = {}
         
-        # BUG FIX: Adicionar dependent_cpf se encontrado
         if dependent_cpf:
             item["dependent_cpf"] = dependent_cpf
+        
+        item["nit_pis_pasep"] = nit_pis_pasep
+        item["income"] = income_data
         
         if deductions_data:
             deductions_data["total"] = self._calculate_deductions_totals(deductions_data, deductions_totals_pdf)
