@@ -135,8 +135,11 @@ class IncomePJExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         # Formato: NOME RENDIMENTO CONTRIB_PREV IRRF 13_SALARIO IRRF_13
-        # Padrão de número brasileiro: 1.234.567,89 ou 0,00
-        num_pattern = r"([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})"
+        # Padrão unificado que aceita AMBOS os formatos:
+        # - Brasileiro: 250.000,00 (ponto=milhar, vírgula=decimal)
+        # - Americano: 250,000.00 (vírgula=milhar, ponto=decimal)
+        # BUG #81321 fix: Suporte para formato americano (inversão de separadores)
+        num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
         pattern = re.match(
             rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"
             rf"{num_pattern}\s+"

@@ -89,19 +89,13 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 section_ended = True
                 break
             
-            # Extrair itens
-            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            # Extrair itens e total da seção
+            page_items, section_totals = self._extract_from_page_with_totals(page_text, page_num, seen_ids)
             items.extend(page_items)
             
-            # Extrair total do PDF (se existir nesta página)
-            if not pdf_totals:
-                page_totals = extract_section_total(
-                    page_text, 
-                    "TOTAL",
-                    skip_keywords=["TOTAL DE DEDUÇÃO", "TOTAL DO"]
-                )
-                if page_totals:
-                    pdf_totals = page_totals
+            # Usar total da seção (não o primeiro TOTAL da página)
+            if not pdf_totals and section_totals:
+                pdf_totals = section_totals
             
             # Verificar fim após extração
             if self._is_definitive_section_end(page_text):
@@ -152,19 +146,17 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         return False
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set, already_in_section: bool = False) -> list[dict]:
-        """Extrai itens de uma página.
+    def _extract_from_page_with_totals(self, page_text: str, page_num: int, seen_ids: set) -> tuple[list[dict], list[float]]:
+        """Extrai itens e totais de uma página.
         
-        Args:
-            page_text: Texto da página
-            page_num: Número da página
-            seen_ids: Set de IDs já vistos
-            already_in_section: Se True, considera que já estamos na seção
+        Returns:
+            Tuple com (lista de itens, lista de totais da seção)
         """
         items = []
+        section_totals = []
         lines = page_text.split("\n")
         
-        in_section = already_in_section
+        in_section = False
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
@@ -194,12 +186,45 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 if "SEM INFORMAÇÕES" in upper_line:
                     continue
             
+            # Capturar TOTAL da seção (apenas quando estamos dentro da seção)
+            if in_section and upper_line.strip().startswith("TOTAL"):
+                totals = self._parse_total_line(line)
+                if totals:
+                    section_totals = totals
+                continue
+            
             # Tentar parsear item
             item = self._try_parse_income_line(line, lines, i, page_num)
             if item and item["id"] not in seen_ids:
                 seen_ids.add(item["id"])
                 items.append(item)
         
+        return items, section_totals
+    
+    def _parse_total_line(self, line: str) -> list[float]:
+        """Extrai valores numéricos de uma linha TOTAL.
+        
+        Formato esperado: TOTAL 46.000,00 3.000,00 0,00 4.000,00
+        """
+        # Encontrar todos os valores numéricos no formato brasileiro
+        pattern = r'(\d{1,3}(?:\.\d{3})*,\d{2})'
+        matches = re.findall(pattern, line)
+        
+        if matches:
+            return [parse_currency(m) for m in matches]
+        
+        return []
+    
+    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set, already_in_section: bool = False) -> list[dict]:
+        """Extrai itens de uma página (sem totais).
+        
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            seen_ids: Set de IDs já vistos
+            already_in_section: Se True, considera que já estamos na seção
+        """
+        items, _ = self._extract_from_page_with_totals(page_text, page_num, seen_ids)
         return items
     
     def _try_parse_income_line(
@@ -271,31 +296,61 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Parse formato: NOME CNPJ REND CONTRIB IRRF DESP"""
+        """Parse formato: NOME CNPJ REND CONTRIB PENSAO IRRF
+        
+        Campos extraídos conforme schema:
+        - payer_name: Nome da fonte pagadora (pode estar em múltiplas linhas)
+        - cpf_cnpj: CNPJ da fonte
+        - taxable_income_total: Total de rendimentos tributáveis
+        - official_social_security_contribution: Contribuição previdenciária oficial
+        - alimony: Pensão alimentícia
+        - tax_withheld_at_source: Imposto retido na fonte
+        - tax_option: Opção de tributação (Exclusiva/Ajuste)
+        - month_of_receipt: Mês de recebimento
+        - amount_received_related_to_interest: Valor recebido referente a juros
+        - number_of_months: Número de meses
+        - tax_due_rra: Imposto devido RRA
+        """
         payer_name = match.group(1).strip()
         cnpj = match.group(2)
         
         if self._should_skip_line(payer_name):
             return None
         
+        # Verificar se o nome continua na próxima linha (ex: "GOVERNO DO ESTATO DE MINAS" + "GERAIS")
+        payer_name = self._get_full_payer_name(payer_name, lines, idx)
+        
         item_id = generate_item_id(f"{cnpj}{payer_name}")
         
-        # Extrair metadados adicionais das linhas seguintes (meses, opção tributação, etc)
-        months_count = None
+        # Extrair metadados adicionais das linhas seguintes
+        number_of_months = None
         tax_option = None
         tax_due_rra = None
+        month_of_receipt = None
+        amount_received_related_to_interest = None
         
-        for j in range(idx + 1, min(idx + 5, len(lines))):
+        for j in range(idx + 1, min(idx + 6, len(lines))):
             next_line = lines[j].strip()
             
-            # Extrair opção de tributação e meses
+            # Extrair opção de tributação
             option_match = re.search(r"OPÇÃO DE TRIBUTAÇÃO:\s*(\w+)", next_line, re.IGNORECASE)
             if option_match:
                 tax_option = option_match.group(1)
             
-            months_match = re.search(r"(?:NÚM\.?\s*MESES|MESES)[:\s]*(\d+)", next_line, re.IGNORECASE)
+            # Extrair mês de recebimento
+            month_match = re.search(r"MÊS\s+(\w+\.?)", next_line, re.IGNORECASE)
+            if month_match:
+                month_of_receipt = month_match.group(1)
+            
+            # Extrair valor recebido referente a juros
+            interest_match = re.search(r"Valor Recebido[:\s]*([\d.,]+)", next_line, re.IGNORECASE)
+            if interest_match:
+                amount_received_related_to_interest = parse_currency(interest_match.group(1))
+            
+            # Extrair número de meses
+            months_match = re.search(r"(?:NÚM\.?\s*MESES|MESES)[:\s]*([\d.,]+)", next_line, re.IGNORECASE)
             if months_match:
-                months_count = int(months_match.group(1))
+                number_of_months = parse_currency(months_match.group(1))
             
             # Imposto devido RRA
             rra_match = re.search(r"IMPOSTO DEVIDO RRA[:\s]*([\d.,]+)", next_line, re.IGNORECASE)
@@ -305,28 +360,62 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             # Parar se encontrar início de outro item ou seção
             if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+\s+\d{2}\.\d{3}\.\d{3}", next_line):
                 break
-            if "TOTAL" in next_line.upper():
+            if next_line.upper().startswith("TOTAL"):
                 break
         
         result = {
             "payer_name": payer_name,
             "cpf_cnpj": cnpj,
-            "accumulated_income": parse_currency(match.group(3)),
-            "social_security_contribution": parse_currency(match.group(4)),
+            "taxable_income_total": parse_currency(match.group(3)),
+            "official_social_security_contribution": parse_currency(match.group(4)),
             "alimony": parse_currency(match.group(5)),
             "tax_withheld_at_source": parse_currency(match.group(6)),
             "id": item_id,
             "page": page_num
         }
         
-        if months_count:
-            result["months_count"] = months_count
-        if tax_option:
+        # Adicionar campos opcionais (incluindo valores 0.0)
+        if tax_option is not None:
             result["tax_option"] = tax_option
-        if tax_due_rra:
+        if month_of_receipt is not None:
+            result["month_of_receipt"] = month_of_receipt
+        if amount_received_related_to_interest is not None:
+            result["amount_received_related_to_interest"] = amount_received_related_to_interest
+        if number_of_months is not None:
+            result["number_of_months"] = number_of_months
+        if tax_due_rra is not None:
             result["tax_due_rra"] = tax_due_rra
         
         return result
+    
+    def _get_full_payer_name(self, initial_name: str, lines: list[str], idx: int) -> str:
+        """Concatena nome do pagador que pode estar em múltiplas linhas.
+        
+        Ex: Linha 38: "GOVERNO DO ESTATO DE MINAS 58.538.174/0001-92 ..."
+            Linha 39: "GERAIS"
+        Resultado: "GOVERNO DO ESTATO DE MINAS GERAIS"
+        """
+        full_name = initial_name
+        
+        # Verificar próxima linha
+        if idx + 1 < len(lines):
+            next_line = lines[idx + 1].strip()
+            
+            # É continuação se:
+            # - Não contém CNPJ
+            # - Não contém valores numéricos típicos (XX.XXX,XX)
+            # - Não é uma linha de metadados (OPÇÃO, MÊS, etc)
+            # - É texto em maiúsculas curto (nome do estado, etc)
+            if (
+                not re.search(r"\d{2}\.\d{3}\.\d{3}", next_line) and
+                not re.search(r"\d+[.,]\d{3}[.,]\d{2}", next_line) and
+                not re.search(r"(OPÇÃO|MÊS|RECEBIMENTO|IMPOSTO|TOTAL)", next_line.upper()) and
+                re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]*$", next_line) and
+                len(next_line) <= 30
+            ):
+                full_name = f"{initial_name} {next_line}"
+        
+        return full_name
     
     def _parse_cnpj_inline_3v(
         self,
@@ -342,13 +431,16 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         if self._should_skip_line(payer_name):
             return None
         
+        # Verificar se o nome continua na próxima linha
+        payer_name = self._get_full_payer_name(payer_name, lines, idx)
+        
         item_id = generate_item_id(f"{cnpj}{payer_name}")
         
         return {
             "payer_name": payer_name,
             "cpf_cnpj": cnpj,
-            "accumulated_income": parse_currency(match.group(3)),
-            "social_security_contribution": parse_currency(match.group(4)),
+            "taxable_income_total": parse_currency(match.group(3)),
+            "official_social_security_contribution": parse_currency(match.group(4)),
             "tax_withheld_at_source": parse_currency(match.group(5)),
             "id": item_id,
             "page": page_num
@@ -368,7 +460,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         name_parts = [payer_name_start]
         cnpj = ""
-        months_count = ""
+        number_of_months = None
         
         for j in range(idx + 1, min(idx + 8, len(lines))):
             next_line = lines[j].strip()
@@ -377,9 +469,9 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             if cnpj_match:
                 cnpj = cnpj_match.group(1)
             
-            months_match = re.search(r"Meses[:\s]*(\d+)", next_line, re.IGNORECASE)
+            months_match = re.search(r"Meses[:\s]*([\d.,]+)", next_line, re.IGNORECASE)
             if months_match:
-                months_count = months_match.group(1)
+                number_of_months = parse_currency(months_match.group(1))
             
             if cnpj:
                 break
@@ -395,8 +487,8 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         result = {
             "payer_name": full_name,
-            "accumulated_income": parse_currency(match.group(2)),
-            "social_security_contribution": parse_currency(match.group(3)),
+            "taxable_income_total": parse_currency(match.group(2)),
+            "official_social_security_contribution": parse_currency(match.group(3)),
             "tax_withheld_at_source": parse_currency(match.group(4)),
             "judicial_expenses": parse_currency(match.group(5)),
             "cpf_cnpj": cnpj,
@@ -404,8 +496,8 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             "page": page_num
         }
         
-        if months_count:
-            result["months_count"] = int(months_count)
+        if number_of_months is not None:
+            result["number_of_months"] = number_of_months
         
         return result
     
@@ -443,7 +535,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         return {
             "payer_name": full_name,
-            "accumulated_income": parse_currency(match.group(2)),
+            "taxable_income_total": parse_currency(match.group(2)),
             "tax_withheld_at_source": parse_currency(match.group(3)),
             "judicial_expenses": parse_currency(match.group(4)),
             "cpf_cnpj": cnpj,
@@ -478,31 +570,34 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         
         Args:
             items: Lista de itens extraídos
-            pdf_totals: Lista de totais do PDF [rend_acum, contrib_prev, irrf, desp_judicial]
+            pdf_totals: Lista de totais do PDF [rend_acum, contrib_prev, pensao, irrf]
+            
+        Ordem dos totais no PDF (linha TOTAL):
+        TOTAL RENDIMENTOS | CONTR. PREV. OFICIAL | PENSÃO ALIMENTÍCIA | IMPOSTO RETIDO NA FONTE
         """
         pdf_totals = pdf_totals or []
         
         # Somar valores extraídos
-        sum_income = round(sum(i.get("accumulated_income", 0) for i in items), 2)
+        sum_income = round(sum(i.get("taxable_income_total", 0) for i in items), 2)
+        sum_contrib = round(sum(i.get("official_social_security_contribution", 0) for i in items), 2)
+        sum_alimony = round(sum(i.get("alimony", 0) for i in items), 2)
         sum_irrf = round(sum(i.get("tax_withheld_at_source", 0) for i in items), 2)
-        sum_contrib = round(sum(i.get("social_security_contribution", 0) for i in items), 2)
         sum_judicial = round(sum(i.get("judicial_expenses", 0) for i in items), 2)
         
-        # Totais do PDF (se disponíveis)
+        # Totais do PDF (se disponíveis) - ordem: REND, CONTRIB, PENSAO, IRRF
         pdf_income = pdf_totals[0] if len(pdf_totals) > 0 else None
         pdf_contrib = pdf_totals[1] if len(pdf_totals) > 1 else None
-        pdf_irrf = pdf_totals[2] if len(pdf_totals) > 2 else None
-        pdf_judicial = pdf_totals[3] if len(pdf_totals) > 3 else None
+        pdf_alimony = pdf_totals[2] if len(pdf_totals) > 2 else None
+        pdf_irrf = pdf_totals[3] if len(pdf_totals) > 3 else None
         
         totals = {
-            "accumulated_income": create_validated_total(sum_income, pdf_income),
+            "taxable_income_total": create_validated_total(sum_income, pdf_income),
+            "official_social_security_contribution": create_validated_total(sum_contrib, pdf_contrib),
+            "alimony": create_validated_total(sum_alimony, pdf_alimony),
             "tax_withheld_at_source": create_validated_total(sum_irrf, pdf_irrf)
         }
         
-        if any("social_security_contribution" in i for i in items):
-            totals["social_security_contribution"] = create_validated_total(sum_contrib, pdf_contrib)
-        
         if any("judicial_expenses" in i for i in items):
-            totals["judicial_expenses"] = create_validated_total(sum_judicial, pdf_judicial)
+            totals["judicial_expenses"] = create_validated_total(sum_judicial, None)
         
         return totals

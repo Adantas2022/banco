@@ -288,6 +288,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         BUG #81758 fix: Corrigido código de 03 para 11 (código correto conforme IRPF).
         BUG #81758 fix v2: Adicionada extração de items detalhados (beneficiary, cpf, cnpj, etc.)
+        BUG fix: Corrigido nome truncado entre páginas (ex: "INDUSTRIA DE INSUMOS" + "AGROPECUARIOS")
         """
         items = []
         seen_keys = set()
@@ -304,7 +305,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             r"11[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES",
         ]
         
-        for page_num, page_text in sorted_pages:
+        # Coletar todas as páginas para verificar continuação cross-page
+        all_pages = list(sorted_pages)
+        
+        for page_idx, (page_num, page_text) in enumerate(all_pages):
             lines = page_text.split("\n")
             upper_page = page_text.upper()
             
@@ -351,6 +355,12 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
+                        # Verificar se nome pode estar truncado (item no final da página)
+                        # e há continuação na próxima página
+                        if page_idx + 1 < len(all_pages):
+                            next_page_text = all_pages[page_idx + 1][1]
+                            item = self._try_extend_payer_name_cross_page(item, lines, i, next_page_text)
+                        
                         key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
@@ -398,6 +408,85 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "valid_total": True,
             "items": items if items else None
         }
+    
+    def _try_extend_payer_name_cross_page(
+        self,
+        item: dict,
+        current_lines: list[str],
+        item_line_idx: int,
+        next_page_text: str
+    ) -> dict:
+        """Tenta estender o payer_name com continuação da próxima página.
+        
+        Cenário: Nome do pagador truncado no final da página, com continuação
+        na próxima página (ex: "INDUSTRIA DE INSUMOS" na pág 6 + "AGROPECUARIOS" na pág 7).
+        
+        Heurísticas:
+        1. Item está nas últimas linhas da página (antes de "Página X de Y")
+        2. Próxima página começa com texto que parece continuação de nome
+        """
+        # Verificar se item está próximo ao final da página
+        lines_after_item = len(current_lines) - item_line_idx - 1
+        if lines_after_item > 3:
+            # Item não está no final da página
+            return item
+        
+        # Verificar se as linhas após o item são "Página X de Y" ou vazias
+        is_near_page_end = False
+        for j in range(item_line_idx + 1, len(current_lines)):
+            line = current_lines[j].strip()
+            if not line:
+                continue
+            if re.match(r"^P[aá]gina\s+\d+\s*de\s*\d+", line, re.IGNORECASE):
+                is_near_page_end = True
+                break
+            # Se encontrar outro item ou seção, não está no final
+            if re.match(r"^(Titular|Dependente)\s+\d{3}\.\d{3}", line):
+                return item
+            if re.match(r"^\d{2}[.\s]+[A-Z]", line):
+                return item
+        
+        if not is_near_page_end:
+            return item
+        
+        # Verificar próxima página para continuação do nome
+        next_lines = next_page_text.split("\n")
+        
+        # Procurar nas primeiras linhas da próxima página (após cabeçalho)
+        for i, line in enumerate(next_lines[:10]):
+            line = line.strip()
+            upper_line = line.upper()
+            
+            # Pular cabeçalho do documento (NOME:, CPF:, DECLARAÇÃO, etc.)
+            if re.match(r"^NOME:", upper_line) or re.match(r"^CPF:", upper_line):
+                continue
+            if "DECLARAÇÃO" in upper_line or "EXERCÍCIO" in upper_line:
+                continue
+            if not line:
+                continue
+            
+            # Se linha parece continuação de nome:
+            # - É texto em maiúsculas
+            # - Não contém CNPJ/CPF/valor
+            # - Não é código de seção
+            # - Não é cabeçalho de tabela
+            if (
+                re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]*$", line) and
+                not re.search(r"\d{2}\.\d{3}\.\d{3}", line) and  # CNPJ
+                not re.search(r"\d{3}\.\d{3}\.\d{3}", line) and  # CPF
+                not re.search(r"\d+,\d{2}", line) and  # Valor
+                not re.match(r"^\d{2}[.\s]+", line) and  # Código seção
+                not any(kw in upper_line for kw in ["BENEFICIÁRIO", "VALOR", "PAGADORA", "TOTAL"])
+            ):
+                # Concatenar ao nome
+                item["payer_name"] = f"{item['payer_name']} {line}"
+                break
+            
+            # Se encontrar linha que não é continuação, parar
+            if re.match(r"^\d{2}[.\s]+", line):  # Código de seção
+                break
+        
+        return item
     
     def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
         """Extrai 05. Ganhos líquidos em renda variável."""
@@ -1171,7 +1260,19 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Parseia item de 'Outros' com descrição."""
+        """Parseia item de 'Outros' com descrição.
+        
+        BUG fix: Separar corretamente nome do pagador e descrição quando estão
+        na mesma linha ou em múltiplas linhas.
+        
+        Exemplo problemático:
+        Linha: "Titular 171.955.328-95 51.572.102/0001-12 FINACNEIRA XYZ OUTROS 11.000,00"
+        Linhas seguintes: "RENDIMENTOS", "SUJEITOS A", "TRIBUTACAO", "EXCLUSIVA"
+        
+        Resultado esperado:
+        - payer_name: "FINACNEIRA XYZ"
+        - description: "OUTROS RENDIMENTOS SUJEITOS A TRIBUTACAO EXCLUSIVA"
+        """
         # Formato: Titular/Dependente CPF CPF/CNPJ Nome Descrição Valor
         pattern = re.match(
             r"^(Titular|Dependente)\s+"
@@ -1190,16 +1291,68 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             value = parse_currency(pattern.group(5))
             
             # Separar nome do pagador da descrição
-            payer_name = remaining
-            description = ""
+            # Palavras-chave que indicam início de descrição
+            description_keywords = [
+                "OUTROS", "RENDIMENTOS", "GANHOS", "JUROS", "DIVIDENDOS",
+                "LUCROS", "PRÊMIOS", "PREMIOS", "INDENIZAÇÃO", "INDENIZACAO",
+                "COMPENSAÇÃO", "COMPENSACAO", "AUXÍLIO", "AUXILIO",
+            ]
             
-            # Procurar descrição nas linhas seguintes ou no restante
-            for j in range(idx + 1, min(idx + 3, len(lines))):
+            payer_name = remaining
+            description_parts = []
+            
+            # Verificar se alguma palavra-chave de descrição está no remaining
+            words = remaining.split()
+            split_idx = -1
+            
+            for i, word in enumerate(words):
+                if word.upper() in description_keywords:
+                    split_idx = i
+                    break
+            
+            if split_idx > 0:
+                # Nome é tudo antes da palavra-chave de descrição
+                payer_name = " ".join(words[:split_idx])
+                # Descrição começa com a palavra-chave
+                description_parts.append(" ".join(words[split_idx:]))
+            elif split_idx == 0:
+                # Toda a linha remaining é descrição (nome pode estar vazio ou em outro formato)
+                # Neste caso, tentamos manter o nome original e não adicionar descrição da linha
+                pass
+            
+            # Concatenar linhas seguintes à descrição
+            for j in range(idx + 1, min(idx + 8, len(lines))):
                 next_line = lines[j].strip()
-                if next_line and not re.match(r"^(Titular|Dependente|[\d.,]+|\d{2}\.)", next_line):
-                    if "TOTAL" not in next_line.upper():
-                        description = next_line
-                        break
+                upper_next = next_line.upper()
+                
+                # Parar se encontrar novo item, TOTAL, ou seção
+                if re.match(r"^(Titular|Dependente)\s+\d{3}\.\d{3}", next_line):
+                    break
+                if "TOTAL" in upper_next and re.match(r"^TOTAL\s", upper_next):
+                    break
+                if re.match(r"^\d{2}[.\s]+[A-Z]", next_line):
+                    break
+                if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
+                    break
+                
+                # Pular linhas vazias
+                if not next_line:
+                    continue
+                
+                # Pular linhas que são valores monetários sozinhos
+                if re.match(r"^[\d.,]+$", next_line):
+                    continue
+                
+                # Pular linhas de cabeçalho
+                if any(kw in upper_next for kw in ["BENEFICIÁRIO", "PAGADORA", "CPF/CNPJ"]):
+                    continue
+                
+                # Adicionar à descrição se parece texto de descrição
+                if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]*$", next_line):
+                    description_parts.append(next_line)
+            
+            # Juntar descrição
+            description = " ".join(description_parts)
             
             item_id = generate_item_id(f"{payer_cpf_cnpj}{cpf}{value}")
             

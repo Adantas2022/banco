@@ -77,12 +77,21 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
         # Calcular total
         sum_result_usd = sum(i.get("result_usd", 0) for i in items)
         
+        # total_values diretamente (sem subseção result_usd)
+        total_values = {
+            "amount": sum_result_usd,
+            "valid": True
+        }
+        
+        if pdf_total_usd is not None:
+            total_values["pdf_total"] = pdf_total_usd
+            total_values["difference"] = abs(sum_result_usd - pdf_total_usd)
+            total_values["valid"] = total_values["difference"] < 0.01
+        
         return {
             "section_name": "Receitas e Despesas - Exterior",
             "items": items,
-            "total_values": {
-                "result_usd": create_validated_total(sum_result_usd, pdf_total_usd)
-            }
+            "total_values": total_values
         }
     
     def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> tuple[list[dict], Optional[float]]:
@@ -156,7 +165,7 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
         )
         
         if pattern:
-            country_code = pattern.group(1)
+            country_code = int(pattern.group(1))  # Converter para int (remove zero à esquerda)
             country_name = pattern.group(2).strip()
             gross_revenue = self._parse_number(pattern.group(3))
             expenses = self._parse_number(pattern.group(4))
@@ -183,7 +192,7 @@ class RuralIncomeExpenditureAbroadExtractor(ISectionExtractor):
         )
         
         if pattern_simple:
-            country_code = pattern_simple.group(1)
+            country_code = int(pattern_simple.group(1))  # Converter para int (remove zero à esquerda)
             country_name = pattern_simple.group(2).strip()
             result_usd = self._parse_number(pattern_simple.group(3))
             

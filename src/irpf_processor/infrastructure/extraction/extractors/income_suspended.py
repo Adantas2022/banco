@@ -113,7 +113,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         totals = self._calculate_totals(items, pdf_totals)
         
         return {
-            "section_name": "Rendimentos Tributáveis de PJ pelo Titular (Imposto com Exigibilidade Suspensa)",
+            "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular (Imposto com Exigibilidade Suspensa)",
             "items": items,
             "total_values": totals
         }
@@ -251,8 +251,8 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
                 "id": item_id,
                 "payer_name": payer_name,
                 "cpf_cnpj": cnpj_cpf,
-                "taxable_income": taxable_income,
-                "tax_with_suspended_requirement": suspended_tax,
+                "taxable_income_with_suspended_requirements": taxable_income,
+                "court_deposits_of_the_tax": suspended_tax,
                 "page": page_num
             }
         
@@ -291,8 +291,8 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
                 "id": item_id,
                 "payer_name": payer_name,
                 "cpf_cnpj": cnpj_cpf,
-                "taxable_income": taxable_income,
-                "tax_with_suspended_requirement": suspended_tax,
+                "taxable_income_with_suspended_requirements": taxable_income,
+                "court_deposits_of_the_tax": suspended_tax,
                 "page": page_num
             }
         
@@ -333,13 +333,13 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         """Calcula totais e valida contra os totais do PDF."""
         pdf_totals = pdf_totals or []
         
-        sum_income = round(sum(i.get("taxable_income", 0) for i in items), 2)
-        sum_tax = round(sum(i.get("tax_with_suspended_requirement", 0) for i in items), 2)
+        sum_income = round(sum(i.get("taxable_income_with_suspended_requirements", 0) for i in items), 2)
+        sum_tax = round(sum(i.get("court_deposits_of_the_tax", 0) for i in items), 2)
         
         pdf_income = pdf_totals[0] if len(pdf_totals) > 0 else None
         pdf_tax = pdf_totals[1] if len(pdf_totals) > 1 else None
         
         return {
-            "taxable_income": create_validated_total(sum_income, pdf_income),
-            "tax_with_suspended_requirement": create_validated_total(sum_tax, pdf_tax)
+            "taxable_income_with_suspended_requirements": create_validated_total(sum_income, pdf_income),
+            "court_deposits_of_the_tax": create_validated_total(sum_tax, pdf_tax)
         }

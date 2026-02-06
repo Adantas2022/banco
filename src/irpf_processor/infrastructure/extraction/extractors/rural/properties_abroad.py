@@ -8,7 +8,33 @@ from ...table_extractor import parse_currency, generate_item_id
 
 
 class RuralPropertiesAbroadExtractor(ISectionExtractor):
-    """Extrai dados de imóveis rurais explorados - Exterior (BUG #81768)."""
+    """Extrai dados de imóveis rurais explorados - Exterior.
+    
+    Estrutura esperada (conforme gabarito):
+    {
+        "section_name": "Dados e Identificação do Imóvel Explorado - Exterior",
+        "items": [
+            {
+                "code": 10,
+                "participation": 80.0,
+                "exploration_condition": 2,
+                "name_and_location": "AGRICULTURA NO EXTERIOR, ESTADOS UNIDOS",
+                "area": 400.0,
+                "participants": {
+                    "items": [
+                        {
+                            "participant_name": "PARTICIPANTE (31.371.955/0001-89)",
+                            "foreigner": true,
+                            "id": "..."
+                        }
+                    ]
+                },
+                "id": "...",
+                "page": 18
+            }
+        ]
+    }
+    """
     
     SECTION_MARKERS = [
         "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - EXTERIOR",
@@ -133,69 +159,85 @@ class RuralPropertiesAbroadExtractor(ISectionExtractor):
         
         Formato esperado:
         CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA
-        11     100,00       5        FINCA N. 858...    4.066,0
+        10     80,00       2        AGRICULTURA NO EXTERIOR, ESTADOS 400,0
+        UNIDOS
+        PARTICIPANTE(S)
+        PARTICIPANTE (31.371.955/0001-89) Estrangeiro: Sim
         """
         line = lines[idx].strip()
         
         # Padrão: CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME ÁREA
-        # Ex: "11 100,00 5 FINCA N. 858 CORRALITO, CAPITAN BADO, 4.066,0"
+        # Ex: "10 80,00 2 AGRICULTURA NO EXTERIOR, ESTADOS 400,0"
         pattern = re.match(
-            r"^(\d{2})\s+([\d.,]+)\s+(\d+)\s+(.+?)\s+([\d.,]+)\s*$",
+            r"^(\d{1,2})\s+([\d.,]+)\s+(\d+)\s+(.+?)\s+([\d.,]+)\s*$",
             line
         )
         
         if pattern:
-            activity_code = pattern.group(1)
+            code = int(pattern.group(1))
             participation = self._parse_number(pattern.group(2))
-            exploitation_condition = pattern.group(3)
+            exploration_condition = int(pattern.group(3))
             name_location = pattern.group(4).strip()
             area = self._parse_number(pattern.group(5))
             
-            # Capturar nome multi-linha
+            # Capturar continuação do nome (até PARTICIPANTE(S))
             j = idx + 1
             while j < len(lines):
                 next_line = lines[j].strip()
                 upper_next = next_line.upper()
                 
-                # Parar se encontrar outro item ou fim
-                if re.match(r"^\d{2}\s+[\d.,]+\s+\d+\s+", next_line):
+                # Parar se encontrar PARTICIPANTE(S)
+                if "PARTICIPANTE" in upper_next:
                     break
                 
-                for marker in self.SECTION_END_MARKERS:
-                    if marker in upper_next:
-                        break
-                else:
-                    # Se não for valor ou cabeçalho, adicionar ao nome
-                    if next_line and not re.match(r"^[\d.,]+$", next_line):
-                        if not any(kw in upper_next for kw in ["CÓDIGO", "ATIVIDADE", "PÁGINA"]):
-                            name_location = f"{name_location} {next_line}"
-                    j += 1
-                    continue
-                break
+                # Parar se encontrar outro item
+                if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d+\s+", next_line):
+                    break
+                
+                # Parar se encontrar fim de seção
+                if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
+                    break
+                
+                # Adicionar ao nome se for texto válido
+                if next_line and not re.match(r"^[\d.,]+$", next_line):
+                    if not any(kw in upper_next for kw in ["CÓDIGO", "ATIVIDADE", "PÁGINA", "(HA)", "(%)"]):
+                        name_location = f"{name_location} {next_line}"
+                
+                j += 1
             
-            item_id = generate_item_id(f"prop_abroad_{activity_code}_{name_location[:30]}")
+            # Extrair participantes
+            participants = self._extract_participants(lines, j)
+            next_index = participants.pop("_next_index", j)
             
-            return {
-                "id": item_id,
-                "activity_code": activity_code,
-                "participation_percentage": participation,
-                "exploitation_condition": exploitation_condition,
+            item_id = generate_item_id(f"prop_abroad_{code}_{name_location[:30]}")
+            
+            result = {
+                "code": code,
+                "participation": participation,
+                "exploration_condition": exploration_condition,
                 "name_and_location": name_location,
-                "area_hectares": area,
+                "area": area,
+                "id": item_id,
                 "page": page_num,
-                "_next_index": j
+                "_next_index": next_index
             }
+            
+            # Adicionar participantes se existirem
+            if participants.get("items"):
+                result["participants"] = participants
+            
+            return result
         
         # Padrão alternativo sem área no final (área em linha separada)
         pattern_alt = re.match(
-            r"^(\d{2})\s+([\d.,]+)\s+(\d+)\s+(.+)$",
+            r"^(\d{1,2})\s+([\d.,]+)\s+(\d+)\s+(.+)$",
             line
         )
         
         if pattern_alt:
-            activity_code = pattern_alt.group(1)
+            code = int(pattern_alt.group(1))
             participation = self._parse_number(pattern_alt.group(2))
-            exploitation_condition = pattern_alt.group(3)
+            exploration_condition = int(pattern_alt.group(3))
             name_start = pattern_alt.group(4).strip()
             
             # Buscar área e nome nas linhas seguintes
@@ -207,27 +249,29 @@ class RuralPropertiesAbroadExtractor(ISectionExtractor):
                 next_line = lines[j].strip()
                 upper_next = next_line.upper()
                 
-                # Parar se encontrar outro item
-                if re.match(r"^\d{2}\s+[\d.,]+\s+\d+\s+", next_line):
+                # Parar se encontrar PARTICIPANTE(S)
+                if "PARTICIPANTE" in upper_next:
                     break
                 
-                for marker in self.SECTION_END_MARKERS:
-                    if marker in upper_next:
-                        break
-                else:
-                    # Verificar se é apenas área
-                    area_match = re.match(r"^([\d.,]+)\s*$", next_line)
-                    if area_match:
-                        area = self._parse_number(area_match.group(1))
-                        j += 1
-                        break
-                    
-                    # Adicionar ao nome
-                    if next_line and not any(kw in upper_next for kw in ["CÓDIGO", "ATIVIDADE", "PÁGINA"]):
-                        name_parts.append(next_line)
+                # Parar se encontrar outro item
+                if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d+\s+", next_line):
+                    break
+                
+                # Parar se encontrar fim de seção
+                if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
+                    break
+                
+                # Verificar se é apenas área
+                area_match = re.match(r"^([\d.,]+)\s*$", next_line)
+                if area_match:
+                    area = self._parse_number(area_match.group(1))
                     j += 1
-                    continue
-                break
+                    break
+                
+                # Adicionar ao nome
+                if next_line and not any(kw in upper_next for kw in ["CÓDIGO", "ATIVIDADE", "PÁGINA", "(HA)", "(%)"]):
+                    name_parts.append(next_line)
+                j += 1
             
             full_name = " ".join(name_parts)
             
@@ -240,20 +284,93 @@ class RuralPropertiesAbroadExtractor(ISectionExtractor):
             if area == 0.0:
                 return None
             
-            item_id = generate_item_id(f"prop_abroad_{activity_code}_{full_name[:30]}")
+            # Extrair participantes
+            participants = self._extract_participants(lines, j)
+            next_index = participants.pop("_next_index", j)
             
-            return {
-                "id": item_id,
-                "activity_code": activity_code,
-                "participation_percentage": participation,
-                "exploitation_condition": exploitation_condition,
+            item_id = generate_item_id(f"prop_abroad_{code}_{full_name[:30]}")
+            
+            result = {
+                "code": code,
+                "participation": participation,
+                "exploration_condition": exploration_condition,
                 "name_and_location": full_name,
-                "area_hectares": area,
+                "area": area,
+                "id": item_id,
                 "page": page_num,
-                "_next_index": j
+                "_next_index": next_index
             }
+            
+            # Adicionar participantes se existirem
+            if participants.get("items"):
+                result["participants"] = participants
+            
+            return result
         
         return None
+    
+    def _extract_participants(self, lines: list[str], start_idx: int) -> dict:
+        """Extrai participantes da propriedade.
+        
+        Formato:
+        PARTICIPANTE(S)
+        PARTICIPANTE (31.371.955/0001-89) Estrangeiro: Sim
+        """
+        participants_items = []
+        j = start_idx
+        in_participants = False
+        
+        while j < len(lines):
+            line = lines[j].strip()
+            upper_line = line.upper()
+            
+            # Detectar início da seção de participantes
+            if upper_line == "PARTICIPANTE(S)" or upper_line == "PARTICIPANTES":
+                in_participants = True
+                j += 1
+                continue
+            
+            if not in_participants:
+                # Se encontramos linha de participante sem cabeçalho
+                if "PARTICIPANTE" in upper_line and "ESTRANGEIRO" in upper_line:
+                    in_participants = True
+                else:
+                    break
+            
+            # Parar se encontrar fim de seção ou novo item
+            if any(marker in upper_line for marker in self.SECTION_END_MARKERS):
+                break
+            
+            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d+\s+", line):
+                break
+            
+            # Parsear participante
+            # Formato: "PARTICIPANTE (31.371.955/0001-89) Estrangeiro: Sim"
+            participant_match = re.match(
+                r"^(.+?)\s+Estrangeiro:\s*(Sim|Não|S|N)\s*$",
+                line,
+                re.IGNORECASE
+            )
+            
+            if participant_match:
+                participant_name = participant_match.group(1).strip()
+                foreigner_str = participant_match.group(2).upper()
+                foreigner = foreigner_str in ["SIM", "S"]
+                
+                participant_id = generate_item_id(f"participant_{participant_name}")
+                
+                participants_items.append({
+                    "participant_name": participant_name,
+                    "foreigner": foreigner,
+                    "id": participant_id
+                })
+            
+            j += 1
+        
+        return {
+            "items": participants_items,
+            "_next_index": j
+        }
     
     def _parse_number(self, value: str) -> float:
         """Parseia número com formato brasileiro."""
