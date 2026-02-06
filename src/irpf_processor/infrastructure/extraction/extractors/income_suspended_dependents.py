@@ -123,7 +123,7 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         totals = self._calculate_totals(items, pdf_totals)
         
         return {
-            "section_name": "Rendimentos Tributáveis de PJ pelos Dependentes (Imposto com Exigibilidade Suspensa)",
+            "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelos Dependentes (Imposto com Exigibilidade Suspensa)",
             "items": items,
             "total_values": totals
         }
@@ -250,16 +250,24 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
             if self._should_skip_line(payer_name):
                 return None
             
+            # Extrair CPF do dependente das linhas seguintes
+            dependent_cpf = self._extract_dependent_cpf(lines, idx)
+            
             item_id = generate_item_id(f"susp_dep_{cnpj_cpf}_{payer_name}")
             
-            return {
-                "id": item_id,
+            result = {
                 "payer_name": payer_name,
                 "cpf_cnpj": cnpj_cpf,
-                "taxable_income": taxable_income,
-                "tax_with_suspended_requirement": suspended_tax,
+                "taxable_income_with_suspended_requirements": taxable_income,
+                "court_deposits_of_the_tax": suspended_tax,
+                "id": item_id,
                 "page": page_num
             }
+            
+            if dependent_cpf:
+                result["dependent_cpf"] = dependent_cpf
+            
+            return result
         
         # Padrão alternativo: NOME + valores (CNPJ na próxima linha)
         pattern_alt = re.match(
@@ -290,16 +298,47 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
             if not cnpj_cpf:
                 return None
             
+            # Extrair CPF do dependente das linhas seguintes
+            dependent_cpf = self._extract_dependent_cpf(lines, idx)
+            
             item_id = generate_item_id(f"susp_dep_{cnpj_cpf}_{payer_name}")
             
-            return {
-                "id": item_id,
+            result = {
                 "payer_name": payer_name,
                 "cpf_cnpj": cnpj_cpf,
-                "taxable_income": taxable_income,
-                "tax_with_suspended_requirement": suspended_tax,
+                "taxable_income_with_suspended_requirements": taxable_income,
+                "court_deposits_of_the_tax": suspended_tax,
+                "id": item_id,
                 "page": page_num
             }
+            
+            if dependent_cpf:
+                result["dependent_cpf"] = dependent_cpf
+            
+            return result
+        
+        return None
+    
+    def _extract_dependent_cpf(self, lines: list[str], idx: int) -> Optional[str]:
+        """Extrai o CPF do dependente das linhas seguintes.
+        
+        Formato: "CPF DO DEPENDENTE: 303.216.120-78"
+        """
+        for j in range(idx + 1, min(idx + 5, len(lines))):
+            next_line = lines[j].strip()
+            
+            # Parar se encontrar outro item ou seção
+            if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+\s+\d{2}\.\d{3}\.\d{3}", next_line):
+                break
+            if next_line.upper().startswith("TOTAL"):
+                break
+            if any(marker in next_line.upper() for marker in self.SECTION_END_MARKERS):
+                break
+            
+            # Extrair CPF do dependente
+            cpf_match = re.search(r"CPF DO DEPENDENTE[:\s]*([\d.-]+)", next_line, re.IGNORECASE)
+            if cpf_match:
+                return cpf_match.group(1)
         
         return None
     
@@ -338,13 +377,13 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         """Calcula totais e valida contra os totais do PDF."""
         pdf_totals = pdf_totals or []
         
-        sum_income = round(sum(i.get("taxable_income", 0) for i in items), 2)
-        sum_tax = round(sum(i.get("tax_with_suspended_requirement", 0) for i in items), 2)
+        sum_income = round(sum(i.get("taxable_income_with_suspended_requirements", 0) for i in items), 2)
+        sum_tax = round(sum(i.get("court_deposits_of_the_tax", 0) for i in items), 2)
         
         pdf_income = pdf_totals[0] if len(pdf_totals) > 0 else None
         pdf_tax = pdf_totals[1] if len(pdf_totals) > 1 else None
         
         return {
-            "taxable_income": create_validated_total(sum_income, pdf_income),
-            "tax_with_suspended_requirement": create_validated_total(sum_tax, pdf_tax)
+            "taxable_income_with_suspended_requirements": create_validated_total(sum_income, pdf_income),
+            "court_deposits_of_the_tax": create_validated_total(sum_tax, pdf_tax)
         }
