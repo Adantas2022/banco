@@ -838,7 +838,8 @@ class AssetsExtractor(ISectionExtractor):
         skip_prefixes = (
             "Bem", "Inscrição", "Logradouro", "Comp", "Município",
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
-            "Registro de Embarcação", "Matrícula", "Banco", "Agência",
+            "Registro de Embarcação", "Registro de Aeronave", "Matrícula",
+            "Banco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
             "CNPJ", "Lucro ou", "Valor Recebido", "Imposto",
             "CEI", "CNO", "CEI/CNO", "Aplicação Financeira", "UF",

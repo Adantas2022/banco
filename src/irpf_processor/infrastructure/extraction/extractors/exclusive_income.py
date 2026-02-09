@@ -693,7 +693,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     "code": "07",
                     "total_value": value,
                     "valid_total": True,
-                    "items": []
+                    "items": None
                 }
         return None
     
@@ -733,7 +733,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         "code": "09",
                         "total_value": value,
                         "valid_total": True,
-                        "items": []
+                        "items": None
                     }
         return None
     

@@ -56,7 +56,7 @@ class IncomePFExtractor(ISectionExtractor):
     def _empty_result(self) -> dict[str, Any]:
         return {
             "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular",
-            "items": []
+            "items": None
         }
     
     def _extract_dimensa_format(self, page_text: str, page_num: int) -> Optional[dict]:

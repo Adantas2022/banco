@@ -25,9 +25,16 @@ class RuralDebtsExtractor(ISectionExtractor):
         pdf_totals = []  # Totais extraídos do PDF
         
         for page_num, page_text in context.pages_text.items():
-            if self.SECTION_MARKER not in page_text.upper():
+            upper_text = page_text.upper()
+            
+            if self.SECTION_MARKER not in upper_text:
                 continue
             
+            # Garantir que é BRASIL e não EXTERIOR
+            if "EXTERIOR" in upper_text and "BRASIL" not in upper_text:
+                continue
+            
+            # Se a página tem ambos (BRASIL e EXTERIOR), só extrair a parte BRASIL
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
             
@@ -63,10 +70,10 @@ class RuralDebtsExtractor(ISectionExtractor):
         }
     
     def _extract_section_total(self, page_text: str) -> list[float]:
-        """Extrai o TOTAL específico da seção de Dívidas Rurais.
+        """Extrai o TOTAL específico da seção de Dívidas Rurais - BRASIL.
         
-        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção,
-        evitando pegar totais de seções anteriores na mesma página.
+        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção BRASIL,
+        evitando pegar totais de seções anteriores (BENS) ou EXTERIOR.
         """
         lines = page_text.split("\n")
         in_section = False
@@ -76,10 +83,14 @@ class RuralDebtsExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper()
             
-            # Entrar na seção
-            if self.SECTION_MARKER in upper_line:
+            # Entrar na seção BRASIL (não EXTERIOR)
+            if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
                 in_section = True
                 continue
+            
+            # Sair se encontrar EXTERIOR
+            if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
+                break
             
             if not in_section:
                 continue
@@ -106,16 +117,36 @@ class RuralDebtsExtractor(ISectionExtractor):
         items = []
         lines = page_text.split("\n")
         
+        in_section = False
         i = 0
         while i < len(lines):
             line = lines[i].strip()
+            upper_line = line.upper()
+            
+            # Detectar início da seção BRASIL
+            if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
+                in_section = True
+                i += 1
+                continue
+            
+            # Parar se encontrar seção EXTERIOR ou outra seção
+            if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
+                break
+            
+            # Parar no TOTAL da seção
+            if in_section and upper_line.startswith("TOTAL"):
+                break
+            
+            if not in_section:
+                i += 1
+                continue
             
             pattern = re.match(
                 r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
             )
             
-            if pattern and "ITEM" not in line.upper() and "TOTAL" not in line.upper():
+            if pattern and "ITEM" not in upper_line and "TOTAL" not in upper_line:
                 item = self._parse_debt(pattern, lines, i, page_num)
                 if item:
                     items.append(item)
@@ -210,6 +241,14 @@ class RuralDebtsExtractor(ISectionExtractor):
             return False
         
         if len(line) < 3:
+            return False
+        
+        # Ignorar datas de cabeçalho (ex: "31/12/2023 31/12/2024")
+        if re.match(r"^\d{2}/\d{2}/\d{4}", line):
+            return False
+        
+        # Ignorar cabeçalhos de coluna
+        if "SITUAÇÃO EM" in line.upper() or "VALOR PAGO" in line.upper():
             return False
         
         return True
