@@ -263,12 +263,7 @@ class LivestockMovementAbroadExtractor(ISectionExtractor):
         return "99"
     
     def _parse_number(self, value: str) -> float:
-        """Parseia número com formato brasileiro."""
-        try:
-            clean_value = value.replace(".", "").replace(",", ".")
-            return float(clean_value)
-        except (ValueError, AttributeError):
-            return 0.0
+        return parse_currency(value)
     
     def _should_skip_line(self, text: str) -> bool:
         skip_keywords = ["TOTAL", "CÓDIGO", "ESPÉCIE", "QUANTIDADE", "NASCIMENTO", "ESTOQUE", "PÁGINA"]
@@ -305,7 +300,6 @@ class LivestockMovementAbroadExtractor(ISectionExtractor):
         """Extrai o TOTAL específico da seção."""
         lines = page_text.split("\n")
         in_section = False
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for line in lines:

@@ -81,7 +81,6 @@ class RuralDebtsAbroadExtractor(ISectionExtractor):
         """Extrai o TOTAL específico da seção."""
         lines = page_text.split("\n")
         in_section = False
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for line in lines:
@@ -106,14 +105,7 @@ class RuralDebtsAbroadExtractor(ISectionExtractor):
         return []
     
     def _parse_currency(self, value_str: str) -> float:
-        """Converte string de valor brasileiro para float."""
-        if not value_str:
-            return 0.0
-        cleaned = value_str.replace(".", "").replace(",", ".")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return 0.0
+        return parse_currency(value_str)
     
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
         items = []

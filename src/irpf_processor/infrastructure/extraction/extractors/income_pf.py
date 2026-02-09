@@ -196,14 +196,9 @@ class IncomePFExtractor(ISectionExtractor):
     
     def _extract_values_from_line(self, text: str) -> list[float]:
         values = []
-        
         parts = re.findall(r"[\d.,]+", text)
-        
         for part in parts:
-            try:
-                clean = part.replace(".", "").replace(",", ".")
-                values.append(float(clean))
-            except ValueError:
-                continue
-        
+            val = parse_currency(part)
+            if val != 0.0 or part in ("0,00", "0.00"):
+                values.append(val)
         return values

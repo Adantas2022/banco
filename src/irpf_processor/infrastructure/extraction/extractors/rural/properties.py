@@ -4,7 +4,7 @@ import re
 from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
-from ...table_extractor import generate_item_id
+from ...table_extractor import parse_currency, generate_item_id
 
 
 class RuralPropertiesExtractor(ISectionExtractor):
@@ -243,19 +243,15 @@ class RuralPropertiesExtractor(ISectionExtractor):
         
         if partial_pattern:
             code = int(partial_pattern.group(1))
-            participation_str = partial_pattern.group(2).replace(".", "").replace(",", ".")
-            participation = float(participation_str)
+            participation = parse_currency(partial_pattern.group(2))
             exploration = int(partial_pattern.group(3))
             remaining = partial_pattern.group(4).strip()
             
-            # Tentar extrair area e cib do remaining
-            # Formato: "FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
             area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", remaining)
             
             if area_cib_match:
                 name_location = remaining[:area_cib_match.start()].strip()
-                area_str = area_cib_match.group(1).replace(".", "").replace(",", ".")
-                area = float(area_str)
+                area = parse_currency(area_cib_match.group(1))
                 cib = area_cib_match.group(2)
                 
                 # Verificar se próxima linha é continuação do nome
@@ -313,16 +309,13 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         name_part = next_line[:area_cib_end.start()].strip()
                         if name_part:
                             name_parts.append(name_part)
-                        area_str = area_cib_end.group(1).replace(".", "").replace(",", ".")
-                        area = float(area_str)
+                        area = parse_currency(area_cib_end.group(1))
                         cib = area_cib_end.group(2)
                         found_area_cib = True
                         break
                     
-                    # Pattern 2: Área sozinha na linha (ex: "1.200,0")
                     if re.match(r"^[\d.]+,\d+$", next_line):
-                        area_str = next_line.replace(".", "").replace(",", ".")
-                        area = float(area_str)
+                        area = parse_currency(next_line)
                         # Próxima linha pode ser CIB
                         if j + 1 < len(lines):
                             cib_line = lines[j + 1].strip()
@@ -370,12 +363,10 @@ class RuralPropertiesExtractor(ISectionExtractor):
         page_num: int
     ) -> dict:
         code = int(match.group(1))
-        participation_str = match.group(2).replace(".", "").replace(",", ".")
-        participation = float(participation_str)
+        participation = parse_currency(match.group(2))
         exploration = int(match.group(3))
         name_location = match.group(4).strip()
-        area_str = match.group(5).replace(".", "").replace(",", ".")
-        area = float(area_str)
+        area = parse_currency(match.group(5))
         cib = match.group(6)
         
         # Verificar se próxima linha é continuação do nome
@@ -430,11 +421,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
         if j >= len(lines):
             return None
         
-        # Participação
-        participation_str = lines[j].strip().replace(".", "").replace(",", ".")
-        try:
-            participation = float(participation_str)
-        except ValueError:
+        participation = parse_currency(lines[j].strip())
+        if participation == 0.0 and lines[j].strip() != "0,00":
             return None
         j += 1
         
@@ -483,16 +471,13 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 name_part = next_line[:area_cib_match.start()].strip()
                 if name_part:
                     name_parts.append(name_part)
-                area_str = area_cib_match.group(1).replace(".", "").replace(",", ".")
-                area = float(area_str)
+                area = parse_currency(area_cib_match.group(1))
                 cib = area_cib_match.group(2)
                 j += 1
                 break
             
-            # Área sozinha (formato: 123,4 ou 1.200,0)
             if re.match(r"^[\d.]+,\d+$", next_line):
-                area_str = next_line.replace(".", "").replace(",", ".")
-                area = float(area_str)
+                area = parse_currency(next_line)
                 j += 1
                 # Próximo deve ser CIB
                 if j < len(lines):

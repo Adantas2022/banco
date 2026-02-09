@@ -283,7 +283,6 @@ class RuralAssetsExtractor(ISectionExtractor):
         """
         lines = page_text.split("\n")
         in_section = False
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         # Limitar busca até o marcador de fim
@@ -312,11 +311,4 @@ class RuralAssetsExtractor(ISectionExtractor):
         return []
     
     def _parse_currency(self, value_str: str) -> float:
-        """Converte string de valor brasileiro para float."""
-        if not value_str:
-            return 0.0
-        cleaned = value_str.replace(".", "").replace(",", ".")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return 0.0
+        return parse_currency(value_str)

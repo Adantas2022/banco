@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
 from ..field_extractors import normalize_cpf
+from ..table_extractor import parse_currency
 
 
 @dataclass
@@ -264,11 +265,7 @@ class ReceiptExtractor(ISectionExtractor):
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             value_str = match.group(1)
-            value_str = value_str.replace(".", "").replace(",", ".")
-            try:
-                return float(value_str)
-            except ValueError:
-                return 0.0
+            return parse_currency(value_str)
         return 0.0
 
     def _extract_monetary_value_with_alt(

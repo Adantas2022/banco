@@ -9,25 +9,11 @@ Este módulo fornece funções para:
 import re
 from typing import Optional
 
+from .table_extractor import parse_currency
+
 
 def parse_currency_value(value_str: str) -> float:
-    """Converte string de valor brasileiro para float.
-    
-    Args:
-        value_str: String no formato "1.234.567,89" ou "0,00"
-        
-    Returns:
-        Valor como float
-    """
-    if not value_str:
-        return 0.0
-    
-    # Remove pontos de milhar e troca vírgula por ponto
-    cleaned = value_str.replace(".", "").replace(",", ".")
-    try:
-        return float(cleaned)
-    except ValueError:
-        return 0.0
+    return parse_currency(value_str)
 
 
 def extract_total_values_from_lines(
@@ -47,8 +33,7 @@ def extract_total_values_from_lines(
     """
     skip_keywords = skip_keywords or []
     
-    # Padrão para números no formato brasileiro
-    num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+    num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
     
     for line in lines:
         stripped = line.strip()

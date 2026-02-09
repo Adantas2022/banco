@@ -342,13 +342,7 @@ class LivestockMovementExtractor(ISectionExtractor):
         return "99"
     
     def _parse_number(self, value: str) -> float:
-        """Parseia número com formato brasileiro (1.234,56 ou 1234)."""
-        try:
-            # Remover pontos de milhar e trocar vírgula por ponto
-            clean_value = value.replace(".", "").replace(",", ".")
-            return float(clean_value)
-        except (ValueError, AttributeError):
-            return 0.0
+        return parse_currency(value)
     
     def _should_skip_line(self, text: str) -> bool:
         skip_keywords = ["TOTAL", "CÓDIGO", "ESPÉCIE", "QUANTIDADE", "NASCIMENTO", "ESTOQUE"]
@@ -395,7 +389,6 @@ class LivestockMovementExtractor(ISectionExtractor):
         """
         lines = page_text.split("\n")
         in_section = False
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for line in lines:
@@ -422,11 +415,4 @@ class LivestockMovementExtractor(ISectionExtractor):
         return []
     
     def _parse_total_value(self, value_str: str) -> float:
-        """Converte string de valor brasileiro para float."""
-        if not value_str:
-            return 0.0
-        cleaned = value_str.replace(".", "").replace(",", ".")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return 0.0
+        return parse_currency(value_str)

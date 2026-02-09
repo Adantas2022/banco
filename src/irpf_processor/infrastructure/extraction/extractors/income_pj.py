@@ -138,7 +138,6 @@ class IncomePJExtractor(ISectionExtractor):
         # Padrão unificado que aceita AMBOS os formatos:
         # - Brasileiro: 250.000,00 (ponto=milhar, vírgula=decimal)
         # - Americano: 250,000.00 (vírgula=milhar, ponto=decimal)
-        # BUG #81321 fix: Suporte para formato americano (inversão de separadores)
         num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
         pattern = re.match(
             rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"
