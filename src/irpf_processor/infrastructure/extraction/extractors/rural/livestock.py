@@ -167,6 +167,14 @@ class LivestockMovementExtractor(ISectionExtractor):
             if self._should_skip_line(species):
                 return None
             
+            # Verificar se próxima linha é continuação do nome da espécie
+            # Ex: "Asininos, equinos" + "e muares"
+            if idx + 1 < len(lines):
+                next_line = lines[idx + 1].strip()
+                if next_line and not re.match(r'^[\d.,]+', next_line) and not self._should_skip_line(next_line):
+                    if re.match(r'^[a-záàâãéêíóôõúç]', next_line, re.IGNORECASE) and len(next_line) < 30:
+                        species = f"{species} {next_line}"
+            
             item_id = generate_item_id(f"livestock_{code}_{species}")
             
             return {
@@ -200,6 +208,13 @@ class LivestockMovementExtractor(ISectionExtractor):
             
             if self._should_skip_line(species):
                 return None
+            
+            # Verificar se próxima linha é continuação do nome da espécie
+            if idx + 1 < len(lines):
+                next_line = lines[idx + 1].strip()
+                if next_line and not re.match(r'^[\d.,]+', next_line) and not self._should_skip_line(next_line):
+                    if re.match(r'^[a-záàâãéêíóôõúç]', next_line, re.IGNORECASE) and len(next_line) < 30:
+                        species = f"{species} {next_line}"
             
             # Gerar código baseado no nome da espécie
             code = self._get_species_code(species)
