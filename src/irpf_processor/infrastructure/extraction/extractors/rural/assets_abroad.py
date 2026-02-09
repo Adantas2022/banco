@@ -290,7 +290,6 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
         """Extrai o TOTAL específico da seção."""
         lines = page_text.split("\n")
         in_section = False
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         max_line = end_line_index if end_line_index is not None else len(lines)
@@ -318,11 +317,4 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
         return []
     
     def _parse_currency(self, value_str: str) -> float:
-        """Converte string de valor brasileiro para float."""
-        if not value_str:
-            return 0.0
-        cleaned = value_str.replace(".", "").replace(",", ".")
-        try:
-            return float(cleaned)
-        except ValueError:
-            return 0.0
+        return parse_currency(value_str)

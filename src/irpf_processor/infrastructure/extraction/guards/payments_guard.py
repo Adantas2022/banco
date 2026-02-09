@@ -56,7 +56,7 @@ class PaymentsGuard(ISectionGuard):
         )
     
     def _extract_pdf_total(self, context: ExtractionContext) -> float | None:
-        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for page_num, page_text in context.pages_text.items():
             upper_text = page_text.upper()

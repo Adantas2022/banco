@@ -88,7 +88,6 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         Isso evita capturar o total da seção do titular que pode estar na mesma página.
         """
         lines = page_text.split("\n")
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         found_dependents_marker = False
@@ -172,8 +171,6 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         page_num: int
     ) -> Optional[dict]:
         # Formato: NOME RENDIMENTO CONTRIB_PREV IRRF 13_SALARIO IRRF_13
-        # Padrão de número brasileiro: 1.234.567,89 ou 0,00
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
         pattern = re.match(
             rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"

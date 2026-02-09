@@ -384,7 +384,6 @@ class DebtsExtractor(ISectionExtractor):
     def _extract_debts_total(self, page_text: str) -> list[float]:
         # Normalizar números OCR
         page_text_normalized = self._normalize_ocr_numbers(page_text)
-        # Pattern unificado BR/US - BUG #81321 fix
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         lines = page_text_normalized.split("\n")
         in_debts_section = False

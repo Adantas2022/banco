@@ -60,7 +60,7 @@ class DebtsGuard(ISectionGuard):
     
     def _extract_pdf_totals(self, context: ExtractionContext) -> dict[str, float]:
         totals: dict[str, float] = {}
-        num_pattern = r'([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})'
+        num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
         for page_num, page_text in context.pages_text.items():
             upper_text = page_text.upper()

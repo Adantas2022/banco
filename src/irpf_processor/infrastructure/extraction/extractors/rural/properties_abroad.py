@@ -373,9 +373,4 @@ class RuralPropertiesAbroadExtractor(ISectionExtractor):
         }
     
     def _parse_number(self, value: str) -> float:
-        """Parseia número com formato brasileiro."""
-        try:
-            clean_value = value.replace(".", "").replace(",", ".")
-            return float(clean_value)
-        except (ValueError, AttributeError):
-            return 0.0
+        return parse_currency(value)
