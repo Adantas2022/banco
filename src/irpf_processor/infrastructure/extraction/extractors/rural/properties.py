@@ -257,6 +257,20 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 area_str = area_cib_match.group(1).replace(".", "").replace(",", ".")
                 area = float(area_str)
                 cib = area_cib_match.group(2)
+                
+                # Verificar se próxima linha é continuação do nome
+                # Ex: "MAQUINAS DE CULTURA DE SOLO, MATO" + "GROSSO"
+                if idx + 1 < len(lines):
+                    next_line = lines[idx + 1].strip()
+                    if (next_line
+                        and not re.match(r'^\d{1,2}\s+[\d.,]+\s+\d\s+', next_line)
+                        and not re.match(r'^\d{1,2}$', next_line)
+                        and not re.match(r'^[\d.,]+\s', next_line)
+                        and "PARTICIPANTE" not in next_line.upper()
+                        and not any(marker in next_line.upper() for marker in self.SECTION_END_MARKERS)
+                        and re.match(r'^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]', next_line)
+                        and len(next_line) < 40):
+                        name_location = f"{name_location} {next_line}"
             else:
                 # BUG #81760 fix: Buscar agressivamente nas linhas seguintes
                 # Nomes de propriedades rurais frequentemente são muito longos e
@@ -363,6 +377,20 @@ class RuralPropertiesExtractor(ISectionExtractor):
         area_str = match.group(5).replace(".", "").replace(",", ".")
         area = float(area_str)
         cib = match.group(6)
+        
+        # Verificar se próxima linha é continuação do nome
+        # Ex: "MAQUINAS DE CULTURA DE SOLO, MATO" + "GROSSO"
+        if idx + 1 < len(lines):
+            next_line = lines[idx + 1].strip()
+            if (next_line
+                and not re.match(r'^\d{1,2}\s+[\d.,]+\s+\d\s+', next_line)
+                and not re.match(r'^\d{1,2}$', next_line)
+                and not re.match(r'^[\d.,]+\s', next_line)
+                and "PARTICIPANTE" not in next_line.upper()
+                and not any(marker in next_line.upper() for marker in self.SECTION_END_MARKERS)
+                and re.match(r'^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]', next_line)
+                and len(next_line) < 40):
+                name_location = f"{name_location} {next_line}"
         
         name_location = self._normalize_name(name_location)
         participants = self._extract_participants(lines, idx)
