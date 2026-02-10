@@ -80,6 +80,18 @@ OPTIONAL_SECTIONS = {
     "accumulated_income_from_legal_person_to_dependents",
 }
 
+NON_MONETARY_KEYS = {"page", "total_pages", "total_properties", "code", "country_code", "exploration_condition"}
+
+
+def _normalize_floats(obj):
+    if isinstance(obj, dict):
+        return {k: _normalize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_normalize_floats(v) for v in obj]
+    if isinstance(obj, float):
+        return round(obj, 2)
+    return obj
+
 
 @dataclass
 class IRPFDeclarationResult:
@@ -120,7 +132,7 @@ class IRPFDeclarationResult:
     confidence: float = 0.0
     
     def to_dict(self) -> dict:
-        return {
+        raw = {
             "taxpayer_identification": self.taxpayer_identification,
             "total_value": self.total_value,
             "valid_total": self.valid_total,
@@ -153,6 +165,7 @@ class IRPFDeclarationResult:
             "donations_made": self.donations_made,
             "total_pages": self.total_pages,
         }
+        return _normalize_floats(raw)
 
 
 class IRPFParser:

@@ -1,6 +1,8 @@
+import json
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from irpf_processor.domain.entities import ApiKey
@@ -13,6 +15,34 @@ from irpf_processor.config import get_settings
 from irpf_processor.presentation.api.dependencies import CurrentTenant, require_scope
 from irpf_processor.presentation.workers.router_worker import route_document
 from irpf_processor.shared.logging import get_logger
+
+
+class MonetaryEncoder(json.JSONEncoder):
+    def iterencode(self, o, _one_shot=False):
+        if isinstance(o, float):
+            yield f"{o:.2f}"
+        elif isinstance(o, dict):
+            yield "{"
+            first = True
+            for key, value in o.items():
+                if not first:
+                    yield ", "
+                first = False
+                yield from self.iterencode(key)
+                yield ": "
+                yield from self.iterencode(value)
+            yield "}"
+        elif isinstance(o, list):
+            yield "["
+            first = True
+            for item in o:
+                if not first:
+                    yield ", "
+                first = False
+                yield from self.iterencode(item)
+            yield "]"
+        else:
+            yield from super().iterencode(o, _one_shot)
 from irpf_processor.shared.metrics import record_document_upload, record_queue_send_failure, record_failure
 
 logger = get_logger(__name__)
@@ -238,4 +268,7 @@ async def get_document_result(
 
     result.pop("_id", None)
 
-    return result
+    return Response(
+        content=json.dumps(result, cls=MonetaryEncoder, ensure_ascii=False, default=str),
+        media_type="application/json",
+    )
