@@ -369,10 +369,13 @@ class IRPFParser:
                 pages_text[page_num] = page_text
                 full_text += page_text + "\n"
         
+        pdf_path_str = str(pdf_source) if not isinstance(pdf_source, bytes) else None
+        
         context = ExtractionContext(
             full_text=full_text,
             pages_text=pages_text,
-            total_pages=total_pages
+            total_pages=total_pages,
+            pdf_path=pdf_path_str
         )
         
         if self._is_scanned_pdf(full_text, total_pages):

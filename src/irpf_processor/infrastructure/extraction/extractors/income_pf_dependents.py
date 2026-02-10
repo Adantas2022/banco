@@ -202,10 +202,11 @@ class IncomePFDependentsExtractor(ISectionExtractor):
             deductions_data["total"] = self._calculate_deductions_totals(deductions_data, deductions_totals_pdf)
             item["deductions"] = deductions_data
         
+        item["page"] = page_num
+        
         return {
             "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelos Dependentes",
             "items": [item],
-            "page": page_num
         }
     
     def _calculate_income_totals(self, income_data: dict, pdf_totals: dict) -> dict:
