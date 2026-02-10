@@ -12,7 +12,13 @@ from .irpf_parser import IRPFParser, IRPFDeclarationResult
 from .receipt_parser import ReceiptParser, IRPFReceiptResult
 from .version_detector import VersionDetector, DocumentProfile
 from .text_extractor import PdfTextExtractor
-from .table_extractor import TableExtractor, ExtractedTable, parse_currency, generate_item_id, sum_currency_values
+from .table_extractor import TableExtractor, ExtractedTable, generate_item_id
+from .currency_utils import (
+    CurrencyFormat,
+    detect_currency_format,
+    parse_currency,
+    sum_currency_values,
+)
 from .field_extractors import (
     extract_cpf,
     extract_cnpj,
@@ -68,8 +74,12 @@ __all__ = [
     "PdfTextExtractor",
     "TableExtractor",
     "ExtractedTable",
-    "parse_currency",
     "generate_item_id",
+    
+    # Currency utilities
+    "CurrencyFormat",
+    "detect_currency_format",
+    "parse_currency",
     "sum_currency_values",
     
     "extract_cpf",
