@@ -12,6 +12,7 @@ class ExtractionContext:
     full_text: str
     pages_text: dict[int, str]
     total_pages: int = 0
+    pdf_path: Optional[str] = None
     warnings: list[str] = field(default_factory=list)
     
     def add_warning(self, message: str) -> None:

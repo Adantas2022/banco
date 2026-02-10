@@ -744,6 +744,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
         items = []
         seen_keys = set()
         
+        others_page = None
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
         section_ended = False
@@ -757,29 +758,30 @@ class ExemptIncomeExtractor(ISectionExtractor):
             for i, line in enumerate(lines):
                 upper_line = line.upper()
                 
-                # Detectar fim da seção
                 if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
-                # Detectar início da subseção 99
                 if re.search(r"99[.\s]+OUTROS", upper_line, re.IGNORECASE):
                     in_subsection = True
+                    others_page = page_num
                     continue
                 
-                # Detectar fim
                 if in_subsection:
                     if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
                         in_subsection = False
                         continue
                 
                 if in_subsection:
-                    item = self._parse_others_item(line, lines, i, page_num)
+                    item = self._parse_others_item_basic(line, page_num)
                     if item:
                         key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
+        
+        if items and context.pdf_path and others_page:
+            items = self._refine_others_with_word_positions(context.pdf_path, others_page, items)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -791,15 +793,12 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
-    def _parse_others_item(
+    def _parse_others_item_basic(
         self,
         line: str,
-        lines: list[str],
-        idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Parseia item de 'Outros' com descrição."""
-        # Pattern: Titular/Dependente CPF CPF/CNPJ Nome Valor
+        """Parseia item de 'Outros' - extrai campos estruturados (CPF, CNPJ, valor)."""
         pattern = re.match(
             r"^(Titular|Dependente)\s+"
             r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
@@ -809,58 +808,120 @@ class ExemptIncomeExtractor(ISectionExtractor):
             line.strip()
         )
         
-        if pattern:
-            beneficiary = pattern.group(1)
-            cpf = pattern.group(2)
-            payer_cpf_cnpj = pattern.group(3)
-            remaining = pattern.group(4).strip()
-            value = parse_currency(pattern.group(5))
-            
-            # Separar nome e descrição
-            payer_name = remaining
-            description_parts = []
-            
-            # Procurar descrição nas linhas seguintes
-            for j in range(idx + 1, min(idx + 6, len(lines))):
-                next_line = lines[j].strip()
-                upper_next = next_line.upper()
-                
-                # Parar se encontrar TOTAL ou próximo item
-                if "TOTAL" in upper_next and not re.search(r"TITULAR|DEPENDENTE", upper_next):
-                    break
-                if re.match(r"^(Titular|Dependente)\s+\d{3}\.", next_line):
-                    break
-                if re.match(r"^\d{2}\..*[A-Z]", next_line):
-                    break
-                if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
-                    break
-                
-                # Pular linhas vazias e cabeçalhos
-                if not next_line:
-                    continue
-                if "Beneficiário" in next_line or "Pagadora" in next_line:
-                    continue
-                
-                # Adicionar à descrição
-                if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line):
-                    description_parts.append(next_line)
-            
-            description = " ".join(description_parts)
-            
-            item_id = generate_item_id(f"{payer_cpf_cnpj}{cpf}{value}")
-            
-            return {
-                "beneficiary": beneficiary,
-                "cpf": cpf,
-                "payer_cpf_cnpj": payer_cpf_cnpj,
-                "payer_name": payer_name,
-                "description": description,
-                "value": value,
-                "id": item_id,
-                "page": page_num
-            }
+        if not pattern:
+            return None
         
-        return None
+        return {
+            "beneficiary": pattern.group(1),
+            "cpf": pattern.group(2),
+            "payer_cpf_cnpj": pattern.group(3),
+            "payer_name": "",
+            "description": "",
+            "value": parse_currency(pattern.group(5)),
+            "id": generate_item_id(f"{pattern.group(3)}{pattern.group(2)}{parse_currency(pattern.group(5))}"),
+            "page": page_num
+        }
+    
+    def _refine_others_with_word_positions(
+        self,
+        pdf_path: str,
+        page_num: int,
+        items: list[dict]
+    ) -> list[dict]:
+        """Usa posições de palavras do pdfplumber para separar nome e descrição."""
+        try:
+            import pdfplumber
+            
+            with pdfplumber.open(pdf_path) as pdf:
+                page = pdf.pages[page_num - 1]
+                words = page.extract_words()
+            
+            section_start = next((w for w in words if w["text"] == "99."), None)
+            if not section_start:
+                return items
+            section_top = section_start["top"]
+            
+            total_word = next(
+                (w for w in words if w["text"].upper() == "TOTAL" and w["top"] > section_top + 20),
+                None
+            )
+            section_bottom = total_word["top"] if total_word else section_top + 200
+            
+            section_words = [w for w in words if section_top <= w["top"] <= section_bottom]
+            
+            desc_header = next(
+                (w for w in section_words if w["text"] == "Descrição"),
+                None
+            )
+            if not desc_header:
+                return items
+            
+            desc_x = desc_header["x0"]
+            name_header = next(
+                (w for w in section_words if w["text"] == "Nome" and w["x0"] < desc_x),
+                None
+            )
+            name_x = name_header["x0"] if name_header else desc_x - 100
+            col_boundary = (desc_x + name_x) / 2 + (desc_x - name_x) * 0.3
+            
+            for item in items:
+                cnpj_str = item["payer_cpf_cnpj"].replace(".", "").replace("/", "").replace("-", "")
+                
+                anchor_word = next(
+                    (w for w in section_words if cnpj_str in w["text"].replace(".", "").replace("/", "").replace("-", "")),
+                    None
+                )
+                if not anchor_word:
+                    continue
+                
+                item_top = anchor_word["top"]
+                
+                next_item_top = None
+                for other in items:
+                    if other is item:
+                        continue
+                    other_cnpj = other["payer_cpf_cnpj"].replace(".", "").replace("/", "").replace("-", "")
+                    other_w = next(
+                        (w for w in section_words if other_cnpj in w["text"].replace(".", "").replace("/", "").replace("-", "")),
+                        None
+                    )
+                    if other_w and other_w["top"] > item_top:
+                        if next_item_top is None or other_w["top"] < next_item_top:
+                            next_item_top = other_w["top"]
+                
+                end_top = min(next_item_top or section_bottom, section_bottom)
+                
+                left_x = anchor_word["x1"] + 5
+                
+                text_words = [
+                    w for w in section_words
+                    if w["top"] >= item_top - 2
+                    and w["top"] < end_top
+                    and w["x0"] >= left_x
+                    and not re.match(r"^[\d.,]+$", w["text"])
+                    and w["text"] not in ("Titular", "Dependente")
+                    and not re.match(r"^\d{3}\.\d{3}\.\d{3}", w["text"])
+                    and not re.match(r"^\d{2}\.\d{3}\.\d{3}/", w["text"])
+                ]
+                
+                name_words = sorted(
+                    [w for w in text_words if w["x0"] < col_boundary],
+                    key=lambda w: (w["top"], w["x0"])
+                )
+                desc_words = sorted(
+                    [w for w in text_words if w["x0"] >= col_boundary],
+                    key=lambda w: (w["top"], w["x0"])
+                )
+                
+                if name_words:
+                    item["payer_name"] = " ".join(w["text"] for w in name_words)
+                if desc_words:
+                    item["description"] = " ".join(w["text"] for w in desc_words)
+        
+        except Exception:
+            pass
+        
+        return items
     
     def _extract_termination_subsection(
         self,
