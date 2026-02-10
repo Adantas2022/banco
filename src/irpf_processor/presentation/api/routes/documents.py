@@ -249,8 +249,8 @@ async def get_document_result(
 
     if document.status != DocumentStatus.READY:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Document not ready. Current status: {document.status.value}",
+            status_code=status.HTTP_202_ACCEPTED,
+            detail=f"Document is still being processed. Current status: {document.status.value}",
         )
 
     db = await get_database()

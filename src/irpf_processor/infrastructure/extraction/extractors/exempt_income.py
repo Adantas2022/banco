@@ -79,7 +79,14 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "name": "11. Pensão, proventos de aposentadoria ou reforma por moléstia grave ou aposentadoria ou reforma por acidente em serviço",
             "keywords": ["pensão", "moléstia grave", "acidente em serviço"],
             "has_items": True,
-            "format": "illness"  # Formato especial com múltiplos campos
+            "format": "illness"
+        },
+        "savings_accounts_mortgage_lci_lca_cra_cri": {
+            "code": "12",
+            "name": "12. Rendimentos de cadernetas de poupança, letras hipotecárias, letras de crédito do agronegócio e imobiliário (LCA e LCI) e certificados de recebíveis do agronegócio e imobiliários (CRA e CRI)",
+            "keywords": ["cadernetas", "poupança", "letras hipotecárias", "LCA", "LCI", "CRA", "CRI"],
+            "has_items": True,
+            "format": "standard"
         },
         "income_of_small_business_partner_or_owner": {
             "code": "13",
