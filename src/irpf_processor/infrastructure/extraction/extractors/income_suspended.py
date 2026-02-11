@@ -1,11 +1,11 @@
 """Extrator de rendimentos com exigibilidade suspensa - Titular."""
 
 import re
-from typing import Any, Optional
+from typing import Any
 
-from .base import ExtractionContext, ISectionExtractor
-from ..table_extractor import parse_currency, generate_item_id
+from ..table_extractor import generate_item_id, parse_currency
 from ..validation_utils import create_validated_total
+from .base import ExtractionContext, ISectionExtractor
 
 
 class IncomeSuspendedHolderExtractor(ISectionExtractor):
@@ -18,7 +18,10 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         # Markers parciais para títulos quebrados em múltiplas linhas
         "PELO TITULAR (IMPOSTO COM",  # Início do título quebrado
         "EXIGIBILIDADE SUSPENSA)",  # Continuação do título
-        # Variações sem acento (OCR)
+    ]
+
+    # These markers are too generic and should only be used with additional context
+    GENERIC_MARKERS = [
         "RENDIMENTOS TRIBUTAVEIS RECEBIDOS DE PESSOA JURIDICA PELO TITULAR",
         "RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR",
     ]
@@ -50,7 +53,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
 
-    def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
+    def extract(self, context: ExtractionContext) -> dict[str, Any] | None:
         items = []
         seen_ids = set()
         pdf_totals = []
@@ -63,25 +66,11 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         for page_num, page_text in sorted_pages:
             upper_page = page_text.upper()
 
-            # Entrar na seção - apenas TITULAR, não DEPENDENTES
+            # Entrar na seção - apenas TITULAR com EXIGIBILIDADE SUSPENSA
             if not in_section:
-                # Verificar markers completos - verificar posição relativa
-                for marker in self.SECTION_MARKERS:
-                    if marker in upper_page:
-                        # Verificar se é seção do TITULAR
-                        holder_pos = upper_page.find(self.HOLDER_MARKER)
-                        dependents_pos = upper_page.find("PELOS DEPENDENTES")
-
-                        # Se encontrar PELO TITULAR e não houver PELOS DEPENDENTES antes
-                        if holder_pos != -1 and (
-                            dependents_pos == -1 or holder_pos < dependents_pos
-                        ):
-                            in_section = True
-                            break
-
-                # Verificar título quebrado em múltiplas linhas
-                # Padrão: "PELO TITULAR (IMPOSTO COM" seguido de "EXIGIBILIDADE SUSPENSA)"
-                if not in_section and self._has_holder_section_marker(upper_page):
+                # BUG FIX: Verificar se é a seção correta (EXIGIBILIDADE SUSPENSA)
+                # e não a seção genérica de rendimentos de PJ
+                if self._is_suspended_holder_section(upper_page):
                     in_section = True
 
             if not in_section:
@@ -96,13 +85,17 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
                 lines = page_text.split("\n")
                 for i, line in enumerate(lines):
                     upper_line = line.upper()
-                    if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                        if self.HOLDER_MARKER in upper_line:
-                            # Verificar próxima linha
-                            if i + 1 < len(lines):
-                                next_line = lines[i + 1].upper()
-                                if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
-                                    return None
+                    if self._is_suspended_section_marker_line(upper_line, lines, i):
+                        # Verificar próxima linha
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].upper()
+                            if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
+                                return None
+                        # Também verificar 2 linhas depois (título pode estar quebrado)
+                        if i + 2 < len(lines):
+                            next_line = lines[i + 2].upper()
+                            if "SEM INFORMAÇÕES" in next_line or "SEM INFORMACOES" in next_line:
+                                return None
 
             # Extrair itens
             page_items = self._extract_from_page(page_text, page_num, seen_ids)
@@ -135,6 +128,52 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         for marker in self.SECTION_END_MARKERS:
             if marker in upper_text:
                 return True
+        return False
+
+    def _is_suspended_holder_section(self, upper_text: str) -> bool:
+        """Verifica se o texto contém a seção de EXIGIBILIDADE SUSPENSA do TITULAR.
+
+        BUG FIX: Diferencia da seção genérica de rendimentos de PJ pelo titular,
+        que NÃO contém 'EXIGIBILIDADE SUSPENSA' ou 'IMPOSTO COM'.
+
+        Returns:
+            True se encontrar a seção correta de exigibilidade suspensa do titular
+        """
+        # Verificar markers completos que incluem EXIGIBILIDADE SUSPENSA
+        for marker in self.SECTION_MARKERS:
+            if marker in upper_text:
+                # Apenas aceitar se o marker inclui "EXIGIBILIDADE" ou "IMPOSTO COM"
+                if "EXIGIBILIDADE" in marker or "IMPOSTO COM" in marker:
+                    return True
+
+        # Verificar título quebrado em múltiplas linhas
+        return self._has_holder_section_marker(upper_text)
+
+    def _is_suspended_section_marker_line(
+        self, upper_line: str, lines: list[str], idx: int
+    ) -> bool:
+        """Verifica se a linha atual é o marker da seção de exigibilidade suspensa.
+
+        Args:
+            upper_line: Linha atual em maiúsculas
+            lines: Lista de todas as linhas
+            idx: Índice da linha atual
+
+        Returns:
+            True se a linha é o marker da seção de exigibilidade suspensa
+        """
+        # Padrão 1: Linha contém "EXIGIBILIDADE SUSPENSA" e "PELO TITULAR"
+        if "EXIGIBILIDADE SUSPENSA" in upper_line and "PELO TITULAR" in upper_line:
+            return "PELOS DEPENDENTES" not in upper_line
+
+        # Padrão 2: Título quebrado - "PELO TITULAR (IMPOSTO COM" seguido de EXIGIBILIDADE
+        if "PELO TITULAR" in upper_line and "(IMPOSTO COM" in upper_line:
+            if "PELOS DEPENDENTES" not in upper_line:
+                if idx + 1 < len(lines):
+                    next_line = lines[idx + 1].upper()
+                    if "EXIGIBILIDADE SUSPENSA" in next_line:
+                        return True
+
         return False
 
     def _has_holder_section_marker(self, upper_text: str) -> bool:
@@ -238,7 +277,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
 
     def _try_parse_income_line(
         self, line: str, lines: list[str], idx: int, page_num: int
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Tenta parsear uma linha de rendimento com exigibilidade suspensa.
 
         Formato esperado:
@@ -318,7 +357,86 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
                 "page": page_num,
             }
 
+        # Padrão 3: CNPJ primeiro, valores depois, nome por último (PDF digital/OCR)
+        # Formato:
+        #   92.232.173/0001-53   <- CNPJ sozinho
+        #   15,000.00            <- Rendimentos tributáveis
+        #   2,000.00             <- Depósitos judiciais
+        #   MILANO COMÉRCIO VAREJISTA  <- Nome do pagador
+        result = self._try_parse_cnpj_first_format(line, lines, idx, page_num)
+        if result:
+            return result
+
         return None
+
+    def _try_parse_cnpj_first_format(
+        self, line: str, lines: list[str], idx: int, page_num: int
+    ) -> dict | None:
+        """Parse formato onde CNPJ vem antes do nome do pagador (PDF digital/OCR).
+
+        Formato esperado:
+        92.232.173/0001-53    <- CNPJ sozinho na linha
+        15,000.00             <- Valor 1 (rendimentos tributáveis)
+        2,000.00              <- Valor 2 (depósitos judiciais)
+        MILANO COMÉRCIO VAREJISTA  <- Nome do pagador
+        """
+        stripped = line.strip()
+
+        # Verificar se a linha é um CNPJ/CPF sozinho
+        cnpj_match = re.match(
+            r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})$",
+            stripped,
+        )
+        if not cnpj_match:
+            return None
+
+        cnpj_cpf = cnpj_match.group(1)
+        values = []
+        payer_name = ""
+
+        # Procurar valores e nome nas próximas linhas
+        for j in range(idx + 1, min(idx + 10, len(lines))):
+            next_line = lines[j].strip()
+            if not next_line:
+                continue
+
+            upper_next = next_line.upper()
+
+            # Parar se encontrar TOTAL ou próximo CNPJ
+            if upper_next.startswith("TOTAL"):
+                break
+            if re.match(r"^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$", next_line):
+                break
+
+            # Verificar se é um valor numérico
+            value_match = re.match(r"^([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})$", next_line)
+            if value_match and len(values) < 2:
+                values.append(parse_currency(value_match.group(1)))
+                continue
+
+            # Se já temos 2 valores, procurar nome do pagador
+            if len(values) >= 2:
+                # Verificar se é um nome válido (texto em maiúsculas, não header)
+                if re.match(
+                    r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,&\-]+$", next_line
+                ) and not self._should_skip_line(next_line):
+                    payer_name = next_line
+                    break
+
+        # Validar que temos dados suficientes
+        if len(values) < 2 or not payer_name:
+            return None
+
+        item_id = generate_item_id(f"suspended_{cnpj_cpf}_{payer_name}")
+
+        return {
+            "id": item_id,
+            "payer_name": payer_name,
+            "cpf_cnpj": cnpj_cpf,
+            "taxable_income_with_suspended_requirements": values[0],
+            "court_deposits_of_the_tax": values[1],
+            "page": page_num,
+        }
 
     def _should_skip_line(self, text: str) -> bool:
         skip_keywords = ["TOTAL", "CNPJ", "NOME DA", "RENDIMENTOS", "IMPOSTO"]
