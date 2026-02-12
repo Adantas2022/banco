@@ -352,6 +352,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 if in_subsection:
+                    # BUG #82491: Chave de dedup inclui page_num
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
@@ -361,7 +362,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                             next_page_text = all_pages[page_idx + 1][1]
                             item = self._try_extend_payer_name_cross_page(item, lines, i, next_page_text)
                         
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
@@ -369,7 +370,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item multiline (CNPJ na linha sozinho)
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -377,7 +378,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 5 linhas
                     five_line_item = self._parse_5line_income_item(lines, i, page_num)
                     if five_line_item:
-                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        key = f"{page_num}:{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(five_line_item)
@@ -385,7 +386,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 2 linhas
                     two_line_item = self._parse_2line_income_item(lines, i, page_num)
                     if two_line_item:
-                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        key = f"{page_num}:{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(two_line_item)
@@ -523,7 +524,12 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_financial_income(self, context: ExtractionContext) -> dict:
-        """Extrai 06. Rendimentos de aplicações financeiras."""
+        """Extrai 06. Rendimentos de aplicações financeiras.
+        
+        BUG #82491: A chave de deduplicação agora inclui page_num para evitar
+        remover entradas legítimas que aparecem em páginas diferentes com mesmo
+        CNPJ+valor. A dedup intra-página é mantida para evitar duplicatas de parsing.
+        """
         items = []
         seen_keys = set()
         
@@ -579,10 +585,12 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 if in_subsection:
+                    # BUG #82491: Chave de dedup inclui page_num para permitir
+                    # entradas legítimas com mesmo CNPJ+valor em páginas diferentes.
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
@@ -590,7 +598,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item multiline (CNPJ na linha sozinho)
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -598,7 +606,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 5 linhas (Beneficiário em linha separada)
                     five_line_item = self._parse_5line_income_item(lines, i, page_num)
                     if five_line_item:
-                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        key = f"{page_num}:{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(five_line_item)
@@ -606,7 +614,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 2 linhas (CNPJ+Nome / Benef+Valor+CPF)
                     two_line_item = self._parse_2line_income_item(lines, i, page_num)
                     if two_line_item:
-                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        key = f"{page_num}:{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(two_line_item)
@@ -783,16 +791,17 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         break
                 
                 if in_subsection:
+                    # BUG #82491: Chave de dedup inclui page_num
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
                     
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -890,9 +899,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         break
                 
                 if in_subsection:
+                    # BUG #82491: Chave de dedup inclui page_num
                     item = self._parse_others_item(line, lines, i, page_num)
                     if item:
-                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{page_num}:{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)

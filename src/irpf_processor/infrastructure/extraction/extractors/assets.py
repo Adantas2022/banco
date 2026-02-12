@@ -19,12 +19,14 @@ class AssetsExtractor(ISectionExtractor):
     ]
     SECTION_MARKER = "DECLARAÇÃO DE BENS E DIREITOS"  # Mantido para compatibilidade
     # IMPORTANTE: Apenas marcadores de seções que vêm DEPOIS de bens na declaração IRPF
+    # BUG #82484: Removido "DOAÇÕES EFETUADAS" pois DOAÇÕES vem ANTES de BENS na
+    # ordem padrão do IRPF. Em páginas OCR de transição (que contêm tanto DOAÇÕES
+    # quanto BENS), ter DOAÇÕES como end marker causava detecção prematura de fim.
     SECTION_END_MARKERS = [
         "DÍVIDAS E ÔNUS REAIS",
         "DIVIDAS E ONUS REAIS",
         "DiVIDAS E ONUS REAIS",  # OCR: variação
-        "DOAÇÕES EFETUADAS",
-        "DOACOES EFETUADAS",
+        "DIVIDAS E ÔNUS REAIS",  # OCR: sem acento parcial
     ]
     
     def __init__(self):
