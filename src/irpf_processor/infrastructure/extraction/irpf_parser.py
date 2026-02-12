@@ -80,16 +80,21 @@ OPTIONAL_SECTIONS = {
     "accumulated_income_from_legal_person_to_dependents",
 }
 
-NON_MONETARY_KEYS = {"page", "total_pages", "total_properties", "code", "country_code", "exploration_condition"}
+NON_MONETARY_KEYS = {
+    "page", "total_pages", "total_properties", "code",
+    "country_code", "exploration_condition", "num_months",
+}
 
 
-def _normalize_floats(obj):
+def _normalize_floats(obj, _key=None):
     if isinstance(obj, dict):
-        return {k: _normalize_floats(v) for k, v in obj.items()}
+        return {k: _normalize_floats(v, _key=k) for k, v in obj.items()}
     if isinstance(obj, list):
         return [_normalize_floats(v) for v in obj]
-    if isinstance(obj, float):
-        return round(obj, 2)
+    if isinstance(obj, bool):
+        return obj
+    if isinstance(obj, (int, float)) and _key not in NON_MONETARY_KEYS:
+        return round(float(obj), 2)
     return obj
 
 
@@ -98,9 +103,9 @@ class IRPFDeclarationResult:
     """Resultado da extração de uma declaração IRPF."""
     
     taxpayer_identification: dict = field(default_factory=dict)
-    total_value: int = 0
+    total_value: float = 0.0
     valid_total: bool = True
-    equity_evolution: int = 0
+    equity_evolution: float = 0.0
     assets_declaration: Optional[dict] = None
     debts_and_encumbrances: Optional[dict] = None
     exempt_income: Optional[dict] = None
@@ -459,20 +464,20 @@ class IRPFParser:
     def get_confidence_details(self) -> ConfidenceResult | None:
         return getattr(self, "_last_confidence_result", None)
     
-    def _calculate_total_value(self, result: IRPFDeclarationResult) -> int:
+    def _calculate_total_value(self, result: IRPFDeclarationResult) -> float:
         if result.assets_declaration:
-            value = result.assets_declaration.get("current_year_total_value", 0)
-            return int(value)
-        return 0
+            value = result.assets_declaration.get("current_year_total_value", 0.0)
+            return round(float(value), 2)
+        return 0.0
     
-    def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> int:
+    def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> float:
         if not result.assets_declaration:
-            return 0
+            return 0.0
         
-        current_year = result.assets_declaration.get("current_year_total_value", 0.0)
-        last_year = result.assets_declaration.get("last_year_total_value", 0.0)
+        current_year = float(result.assets_declaration.get("current_year_total_value", 0.0))
+        last_year = float(result.assets_declaration.get("last_year_total_value", 0.0))
         
-        return int(current_year - last_year)
+        return round(current_year - last_year, 2)
 
     def _split_text_by_pages(self, text: str, total_pages: int) -> dict[int, str]:
         """Tenta dividir o texto por páginas usando o marcador 'Pagina X de Y'.
