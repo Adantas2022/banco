@@ -189,7 +189,12 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
-    CURRENCY_RE = r"(\d[\d.]*,\d{2})"
+    # Regex para valores monetários: suporta formato BR (180.000,00) e US (180,000.00)
+    # BUG #84060: PDFs podem ter valores em formato americano (vírgula=milhar, ponto=decimal)
+    # ou brasileiro (ponto=milhar, vírgula=decimal). Ambos devem ser reconhecidos.
+    CURRENCY_RE_BR = r"(\d[\d.]*,\d{2})"
+    CURRENCY_RE_US = r"(\d[\d,]*\.\d{2})"
+    CURRENCY_RE = rf"({CURRENCY_RE_BR[1:-1]}|{CURRENCY_RE_US[1:-1]})"  # Alternation: BR | US
 
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
         items = []
@@ -231,6 +236,12 @@ class AssetsExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
+        """Fallback para extrair item quando o regex primário falha.
+        
+        BUG #84060: Usa regex ancorada no fim da string para separar
+        descrição de valores, evitando falsos positivos com CNPJs e
+        outros números no meio da descrição.
+        """
         line = lines[idx].strip()
         
         header = re.match(r"^(?:\d+\s+)?(\d{2})\s+(\d{2})\s+(.+?)\s*$", line)
@@ -244,26 +255,31 @@ class AssetsExtractor(ISectionExtractor):
         if len(rest.strip()) < 5:
             return None
         
-        vals = re.findall(self.CURRENCY_RE, rest)
+        # BUG #84060: Usar regex ancorada no FIM da string para encontrar valores,
+        # evitando capturar fragmentos de CNPJ (ex: 14.113.825/0001-27) como valores.
+        # Tenta: 2 valores no fim → 1 valor no fim → 0 valores (busca orphans).
+        cur = self.CURRENCY_RE
         
-        if len(vals) >= 2:
-            v1, v2 = vals[-2], vals[-1]
-            desc = rest[:rest.rfind(vals[-2])].strip()
-            if len(desc) < 5:
-                return None
-        elif len(vals) == 1:
-            v1 = vals[0]
-            desc = rest[:rest.rfind(v1)].strip()
-            if len(desc) < 5:
-                return None
-            v2 = self._find_orphan_value(lines, idx + 1)
-            if not v2:
-                return None
+        # Caso 1: dois valores no final da string
+        m2 = re.search(rf"(.+?)\s+{cur}\s+{cur}\s*$", rest)
+        if m2 and len(m2.group(1).strip()) >= 5:
+            desc = m2.group(1).strip()
+            v1, v2 = m2.group(2), m2.group(3)
         else:
-            desc = rest.strip()
-            v1, v2 = self._find_two_orphan_values(lines, idx + 1)
-            if not v1 or not v2:
-                return None
+            # Caso 2: um valor no final
+            m1 = re.search(rf"(.+?)\s+{cur}\s*$", rest)
+            if m1 and len(m1.group(1).strip()) >= 5:
+                desc = m1.group(1).strip()
+                v1 = m1.group(2)
+                v2 = self._find_orphan_value(lines, idx + 1)
+                if not v2:
+                    return None
+            else:
+                # Caso 3: sem valores na linha, busca orphans
+                desc = rest.strip()
+                v1, v2 = self._find_two_orphan_values(lines, idx + 1)
+                if not v1 or not v2:
+                    return None
         
         class _FakeMatch:
             def __init__(self, groups):
@@ -275,6 +291,7 @@ class AssetsExtractor(ISectionExtractor):
         return self._parse_asset_block(lines, idx, fake, page_num)
 
     def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
+        """Busca valor monetário órfão em linhas subsequentes (suporta BR e US)."""
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
             if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", s):
@@ -287,6 +304,7 @@ class AssetsExtractor(ISectionExtractor):
     def _find_two_orphan_values(
         self, lines: list[str], start: int, max_lines: int = 25
     ) -> tuple[Optional[str], Optional[str]]:
+        """Busca 2 valores monetários órfãos em linhas subsequentes (suporta BR e US)."""
         found = []
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
