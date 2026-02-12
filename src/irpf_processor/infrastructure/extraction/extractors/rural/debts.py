@@ -24,18 +24,45 @@ class RuralDebtsExtractor(ISectionExtractor):
         items = []
         pdf_totals = []  # Totais extraídos do PDF
 
-        for page_num, page_text in context.pages_text.items():
+        # BUG #82852: Iterar páginas em ORDEM e rastrear estado da seção entre páginas.
+        # A seção pode se estender por múltiplas páginas OCR, e apenas a primeira
+        # página contém o marcador. Páginas de continuação devem ser processadas também.
+        in_section = False
+        
+        # Marcadores de seções que vêm DEPOIS de dívidas rurais
+        section_end_markers = [
+            "EXPLOITED RURAL PROPERTIES",
+            "RECEITAS E DESPESAS",
+            "APURAÇÃO DO RESULTADO",
+            "MOVIMENTO DO GADO",
+            "BENS DA ATIVIDADE RURAL",
+            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - EXTERIOR",
+        ]
+
+        for page_num, page_text in sorted(context.pages_text.items()):
             upper_text = page_text.upper()
 
-            if self.SECTION_MARKER not in upper_text:
+            # Detectar início da seção BRASIL
+            if self.SECTION_MARKER in upper_text:
+                # Garantir que é BRASIL e não EXTERIOR
+                if "EXTERIOR" in upper_text and "BRASIL" not in upper_text:
+                    if in_section:
+                        break  # Entrou em EXTERIOR, parar
+                    continue
+                in_section = True
+
+            if not in_section:
                 continue
 
-            # Garantir que é BRASIL e não EXTERIOR
-            if "EXTERIOR" in upper_text and "BRASIL" not in upper_text:
-                continue
+            # Detectar fim da seção (próxima seção ou EXTERIOR)
+            if any(marker in upper_text for marker in section_end_markers):
+                # Ainda extrair desta página (pode ter itens antes do marcador de fim)
+                page_items = self._extract_from_page(page_text, page_num, force_in_section=True)
+                items.extend(page_items)
+                break
 
             # Se a página tem ambos (BRASIL e EXTERIOR), só extrair a parte BRASIL
-            page_items = self._extract_from_page(page_text, page_num)
+            page_items = self._extract_from_page(page_text, page_num, force_in_section=in_section)
             items.extend(page_items)
 
             # Extrair total do PDF APENAS após o marcador da seção
@@ -145,23 +172,29 @@ class RuralDebtsExtractor(ISectionExtractor):
     def _parse_currency(self, value_str: str) -> float:
         return parse_currency(value_str)
 
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _extract_from_page(self, page_text: str, page_num: int, force_in_section: bool = False) -> list[dict]:
+        """Extrai itens de dívidas rurais de uma página.
+        
+        BUG #82852: Adicionado parâmetro force_in_section para páginas de
+        continuação que não contêm o marcador de seção. Quando True, assume
+        que já estamos dentro da seção e começa a extrair imediatamente.
+        """
         items = []
         lines = page_text.split("\n")
 
-        in_section = False
-        passed_header = False  # Indica se já passamos pelo cabeçalho da seção
+        in_section = force_in_section
+        # Se forçamos entrada na seção, pular header não é necessário
+        # (o header só aparece na primeira página)
+        passed_header = force_in_section
         i = 0
         while i < len(lines):
             line = lines[i].strip()
             upper_line = line.upper()
 
-            # Detectar início da seção BRASIL (marker completo com "BRASIL")
-            if (
-                self.SECTION_MARKER in upper_line
-                and "BRASIL" in upper_line
-                and "EXTERIOR" not in upper_line
-            ):
+            # Detectar início da seção BRASIL
+            # BUG #82852: Aceitar marcador mesmo sem "BRASIL" na mesma linha,
+            # pois no OCR "BRASIL" pode estar em linha separada
+            if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
                 in_section = True
                 passed_header = False
                 i += 1
@@ -171,8 +204,10 @@ class RuralDebtsExtractor(ISectionExtractor):
             if in_section and "EXTERIOR" in upper_line and self.SECTION_MARKER in upper_line:
                 break
 
-            # Parar no TOTAL da seção
-            if in_section and upper_line.startswith("TOTAL"):
+            # Parar no TOTAL da seção (mas apenas se é realmente "TOTAL" sozinho ou com valores)
+            if in_section and passed_header and upper_line.strip() == "TOTAL":
+                break
+            if in_section and passed_header and re.match(r"^TOTAL\s+[\d.,]+", upper_line):
                 break
 
             if not in_section:
@@ -181,7 +216,7 @@ class RuralDebtsExtractor(ISectionExtractor):
 
             # Pular cabeçalhos da tabela
             if not passed_header:
-                if "VALOR PAGO" in upper_line:
+                if "VALOR PAGO" in upper_line or "SITUAÇÃO EM" in upper_line:
                     passed_header = True
                 i += 1
                 continue
@@ -196,6 +231,14 @@ class RuralDebtsExtractor(ISectionExtractor):
                     i = item.pop("_next_index", i + 1)
                     continue
 
+            # BUG #82852: Tentar formato onde item+desc estão na linha mas valores
+            # estão em linhas seguintes (OCR que separa tabela em colunas)
+            split_item = self._try_parse_split_values_format(lines, i, page_num)
+            if split_item:
+                items.append(split_item)
+                i = split_item.pop("_next_index", i + 1)
+                continue
+
             # Tentar formato OCR multiline onde descrição, valores e item estão em linhas separadas
             multiline_item = self._try_parse_multiline_format(lines, i, page_num)
             if multiline_item:
@@ -206,6 +249,122 @@ class RuralDebtsExtractor(ISectionExtractor):
             i += 1
 
         return items
+
+    def _try_parse_split_values_format(
+        self, lines: list[str], start_idx: int, page_num: int
+    ) -> dict | None:
+        """Parse formato OCR onde item+descrição estão na linha mas valores em linhas separadas.
+
+        BUG #82852: O OCR pode separar a tabela em colunas, colocando os valores
+        monetários em linhas subsequentes em vez de na mesma linha da descrição.
+
+        Formatos suportados:
+        1. ITEM DESCRICAO (sem valores)
+           VALOR1
+           VALOR2
+           VALOR3
+
+        2. ITEM DESCRICAO VALOR1 (com 1 valor)
+           VALOR2
+           VALOR3
+
+        3. ITEM DESCRICAO VALOR1 VALOR2 (com 2 valores)
+           VALOR3
+        """
+        line = lines[start_idx].strip()
+        upper_line = line.upper()
+
+        if "ITEM" in upper_line or "TOTAL" in upper_line:
+            return None
+
+        # Padrão: ITEM_NUM DESCRICAO (opcionalmente com 0-2 valores no final)
+        # Item number no início da linha
+        item_match = re.match(r"^(\d{1,2})\s+(.+)$", line)
+        if not item_match:
+            return None
+
+        item_num = int(item_match.group(1))
+        rest = item_match.group(2).strip()
+
+        if item_num < 1 or item_num > 99:
+            return None
+
+        # Verificar se rest contém descrição (pelo menos algum texto)
+        if not re.search(r"[A-Za-záàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]", rest):
+            return None
+
+        # Extrair valores inline do final de rest
+        num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
+        inline_values = re.findall(num_pattern, rest)
+        if inline_values:
+            # Remover valores do final da descrição
+            desc = rest
+            for v in reversed(inline_values):
+                idx = desc.rfind(v)
+                if idx >= 0:
+                    desc = desc[:idx].strip()
+        else:
+            desc = rest
+
+        if len(desc) < 3:
+            return None
+
+        # Buscar valores em linhas subsequentes
+        found_values = [parse_currency(v) for v in inline_values]
+        last_idx = start_idx
+        j = start_idx + 1
+
+        while j < len(lines) and len(found_values) < 3:
+            next_line = lines[j].strip()
+            upper_next = next_line.upper()
+
+            if not next_line:
+                j += 1
+                continue
+
+            # Parar se encontrar TOTAL, novo item ou nova descrição
+            if "TOTAL" in upper_next:
+                break
+            if re.match(r"^\d{1,2}\s+[A-Za-z]", next_line):
+                break
+
+            # Valor monetário sozinho na linha
+            val_match = re.match(r"^([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})$", next_line)
+            if val_match:
+                found_values.append(parse_currency(val_match.group(1)))
+                last_idx = j
+                j += 1
+                continue
+
+            # Texto que parece continuação de descrição - adicionar e continuar
+            if self._is_description_fragment(next_line):
+                desc = f"{desc} {next_line}"
+                last_idx = j
+                j += 1
+                continue
+
+            break
+
+        # Precisamos de pelo menos 2 valores (before + current; paid pode ser 0)
+        if len(found_values) < 2:
+            return None
+
+        year_before = found_values[0]
+        year_current = found_values[1]
+        paid_value = found_values[2] if len(found_values) >= 3 else 0.0
+
+        item_id = generate_item_id(f"{item_num}{desc[:30]}")
+
+        return {
+            "item": item_num,
+            "description": desc,
+            "year_before_last_value": year_before,
+            "last_year_value": year_current,
+            "paid_value_in_last_year": paid_value,
+            "id": item_id,
+            "page": page_num,
+            "_next_index": last_idx + 1,
+        }
 
     def _try_parse_multiline_format(
         self, lines: list[str], start_idx: int, page_num: int
