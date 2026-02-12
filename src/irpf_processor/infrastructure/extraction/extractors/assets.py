@@ -189,18 +189,21 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
+    CURRENCY_RE = r"(\d[\d.]*,\d{2})"
+
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
         items = []
         lines = page_text.split("\n")
+        
+        two_val = re.compile(
+            rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
+        )
         
         i = 0
         while i < len(lines):
             line = lines[i].strip()
             
-            asset_match = re.match(
-                r"^(?:\d+\s+)?(\d{2})\s+(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$",
-                line
-            )
+            asset_match = two_val.match(line)
             
             if asset_match:
                 item = self._parse_asset_block(
@@ -211,15 +214,98 @@ class AssetsExtractor(ISectionExtractor):
                     i = item.pop("_next_index", i + 1)
                     continue
             
+            if not asset_match:
+                item = self._try_fallback_asset(lines, i, page_num)
+                if item:
+                    items.append(item)
+                    i = item.pop("_next_index", i + 1)
+                    continue
+            
             i += 1
         
         return items
+
+    def _try_fallback_asset(
+        self,
+        lines: list[str],
+        idx: int,
+        page_num: int
+    ) -> Optional[dict]:
+        line = lines[idx].strip()
+        
+        header = re.match(r"^(?:\d+\s+)?(\d{2})\s+(\d{2})\s+(.+?)\s*$", line)
+        if not header:
+            return None
+        
+        group_code = header.group(1)
+        asset_code = header.group(2)
+        rest = header.group(3)
+        
+        if len(rest.strip()) < 5:
+            return None
+        
+        vals = re.findall(self.CURRENCY_RE, rest)
+        
+        if len(vals) >= 2:
+            v1, v2 = vals[-2], vals[-1]
+            desc = rest[:rest.rfind(vals[-2])].strip()
+            if len(desc) < 5:
+                return None
+        elif len(vals) == 1:
+            v1 = vals[0]
+            desc = rest[:rest.rfind(v1)].strip()
+            if len(desc) < 5:
+                return None
+            v2 = self._find_orphan_value(lines, idx + 1)
+            if not v2:
+                return None
+        else:
+            desc = rest.strip()
+            v1, v2 = self._find_two_orphan_values(lines, idx + 1)
+            if not v1 or not v2:
+                return None
+        
+        class _FakeMatch:
+            def __init__(self, groups):
+                self._groups = groups
+            def group(self, n):
+                return self._groups[n]
+        
+        fake = _FakeMatch({1: group_code, 2: asset_code, 3: desc, 4: v1, 5: v2})
+        return self._parse_asset_block(lines, idx, fake, page_num)
+
+    def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
+        for j in range(start, min(start + max_lines, len(lines))):
+            s = lines[j].strip()
+            if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", s):
+                break
+            m = re.match(rf"^{self.CURRENCY_RE}\s*$", s)
+            if m:
+                return m.group(1)
+        return None
+
+    def _find_two_orphan_values(
+        self, lines: list[str], start: int, max_lines: int = 25
+    ) -> tuple[Optional[str], Optional[str]]:
+        found = []
+        for j in range(start, min(start + max_lines, len(lines))):
+            s = lines[j].strip()
+            if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", s):
+                break
+            m = re.match(rf"^{self.CURRENCY_RE}\s*$", s)
+            if m:
+                found.append(m.group(1))
+                if len(found) == 2:
+                    return found[0], found[1]
+        if len(found) == 1:
+            return found[0], None
+        return None, None
     
     def _parse_asset_block(
         self, 
         lines: list[str], 
         start_idx: int,
-        match: re.Match,
+        match,
         page_num: int
     ) -> Optional[dict]:
         group_code = match.group(1)

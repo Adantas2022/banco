@@ -907,6 +907,40 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
+    def _collect_name_continuation(self, lines: list[str], item_line_idx: int) -> str:
+        """Coleta continuação do nome do pagador nas linhas seguintes.
+        
+        Quando o nome da fonte pagadora quebra entre linhas no PDF,
+        a parte restante fica na(s) linha(s) seguinte(s) como texto em maiúsculas.
+        Ex: "CSN - COMPANHIA SIDERÚRGICA" (linha do item) + "NACIONAL" (próxima linha)
+        """
+        parts = []
+        for offset in range(1, 4):
+            if item_line_idx + offset >= len(lines):
+                break
+            next_line = lines[item_line_idx + offset].strip()
+            if not next_line:
+                continue
+            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", next_line):
+                break
+            if re.search(r"\d{2}\.\d{3}\.\d{3}", next_line):
+                break
+            if re.search(r"\d{3}\.\d{3}\.\d{3}", next_line):
+                break
+            if re.search(r"\d+,\d{2}", next_line):
+                break
+            if re.match(r"^\d{2}[.\s]+", next_line):
+                break
+            if re.match(r"^(Titular|Dependente)\s", next_line, re.IGNORECASE):
+                break
+            if any(kw in next_line.upper() for kw in [
+                "TOTAL", "BENEFICIÁRIO", "BENEFICIARIO", "PAGADORA", "CPF/CNPJ",
+                "VALORES EM REAIS",
+            ]):
+                break
+            parts.append(next_line)
+        return " ".join(parts)
+    
     def _parse_income_item(
         self,
         line: str,
@@ -931,6 +965,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             cnpj = pattern1.group(3)
             payer_name = pattern1.group(4).strip()
             value = parse_currency(pattern1.group(5))
+            
+            continuation = self._collect_name_continuation(lines, idx)
+            if continuation:
+                payer_name = f"{payer_name} {continuation}"
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
@@ -993,6 +1031,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             payer_name = pattern3.group(4).strip()
             value = parse_currency(pattern3.group(5))
             
+            continuation = self._collect_name_continuation(lines, idx)
+            if continuation:
+                payer_name = f"{payer_name} {continuation}"
+            
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
             return {
@@ -1023,6 +1065,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             cnpj = pattern4.group(3)
             payer_name = pattern4.group(4).strip()
             value = parse_currency(pattern4.group(5))
+            
+            continuation = self._collect_name_continuation(lines, idx)
+            if continuation:
+                payer_name = f"{payer_name} {continuation}"
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
@@ -1106,23 +1152,22 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         start_idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Parseia item com formato de 2 linhas.
+        """Parseia item com formato de 2 linhas (com possível continuação de nome).
         
-        Formato:
+        Formato base:
         Linha 1: CNPJ NOME DA FONTE
         Linha 2: Beneficiário Valor	CPF
         
-        Exemplo:
-        07.667.259/0001-30 BRADESCO FIC DE FI REFERENCIADO DI ONIX
-        Titular 1.529,69	779.701.955-04
+        Formato com continuação:
+        Linha 1: CNPJ NOME DA FONTE PARCIAL
+        Linha 2: CONTINUAÇÃO DO NOME
+        Linha 3: Beneficiário Valor	CPF
         """
         if start_idx + 1 >= len(lines):
             return None
         
         line1 = lines[start_idx].strip()
-        line2 = lines[start_idx + 1].strip()
         
-        # Linha 1: CNPJ + Nome (CNPJ no início seguido de espaço e nome)
         match1 = re.match(
             r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+(.+)$",
             line1
@@ -1133,32 +1178,46 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         cnpj = match1.group(1)
         payer_name = match1.group(2).strip()
         
-        # Linha 2: Beneficiário Valor CPF (separados por espaços ou tabs)
-        # Formatos possíveis:
-        # "Titular 1.529,69	779.701.955-04"
-        # "Dependente 24.232,72	783.468.005-68"
-        match2 = re.match(
-            r"^(Titular|Dependente)\s+([\d.,]+)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",
-            line2
-        )
-        if not match2:
-            return None
+        beneficiary_line_idx = start_idx + 1
         
-        beneficiary = match2.group(1)
-        value = parse_currency(match2.group(2))
-        cpf = match2.group(3)
-        
-        if value > 0:
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
-            return {
-                "beneficiary": beneficiary,
-                "cpf": cpf,
-                "payer_cnpj": cnpj,
-                "payer_name": payer_name,
-                "value": value,
-                "id": item_id,
-                "page": page_num
-            }
+        for offset in range(1, 4):
+            if start_idx + offset >= len(lines):
+                break
+            candidate = lines[start_idx + offset].strip()
+            
+            beneficiary_match = re.match(
+                r"^(Titular|Dependente)\s+([\d.,]+)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",
+                candidate
+            )
+            if beneficiary_match:
+                beneficiary_line_idx = start_idx + offset
+                
+                for cont_offset in range(1, offset):
+                    cont_line = lines[start_idx + cont_offset].strip()
+                    if cont_line and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", cont_line):
+                        payer_name = f"{payer_name} {cont_line}"
+                
+                beneficiary = beneficiary_match.group(1)
+                value = parse_currency(beneficiary_match.group(2))
+                cpf = beneficiary_match.group(3)
+                
+                if value > 0:
+                    item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+                    return {
+                        "beneficiary": beneficiary,
+                        "cpf": cpf,
+                        "payer_cnpj": cnpj,
+                        "payer_name": payer_name,
+                        "value": value,
+                        "id": item_id,
+                        "page": page_num
+                    }
+                return None
+            
+            if not candidate:
+                continue
+            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", candidate):
+                break
         
         return None
     

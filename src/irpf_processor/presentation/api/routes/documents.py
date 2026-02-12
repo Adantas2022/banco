@@ -17,20 +17,39 @@ from irpf_processor.presentation.workers.router_worker import route_document
 from irpf_processor.shared.logging import get_logger
 
 
+_NON_MONETARY_KEYS = {
+    "page", "total_pages", "total_properties", "code",
+    "country_code", "exploration_condition", "num_months",
+}
+
+
 class MonetaryEncoder(json.JSONEncoder):
+
     def iterencode(self, o, _one_shot=False):
-        if isinstance(o, float):
+        yield from self._encode(o)
+
+    def _encode(self, o, key=None):
+        if o is None:
+            yield "null"
+        elif isinstance(o, bool):
+            yield "true" if o else "false"
+        elif isinstance(o, float):
             yield f"{o:.2f}"
+        elif isinstance(o, int):
+            if key in _NON_MONETARY_KEYS:
+                yield str(o)
+            else:
+                yield f"{float(o):.2f}"
         elif isinstance(o, dict):
             yield "{"
             first = True
-            for key, value in o.items():
+            for k, v in o.items():
                 if not first:
                     yield ", "
                 first = False
-                yield from self.iterencode(key)
+                yield from self._encode(k)
                 yield ": "
-                yield from self.iterencode(value)
+                yield from self._encode(v, key=k)
             yield "}"
         elif isinstance(o, list):
             yield "["
@@ -39,10 +58,10 @@ class MonetaryEncoder(json.JSONEncoder):
                 if not first:
                     yield ", "
                 first = False
-                yield from self.iterencode(item)
+                yield from self._encode(item, key=key)
             yield "]"
         else:
-            yield from super().iterencode(o, _one_shot)
+            yield from super().iterencode(o, _one_shot=False)
 from irpf_processor.shared.metrics import record_document_upload, record_queue_send_failure, record_failure
 
 logger = get_logger(__name__)
