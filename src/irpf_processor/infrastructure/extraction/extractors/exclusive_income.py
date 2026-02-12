@@ -819,34 +819,87 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def _extract_financial_abroad(self, context: ExtractionContext) -> Optional[dict]:
         """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior.
         
-        BUG #81758 fix: Corrigido pattern para capturar o valor correto (não a Lei).
-        O texto tem formato: "12. Aplicações Financeiras... (Lei 14.754/2023) 3.580,00"
-        O pattern antigo capturava 14.754 (número da Lei) em vez de 3.580,00.
+        BUG #84113 fix: Subsecao 12 nao aparecia no JSON.
+        
+        Causas raiz:
+        1. O padrao antigo so capturava valor inline no formato BR (3.580,00),
+           mas pdfplumber extrai PDFs digitais no formato US (3,580.00).
+        2. Quando a subsecao 12 esta em pagina diferente do marcador da secao
+           principal (ex: pagina 6 vs pagina 5), o extrator nao a encontrava.
+        
+        Solucao:
+        - Usar [d.,]+ para capturar valores em ambos os formatos (BR e US).
+        - Capturar o ULTIMO valor da linha para evitar pegar o nr da Lei (14.754/2023).
+        - Manter estado cross-page (in_section persiste entre paginas).
+        - Suportar valor na mesma linha do titulo OU na linha seguinte (multiline).
         """
         in_section = False
+        in_subsection = False
+        
+        # Pattern para detectar a linha do título da subseção 12
+        title_pattern = re.compile(
+            r"12[.\s]+(?:APLICA[CÇG][AÃOÕ]ES?|APLICACOE?S?)\s+FINANCEIRAS?.*?(?:EXTERIOR|DIVIDENDOS?)",
+            re.IGNORECASE
+        )
+        # Pattern para detectar próxima subseção (fim da 12)
+        next_subsection_pattern = re.compile(r"^(?:13)[.\s]+[A-Z]", re.IGNORECASE)
+        # Pattern para capturar valor monetário no FINAL da linha.
+        # Suporta formato BR (3.580,00) e US (3,580.00).
+        # Ancorado no final ($) para pegar o último token numérico,
+        # evitando capturar o número da Lei (14.754/2023).
+        inline_value_pattern = re.compile(r"([\d.,]+)\s*$")
+
         for page_num, page_text in sorted(context.pages_text.items()):
             upper_text = page_text.upper()
             
-            # Detectar início da seção
+            # Detectar início da seção principal (persiste entre páginas)
             if any(marker in upper_text for marker in self.SECTION_MARKERS):
                 in_section = True
+            if not in_section:
+                continue
             
-            # Para esta subseção, procurar mesmo se já passou o marcador de fim
-            # pois pode estar em outra página ainda dentro da seção
-            
-            # Procurar linha com item 12
             lines = page_text.split('\n')
-            for line in lines:
-                # Pattern para linha completa com item 12
-                # Formato: "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00"
-                # Precisamos capturar o ÚLTIMO valor monetário da linha (após a Lei)
-                match = re.search(
-                    r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
-                    line,
-                    re.IGNORECASE
-                )
-                if match:
-                    value = parse_currency(match.group(1))
+            for idx, line in enumerate(lines):
+                stripped_line = line.strip()
+
+                if title_pattern.search(line):
+                    in_subsection = True
+
+                    # Caso inline: valor no final da mesma linha do título
+                    inline_match = inline_value_pattern.search(line)
+                    if inline_match:
+                        candidate = inline_match.group(1)
+                        # Exigir separador decimal (. ou ,) para descartar
+                        # tokens como "2023" que podem ficar no final se
+                        # não houver valor monetário
+                        if '.' in candidate or ',' in candidate:
+                            value = parse_currency(candidate)
+                            if value > 0:
+                                return {
+                                    "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                                    "code": "12",
+                                    "total_value": value,
+                                    "valid_total": True,
+                                    "items": None
+                                }
+                    continue
+
+                if not in_subsection:
+                    continue
+
+                # Fim da subseção 12 ao encontrar próxima subseção ou total
+                if next_subsection_pattern.match(stripped_line):
+                    in_subsection = False
+                    continue
+                if re.match(r"^\s*TOTAL(?:\s+[\d.,]+)?\s*$", stripped_line, re.IGNORECASE):
+                    in_subsection = False
+                    continue
+
+                # Caso multiline: valor em linha separada após o título
+                # Aceita formatos BR e US
+                value_match = re.match(r"^\s*([\d.,]+)\s*$", stripped_line)
+                if value_match:
+                    value = parse_currency(value_match.group(1))
                     if value > 0:
                         return {
                             "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
@@ -855,6 +908,12 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                             "valid_total": True,
                             "items": None
                         }
+        
+            # Encerrar busca quando seção claramente termina
+            if any(marker in upper_text for marker in self.SECTION_END_MARKERS):
+                if in_subsection:
+                    break
+        
         return None
     
     def _extract_others(self, context: ExtractionContext) -> dict:

@@ -91,10 +91,14 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             if section_ended:
                 break
 
-            # Extrair itens e total da seção ANTES de verificar fim
-            # (dados podem estar na mesma página antes do marker de DEPENDENTES)
+            # BUG FIX #84157: Para páginas de continuação (não a que entrou),
+            # passar already_in_section=True para que o método interno comece
+            # já dentro da seção e extraia dados desde o início da página.
+            # O método interno detecta corretamente o fim da seção, incluindo
+            # títulos de DEPENDENTES quebrados em múltiplas linhas.
             page_items, section_totals = self._extract_from_page_with_totals(
-                page_text, page_num, seen_ids
+                page_text, page_num, seen_ids,
+                already_in_section=not just_entered_section
             )
             items.extend(page_items)
 
@@ -102,8 +106,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
             if not pdf_totals and section_totals:
                 pdf_totals = section_totals
 
-            # BUG FIX: Verificar se esta página é da seção de DEPENDENTES
-            # APÓS extração para capturar itens que vêm antes do marker
+            # Verificar se esta página contém a seção de DEPENDENTES
             if self._is_dependents_section(upper_page):
                 section_ended = True
                 break
@@ -170,9 +173,17 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         return False
 
     def _extract_from_page_with_totals(
-        self, page_text: str, page_num: int, seen_ids: set
+        self, page_text: str, page_num: int, seen_ids: set,
+        already_in_section: bool = False
     ) -> tuple[list[dict], list[float]]:
         """Extrai itens e totais de uma página.
+
+        Args:
+            page_text: Texto da página
+            page_num: Número da página
+            seen_ids: Set de IDs já vistos (para deduplicação)
+            already_in_section: Se True, considera que já estamos dentro da seção
+                               do titular (usado em páginas de continuação).
 
         Returns:
             Tuple com (lista de itens, lista de totais da seção)
@@ -182,7 +193,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         lines = page_text.split("\n")
         consumed_lines = set()  # Track lines consumed by multiline parsing
 
-        in_section = False
+        in_section = already_in_section
 
         for i, line in enumerate(lines):
             # Skip lines already consumed by multiline parsing
@@ -201,8 +212,20 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                                 in_section = True
                                 break
                         elif "DEPENDENTES" not in upper_line:
-                            in_section = True
-                            break
+                            # BUG FIX #84157: Antes de entrar na seção, verificar se
+                            # "DEPENDENTES" está na próxima linha (título quebrado).
+                            # Ex: "RECEBIDOS ACUMULADAMENTE PELOS" + próxima: "DEPENDENTES"
+                            is_dependents_broken = False
+                            if "ACUMULADAMENTE PELOS" in upper_line:
+                                for next_offset in range(1, 4):
+                                    if i + next_offset < len(lines):
+                                        next_ln = lines[i + next_offset].strip().upper()
+                                        if next_ln.startswith("DEPENDENTES"):
+                                            is_dependents_broken = True
+                                            break
+                            if not is_dependents_broken:
+                                in_section = True
+                                break
                 if not in_section:
                     continue
 
@@ -211,6 +234,18 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 # Se encontrar seção de DEPENDENTES, parar
                 if "RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES" in upper_line:
                     break
+                # BUG FIX #84157: Detectar título de dependentes quebrado em múltiplas linhas
+                # Ex: "RECEBIDOS ACUMULADAMENTE PELOS" numa linha, "DEPENDENTES" na próxima
+                if "ACUMULADAMENTE PELOS" in upper_line and "PELO TITULAR" not in upper_line:
+                    for next_offset in range(1, 4):
+                        if i + next_offset < len(lines):
+                            next_ln = lines[i + next_offset].strip().upper()
+                            if next_ln.startswith("DEPENDENTES"):
+                                # É título da seção de dependentes quebrado - parar
+                                in_section = False
+                                break
+                    if not in_section:
+                        break
                 if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
                 if "SEM INFORMAÇÕES" in upper_line:
