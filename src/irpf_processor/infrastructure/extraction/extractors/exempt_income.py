@@ -17,10 +17,16 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO",
+        "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO",
+        "RENDIMENTOS SUJEITOS A TRIBUTACAO",
+        "TRIBUTAÇÃO EXCLUSIVA",
+        "TRIBUTACAO EXCLUSIVA",
         "RENDIMENTOS TRIBUTÁVEIS",
+        "RENDIMENTOS TRIBUTAVEIS",
         "PAGAMENTOS EFETUADOS",
         "DOAÇÕES EFETUADAS",
-        "BENS E DIREITOS"
+        "DOACOES EFETUADAS",
+        "BENS E DIREITOS",
     ]
     
     # Todas as 17 subsections conforme gabarito
@@ -157,6 +163,9 @@ class ExemptIncomeExtractor(ISectionExtractor):
     def section_name(self) -> str:
         return "exempt_income"
     
+    def _is_section_end_line(self, upper_line: str) -> bool:
+        return any(m in upper_line for m in self.SECTION_END_MARKERS)
+    
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
@@ -274,11 +283,10 @@ class ExemptIncomeExtractor(ISectionExtractor):
             upper_page = page_text.upper()
             
             # Parar se encontrar início de outra seção principal
-            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_page:
-                # Verificar se já encontramos o código nesta página antes do fim
+            if self._is_section_end_line(upper_page):
                 lines = page_text.split("\n")
                 for i, line in enumerate(lines):
-                    if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in line.upper():
+                    if self._is_section_end_line(line.upper()):
                         # Só processar linhas antes desta
                         lines = lines[:i]
                         break
@@ -361,7 +369,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção principal
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     section_ended = True
                     break
                 
@@ -505,7 +513,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     if current_item:
                         items.append(current_item)
                         current_item = None
@@ -626,7 +634,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 lower_line = line.lower()
                 
                 # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     section_ended = True
                     break
                 
@@ -725,7 +733,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     section_ended = True
                     break
                 
@@ -800,7 +808,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
             for i, line in enumerate(lines):
                 upper_line = line.upper()
                 
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     section_ended = True
                     break
                 
@@ -998,7 +1006,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção principal
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     section_ended = True
                     break
                 
@@ -1114,7 +1122,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção - o TOTAL vem logo antes
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+                if self._is_section_end_line(upper_line):
                     # O total deve estar nas linhas anteriores
                     for j in range(max(0, i - 5), i):
                         prev_line = lines[j].strip()
@@ -1128,9 +1136,8 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 if upper_line.strip().startswith("TOTAL") and not re.search(r'TITULAR|DEPENDENTE', upper_line):
                     total_match = re.match(r'^TOTAL\s+([\d.,]+)\s*$', line.strip(), re.IGNORECASE)
                     if total_match:
-                        # Verificar se após o total vem RENDIMENTOS SUJEITOS (próximas linhas)
                         for j in range(i + 1, min(i + 5, len(lines))):
-                            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in lines[j].upper():
+                            if self._is_section_end_line(lines[j].upper()):
                                 return parse_currency(total_match.group(1))
         
         return None

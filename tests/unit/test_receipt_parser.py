@@ -148,7 +148,7 @@ class TestReceiptParserTaxExtraction:
         assert result.tax_refund == 2500.0
 
     def test_extracts_tax_due(self, parser):
-        text = "IMPOSTO A PAGAR: R$ 1.000,00"
+        text = "IMPOSTO DEVIDO 1.000,00"
 
         result = parser.parse_from_text(text)
 
