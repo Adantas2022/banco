@@ -165,17 +165,18 @@ class ExemptIncomeExtractor(ISectionExtractor):
         if not self.can_extract(context):
             return None
         
+        section_context = self._build_section_context(context)
+        
         subsections = {}
         
         for key, config in self.SUBSECTIONS.items():
-            subsection = self._extract_subsection_by_format(context, key, config)
+            subsection = self._extract_subsection_by_format(section_context, key, config)
             if subsection and (subsection.get("items") or subsection.get("total_value", 0) > 0):
                 subsections[key] = subsection
         
         total_value = sum(s.get("total_value", 0) for s in subsections.values()) if subsections else 0.0
         
-        # Tentar extrair total do PDF
-        pdf_total = self._extract_total_from_pdf(context)
+        pdf_total = self._extract_total_from_pdf(section_context)
         
         return {
             "section_name": "Rendimentos Isentos e Não Tributáveis",
@@ -184,6 +185,47 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "subsections": subsections,
             "items_count": sum(len(s.get("items", []) or []) for s in subsections.values())
         }
+    
+    def _build_section_context(self, context: ExtractionContext) -> ExtractionContext:
+        """Constrói contexto filtrado contendo apenas as linhas da seção exempt_income."""
+        filtered_pages: dict[int, str] = {}
+        in_section = False
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        for page_num, page_text in sorted_pages:
+            upper_page = page_text.upper()
+            lines = page_text.split("\n")
+            kept_lines = []
+            
+            for line in lines:
+                upper_line = line.upper()
+                
+                if any(m in upper_line for m in self.SECTION_MARKERS):
+                    in_section = True
+                
+                if in_section:
+                    if any(m in upper_line for m in self.SECTION_END_MARKERS):
+                        in_section = False
+                        break
+                    kept_lines.append(line)
+            
+            if kept_lines:
+                filtered_pages[page_num] = "\n".join(kept_lines)
+        
+        if not filtered_pages:
+            return context
+        
+        full_text = "\n".join(
+            text for _, text in sorted(filtered_pages.items())
+        )
+        
+        return ExtractionContext(
+            full_text=full_text,
+            pages_text=filtered_pages,
+            total_pages=context.total_pages,
+            pdf_path=context.pdf_path,
+        )
     
     def _extract_subsection_by_format(
         self,
