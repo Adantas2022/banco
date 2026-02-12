@@ -398,17 +398,42 @@ class DebtsExtractor(ISectionExtractor):
             "_next_index": j
         }
     
+    @staticmethod
+    def _prev_line_ends_with_currency_prefix(current_block: list[str],
+                                              raw_blocks: list) -> bool:
+        """Verifica se a linha anterior termina com 'R$' (indicando valor embutido na descrição).
+        
+        Quando o OCR quebra "R$ 367.000,00" em duas linhas, a segunda linha
+        ("367.000,00") parece um valor de coluna mas na verdade faz parte da descrição.
+        """
+        prev_line = None
+        if current_block:
+            prev_line = current_block[-1].strip()
+        elif raw_blocks:
+            prev_line = raw_blocks[-1][0][-1].strip()
+        
+        if prev_line and re.search(r'R\$\s*[-]?\s*$', prev_line, re.IGNORECASE):
+            return True
+        return False
+
     def _extract_ocr_fallback(
         self,
         section_pages: list[tuple[int, str]],
         assume_in_section: bool = False,
     ) -> list[dict]:
         CURRENCY_RE = r"(\d[\d.]*,\d{2})"
+        # SKIP_RE: pula linhas de cabeçalho.
+        # CPF: agora exige formato completo para não pular referências a CPF dentro de descrições.
         SKIP_RE = re.compile(
-            r"^(NOME:|CPF:\s*\d|DECLARAÇÃO DE AJUSTE|IMPOSTO SOBRE|"
+            r"^(NOME:|DECLARAÇÃO DE AJUSTE|DECLARACAO DE AJUSTE|IMPOSTO SOBRE|"
             r"EXERC[IÍ]CIO\s+\d|\(Valores em|CÓDIGO|CODIGO|"
             r"DISCRIMINA[CÇ][AÃ]O|SITUA[CÇ][AÃ]O|VALOR PAGO|"
             r"AN[O0]-CALEND[AÁ]RIO|\d{2}/\d{2}/\d{4}\s+EM\s+\d{4})",
+            re.IGNORECASE,
+        )
+        # CPF de cabeçalho: linha curta com apenas CPF (ex: "CPF: 004.044.951-33")
+        CPF_HEADER_RE = re.compile(
+            r"^CPF:\s*\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\s*$",
             re.IGNORECASE,
         )
         
@@ -464,6 +489,10 @@ class DebtsExtractor(ISectionExtractor):
                 if SKIP_RE.match(s):
                     continue
                 
+                # Pular apenas CPF de cabeçalho (linha curta com CPF isolado)
+                if CPF_HEADER_RE.match(s):
+                    continue
+                
                 if not s:
                     if current_block and not collecting_values:
                         raw_blocks.append((current_block, current_page))
@@ -476,6 +505,21 @@ class DebtsExtractor(ISectionExtractor):
                 )
                 
                 if is_value_only:
+                    # BUG FIX #82488: Verificar se este valor é embutido na descrição
+                    # Ex: "R$ 367.000,00" quebrado pelo OCR em duas linhas:
+                    #   "...E 30/09/2024 - R$"
+                    #   "367.000,00"
+                    # Neste caso, "367.000,00" faz parte da descrição, não é valor de coluna.
+                    if not collecting_values and self._prev_line_ends_with_currency_prefix(
+                        current_block, raw_blocks
+                    ):
+                        # Valor embutido na descrição - incorporar ao bloco atual
+                        if current_block:
+                            current_block.append(s)
+                        elif raw_blocks:
+                            raw_blocks[-1][0].append(s)
+                        continue
+                    
                     if current_block and not collecting_values:
                         raw_blocks.append((current_block, current_page))
                         current_block = []

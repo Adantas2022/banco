@@ -484,47 +484,83 @@ class IRPFParser:
         
         O OCR concatena todo o texto mas preserva os marcadores de página.
         Este método tenta reconstruir a estrutura por páginas.
+        
+        Trata o caso onde o OCR coloca valores de colunas à direita APÓS
+        o marcador de página (ex: valores monetários em tabelas de 2 colunas).
+        Essas linhas órfãs são reincorporadas à página atual.
         """
         import re
         
-        # Padrão para "Pagina X de Y" ou "Página X de Y"
         page_pattern = r"P[aá]gina\s*(\d+)\s*(?:de|DE)\s*(\d+)"
         
-        # Encontrar todas as ocorrências
         matches = list(re.finditer(page_pattern, text, re.IGNORECASE))
         
         if not matches:
-            # Sem marcadores de página, retorna todo texto como página 1
             return {1: text}
+        
+        orphan_end_pos = {}
+        for i, match in enumerate(matches):
+            post_start = match.end()
+            boundary = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            orphan_end = self._find_orphan_end_position(text, post_start, boundary)
+            orphan_end_pos[i] = orphan_end
         
         pages_text = {}
         
         for i, match in enumerate(matches):
             page_num = int(match.group(1))
-            start_pos = match.end()
             
-            # Fim é o início do próximo marcador ou fim do texto
-            if i + 1 < len(matches):
-                end_pos = matches[i + 1].start()
-            else:
-                end_pos = len(text)
-            
-            # Incluir também o texto ANTES do marcador (o conteúdo da página atual)
             if i == 0:
-                # Primeira página: incluir desde o início
-                prev_end = 0
+                content_start = 0
             else:
-                prev_end = matches[i - 1].end()
+                content_start = orphan_end_pos[i - 1]
             
-            page_content = text[prev_end:match.start()].strip()
+            page_content = text[content_start:match.start()].strip()
+            
+            if orphan_end_pos[i] > match.end():
+                orphan_text = text[match.end():orphan_end_pos[i]].strip()
+                if orphan_text:
+                    page_content = page_content + "\n" + orphan_text
+            
             if page_content:
                 pages_text[page_num] = page_content
         
-        # Se não conseguiu extrair páginas adequadamente, fallback para página única
         if not pages_text:
             return {1: text}
         
         return pages_text
+
+    @staticmethod
+    def _find_orphan_end_position(text: str, start: int, boundary: int) -> int:
+        """Encontra a posição final das linhas órfãs após um marcador de página.
+        
+        Retorna a posição no texto original até onde as linhas órfãs vão.
+        Linhas órfãs são valores monetários soltos que o OCR colocou após
+        o rodapé da página (ex: valores de coluna direita).
+        """
+        import re
+        currency_re = re.compile(r"^[\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2}$")
+        
+        pos = start
+        while pos < boundary:
+            line_end = text.find("\n", pos)
+            if line_end == -1 or line_end >= boundary:
+                line_end = boundary
+            
+            line = text[pos:line_end].strip()
+            
+            if not line:
+                pos = line_end + 1
+                continue
+            
+            if currency_re.match(line):
+                pos = line_end + 1
+                continue
+            
+            break
+        
+        return pos
+
 
     def parse_from_text(
         self,

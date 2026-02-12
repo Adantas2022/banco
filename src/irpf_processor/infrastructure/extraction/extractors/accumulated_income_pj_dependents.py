@@ -232,7 +232,7 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
         
         # Formato: NOME CNPJ VALORES (4 valores: REND, CONTRIB, PENSAO, IRRF)
         pattern_cnpj_inline = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -246,7 +246,7 @@ class AccumulatedIncomePJDependentsExtractor(ISectionExtractor):
         
         # Formato com 3 valores
         pattern_cnpj_inline_3v = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"

@@ -140,7 +140,7 @@ class IncomePJExtractor(ISectionExtractor):
         # - Americano: 250,000.00 (vírgula=milhar, ponto=decimal)
         num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
         pattern = re.match(
-            rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"
+            rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,\-/&()]+?)\s+"
             rf"{num_pattern}\s+"
             rf"{num_pattern}\s+"
             rf"{num_pattern}\s+"
@@ -207,7 +207,7 @@ class IncomePJExtractor(ISectionExtractor):
         if re.match(r"^\d{2}\.\d{3}\.\d{3}", line):
             return False
         
-        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):
+        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,]+$", line):
             return True
         
         return False

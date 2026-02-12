@@ -252,7 +252,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 next_line = lines[j].strip()
                 # Name continuation
                 if (
-                    re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,&-]*$", next_line)
+                    re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&-]*$", next_line)
                     and len(next_line) <= 50
                 ):
                     if not re.search(r"\d{2}\.\d{3}\.\d{3}", next_line):
@@ -311,7 +311,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         # Formato 1: NOME CNPJ VALORES (CNPJ inline) - MAIS COMUM
         # Ex: "CAIXA ECONOMICA FEDERAL 00.360.305/0001-04 674.716,23 0,00 0,00 20.241"
         pattern_cnpj_inline = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -325,7 +325,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
 
         # Formato 2: NOME CNPJ 3 VALORES (sem despesas judiciais)
         pattern_cnpj_inline_3v = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -338,7 +338,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
 
         # Formato 3 (legado): NOME VALORES (CNPJ em linhas seguintes)
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
@@ -351,7 +351,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
 
         # Formato 4 (legado): 3 valores
         pattern_alt = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s+"
             r"([\d]+[.,][\d]+[.,]?\d*)\s*$",
@@ -712,7 +712,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
 
                 # Verificar se é continuação do nome
                 if (
-                    re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,&-]*$", next_line)
+                    re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&-]*$", next_line)
                     and len(next_line) <= 50
                     and not any(skip in next_line.upper() for skip in skip_patterns)
                 ):
@@ -791,7 +791,7 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
         if re.match(r"^\d{2}\.\d{3}\.\d{3}", line):
             return False
 
-        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):
+        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,]+$", line):
             return True
 
         return False

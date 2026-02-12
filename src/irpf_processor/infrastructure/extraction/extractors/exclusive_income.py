@@ -921,7 +921,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             next_line = lines[item_line_idx + offset].strip()
             if not next_line:
                 continue
-            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", next_line):
+            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", next_line):
                 break
             if re.search(r"\d{2}\.\d{3}\.\d{3}", next_line):
                 break
@@ -1194,7 +1194,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 
                 for cont_offset in range(1, offset):
                     cont_line = lines[start_idx + cont_offset].strip()
-                    if cont_line and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", cont_line):
+                    if cont_line and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", cont_line):
                         payer_name = f"{payer_name} {cont_line}"
                 
                 beneficiary = beneficiary_match.group(1)
@@ -1216,7 +1216,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             
             if not candidate:
                 continue
-            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,-]*$", candidate):
+            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", candidate):
                 break
         
         return None
