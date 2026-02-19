@@ -366,11 +366,12 @@ class IRPFParser:
         full_text = ""
         pages_text: dict[int, str] = {}
         total_pages = 0
+        warnings: list[str] = []
         
         with self._pdfplumber.open(pdf_file) as pdf:
             total_pages = len(pdf.pages)
             for page_num, page in enumerate(pdf.pages, 1):
-                page_text = page.extract_text() or ""
+                page_text = self._extract_page_text_safe(page, page_num, warnings)
                 pages_text[page_num] = page_text
                 full_text += page_text + "\n"
         
@@ -382,6 +383,9 @@ class IRPFParser:
             total_pages=total_pages,
             pdf_path=pdf_path_str
         )
+        
+        for w in warnings:
+            context.add_warning(w)
         
         if self._is_scanned_pdf(full_text, total_pages):
             context.add_warning(
@@ -396,6 +400,39 @@ class IRPFParser:
         
         return context
     
+    def _extract_page_text_safe(
+        self, page, page_num: int, warnings: list[str], timeout_seconds: int = 120
+    ) -> str:
+        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos."""
+        import signal
+        import platform
+
+        if platform.system() != "Linux" and platform.system() != "Darwin":
+            return page.extract_text() or ""
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError(f"Page {page_num} text extraction timed out after {timeout_seconds}s")
+
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(timeout_seconds)
+        try:
+            text = page.extract_text() or ""
+            signal.alarm(0)
+            return text
+        except TimeoutError:
+            msg = f"PAGE_TIMEOUT: Pagina {page_num} ignorada - extração excedeu {timeout_seconds}s"
+            logger.warning(msg, page_num=page_num)
+            warnings.append(msg)
+            return ""
+        except Exception as e:
+            signal.alarm(0)
+            msg = f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {e}"
+            logger.warning(msg, page_num=page_num, error=str(e))
+            warnings.append(msg)
+            return ""
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+
     def _is_scanned_pdf(self, full_text: str, total_pages: int) -> bool:
         text_stripped = full_text.strip()
         chars_per_page = len(text_stripped) / max(total_pages, 1)
