@@ -168,39 +168,43 @@ class PdfTypeDetector:
             return PdfType.IMAGE, char_count, image_coverage
 
     def _extract_text_safe(self, page, timeout_seconds: int = 60) -> str:
-        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos."""
-        import signal
-        import platform
+        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos.
 
-        if platform.system() not in ("Linux", "Darwin"):
-            return page.extract_text() or ""
+        Usa threading com daemon=True em vez de signal.SIGALRM porque os workers
+        do Dramatiq executam em threads filhas, e signal só funciona na main thread.
+        """
+        import threading
 
-        def _timeout_handler(signum, frame):
-            raise TimeoutError(f"Page text extraction timed out after {timeout_seconds}s")
+        result_holder: list = []
+        error_holder: list = []
 
-        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(timeout_seconds)
-        try:
-            text = page.extract_text() or ""
-            signal.alarm(0)
-            return text
-        except TimeoutError:
+        def _extract():
+            try:
+                result_holder.append(page.extract_text() or "")
+            except Exception as e:
+                error_holder.append(e)
+
+        thread = threading.Thread(target=_extract, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout_seconds)
+
+        if thread.is_alive():
             logger.warning(
                 "Page text extraction timed out in PdfTypeDetector",
                 page_number=getattr(page, "page_number", "?"),
                 timeout_seconds=timeout_seconds,
             )
             return ""
-        except Exception as e:
-            signal.alarm(0)
+
+        if error_holder:
             logger.warning(
                 "Page text extraction failed in PdfTypeDetector",
                 page_number=getattr(page, "page_number", "?"),
-                error=str(e),
+                error=str(error_holder[0]),
             )
             return ""
-        finally:
-            signal.signal(signal.SIGALRM, old_handler)
+
+        return result_holder[0] if result_holder else ""
 
     def _has_extractable_text(self, pdf_path: Path) -> bool:
         try:

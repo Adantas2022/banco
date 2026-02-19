@@ -403,35 +403,39 @@ class IRPFParser:
     def _extract_page_text_safe(
         self, page, page_num: int, warnings: list[str], timeout_seconds: int = 120
     ) -> str:
-        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos."""
-        import signal
-        import platform
+        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos.
 
-        if platform.system() != "Linux" and platform.system() != "Darwin":
-            return page.extract_text() or ""
+        Usa threading com daemon=True em vez de signal.SIGALRM porque os workers
+        do Dramatiq executam em threads filhas, e signal só funciona na main thread.
+        """
+        import threading
 
-        def _timeout_handler(signum, frame):
-            raise TimeoutError(f"Page {page_num} text extraction timed out after {timeout_seconds}s")
+        result_holder: list = []
+        error_holder: list = []
 
-        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        signal.alarm(timeout_seconds)
-        try:
-            text = page.extract_text() or ""
-            signal.alarm(0)
-            return text
-        except TimeoutError:
+        def _extract():
+            try:
+                result_holder.append(page.extract_text() or "")
+            except Exception as e:
+                error_holder.append(e)
+
+        thread = threading.Thread(target=_extract, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout_seconds)
+
+        if thread.is_alive():
             msg = f"PAGE_TIMEOUT: Pagina {page_num} ignorada - extração excedeu {timeout_seconds}s"
             logger.warning(msg, page_num=page_num)
             warnings.append(msg)
             return ""
-        except Exception as e:
-            signal.alarm(0)
-            msg = f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {e}"
-            logger.warning(msg, page_num=page_num, error=str(e))
+
+        if error_holder:
+            msg = f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {error_holder[0]}"
+            logger.warning(msg, page_num=page_num, error=str(error_holder[0]))
             warnings.append(msg)
             return ""
-        finally:
-            signal.signal(signal.SIGALRM, old_handler)
+
+        return result_holder[0] if result_holder else ""
 
     def _is_scanned_pdf(self, full_text: str, total_pages: int) -> bool:
         text_stripped = full_text.strip()
