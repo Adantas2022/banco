@@ -1,10 +1,11 @@
-"""Configuracao do broker Dramatiq com Redis e OpenTelemetry."""
+"""Configuracao do broker Dramatiq com Redis, OpenTelemetry e Dead Letter Queue."""
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 from dramatiq.middleware import CurrentMessage, Retries, Middleware
 
 from irpf_processor.config import get_settings
+from irpf_processor.presentation.workers.dlq_middleware import DeadLetterQueueMiddleware
 from irpf_processor.shared.logging import configure_logging, get_logger, set_correlation_id
 from irpf_processor.shared.tracing import (
     configure_tracing,
@@ -63,6 +64,12 @@ dramatiq_broker.add_middleware(
         max_retries=settings.max_retry_attempts,
         min_backoff=1000,
         max_backoff=600000,
+    )
+)
+dramatiq_broker.add_middleware(
+    DeadLetterQueueMiddleware(
+        mongo_uri=settings.mongo_uri,
+        mongo_db=settings.mongo_db,
     )
 )
 
