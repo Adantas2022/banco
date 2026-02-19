@@ -268,6 +268,13 @@ WORKER_JOBS_TOTAL = Counter(
 )
 
 
+DLQ_MESSAGES_TOTAL = Counter(
+    "irpf_dlq_messages_total",
+    "Total messages sent to Dead Letter Queue after exhausting retries",
+    ["actor_name", "queue_name"],
+)
+
+
 SSE_CONNECTIONS_ACTIVE = Gauge(
     "irpf_sse_connections_active",
     "Number of active SSE connections",
