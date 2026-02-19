@@ -98,7 +98,7 @@ def detect_document_category(pdf_content: bytes) -> DocumentCategory:
         return DocumentCategory.UNKNOWN
 
 
-@dramatiq.actor(max_retries=3, min_backoff=1000, max_backoff=60000)
+@dramatiq.actor(max_retries=3, min_backoff=1000, max_backoff=60000, time_limit=1200000)
 def process_document(document_id: str, tenant_id: str) -> None:
     start_time = time.perf_counter()
     document_category = DocumentCategory.UNKNOWN
