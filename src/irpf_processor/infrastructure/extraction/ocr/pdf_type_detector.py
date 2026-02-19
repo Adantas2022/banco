@@ -139,7 +139,7 @@ class PdfTypeDetector:
         return [pages[i] for i in sorted_indices]
 
     def _analyze_page(self, page: pdfplumber.PDF) -> tuple[PdfType, int, float]:
-        text = page.extract_text() or ""
+        text = self._extract_text_safe(page)
         char_count = len(text.strip())
 
         images = page.images or []
@@ -167,11 +167,46 @@ class PdfTypeDetector:
                 return PdfType.DIGITAL, char_count, image_coverage
             return PdfType.IMAGE, char_count, image_coverage
 
+    def _extract_text_safe(self, page, timeout_seconds: int = 60) -> str:
+        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos."""
+        import signal
+        import platform
+
+        if platform.system() not in ("Linux", "Darwin"):
+            return page.extract_text() or ""
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError(f"Page text extraction timed out after {timeout_seconds}s")
+
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(timeout_seconds)
+        try:
+            text = page.extract_text() or ""
+            signal.alarm(0)
+            return text
+        except TimeoutError:
+            logger.warning(
+                "Page text extraction timed out in PdfTypeDetector",
+                page_number=getattr(page, "page_number", "?"),
+                timeout_seconds=timeout_seconds,
+            )
+            return ""
+        except Exception as e:
+            signal.alarm(0)
+            logger.warning(
+                "Page text extraction failed in PdfTypeDetector",
+                page_number=getattr(page, "page_number", "?"),
+                error=str(e),
+            )
+            return ""
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+
     def _has_extractable_text(self, pdf_path: Path) -> bool:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 for page in pdf.pages[:3]:
-                    text = page.extract_text() or ""
+                    text = self._extract_text_safe(page)
                     if len(text.strip()) >= self.MIN_CHARS_PER_PAGE:
                         return True
             return False
