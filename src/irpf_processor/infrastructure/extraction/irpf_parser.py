@@ -355,38 +355,28 @@ class IRPFParser:
         return self._last_profile
     
     def _create_context(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
-        self._ensure_pdfplumber()
-        
-        if isinstance(pdf_source, bytes):
-            import io
-            pdf_file = io.BytesIO(pdf_source)
-        else:
-            pdf_file = pdf_source
-        
-        full_text = ""
-        pages_text: dict[int, str] = {}
-        total_pages = 0
-        warnings: list[str] = []
-        
-        with self._pdfplumber.open(pdf_file) as pdf:
-            total_pages = len(pdf.pages)
-            for page_num, page in enumerate(pdf.pages, 1):
-                page_text = self._extract_page_text_safe(page, page_num, warnings)
-                pages_text[page_num] = page_text
-                full_text += page_text + "\n"
-        
+        if self._pdfplumber is not None:
+            return self._create_context_direct(pdf_source)
+        return self._create_context_safe(pdf_source)
+
+    def _create_context_safe(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
+        from .safe_pdf_extractor import extract_all_text
+
+        pages_text, total_pages, warnings = extract_all_text(pdf_source)
+        full_text = "\n".join(
+            pages_text[k] for k in sorted(pages_text.keys())
+        )
+
         pdf_path_str = str(pdf_source) if not isinstance(pdf_source, bytes) else None
-        
         context = ExtractionContext(
             full_text=full_text,
             pages_text=pages_text,
             total_pages=total_pages,
-            pdf_path=pdf_path_str
+            pdf_path=pdf_path_str,
         )
-        
         for w in warnings:
             context.add_warning(w)
-        
+
         if self._is_scanned_pdf(full_text, total_pages):
             context.add_warning(
                 "PDF_SCANNED: Este documento parece ser escaneado (imagem). "
@@ -395,47 +385,48 @@ class IRPFParser:
             logger.warning(
                 "PDF escaneado detectado",
                 total_pages=total_pages,
-                text_chars=len(full_text.strip())
+                text_chars=len(full_text.strip()),
             )
-        
         return context
-    
-    def _extract_page_text_safe(
-        self, page, page_num: int, warnings: list[str], timeout_seconds: int = 120
-    ) -> str:
-        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos.
 
-        Usa threading com daemon=True em vez de signal.SIGALRM porque os workers
-        do Dramatiq executam em threads filhas, e signal só funciona na main thread.
-        """
-        import threading
+    def _create_context_direct(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
+        """Fallback that uses an injected ``_pdfplumber`` (kept for tests)."""
+        if isinstance(pdf_source, bytes):
+            import io
+            pdf_file = io.BytesIO(pdf_source)
+        else:
+            pdf_file = pdf_source
 
-        result_holder: list = []
-        error_holder: list = []
+        full_text = ""
+        pages_text: dict[int, str] = {}
+        total_pages = 0
 
-        def _extract():
-            try:
-                result_holder.append(page.extract_text() or "")
-            except Exception as e:
-                error_holder.append(e)
+        with self._pdfplumber.open(pdf_file) as pdf:
+            total_pages = len(pdf.pages)
+            for page_num, page in enumerate(pdf.pages, 1):
+                page_text = page.extract_text() or ""
+                pages_text[page_num] = page_text
+                full_text += page_text + "\n"
 
-        thread = threading.Thread(target=_extract, daemon=True)
-        thread.start()
-        thread.join(timeout=timeout_seconds)
+        pdf_path_str = str(pdf_source) if not isinstance(pdf_source, bytes) else None
+        context = ExtractionContext(
+            full_text=full_text,
+            pages_text=pages_text,
+            total_pages=total_pages,
+            pdf_path=pdf_path_str,
+        )
 
-        if thread.is_alive():
-            msg = f"PAGE_TIMEOUT: Pagina {page_num} ignorada - extração excedeu {timeout_seconds}s"
-            logger.warning(msg, page_num=page_num)
-            warnings.append(msg)
-            return ""
-
-        if error_holder:
-            msg = f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {error_holder[0]}"
-            logger.warning(msg, page_num=page_num, error=str(error_holder[0]))
-            warnings.append(msg)
-            return ""
-
-        return result_holder[0] if result_holder else ""
+        if self._is_scanned_pdf(full_text, total_pages):
+            context.add_warning(
+                "PDF_SCANNED: Este documento parece ser escaneado (imagem). "
+                "Recomendado processar via OCR para melhor extracao."
+            )
+            logger.warning(
+                "PDF escaneado detectado",
+                total_pages=total_pages,
+                text_chars=len(full_text.strip()),
+            )
+        return context
 
     def _is_scanned_pdf(self, full_text: str, total_pages: int) -> bool:
         text_stripped = full_text.strip()

@@ -127,8 +127,23 @@ class ReceiptParser:
         return result
 
     def _create_context(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
-        self._ensure_pdfplumber()
+        if self._pdfplumber is not None:
+            return self._create_context_direct(pdf_source)
+        return self._create_context_safe(pdf_source)
 
+    def _create_context_safe(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
+        from .safe_pdf_extractor import extract_all_text
+
+        pages_text, total_pages, _ = extract_all_text(pdf_source)
+        full_text = "\n".join(pages_text[k] for k in sorted(pages_text.keys()))
+        return ExtractionContext(
+            full_text=full_text,
+            pages_text=pages_text,
+            total_pages=total_pages,
+        )
+
+    def _create_context_direct(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
+        """Fallback using injected ``_pdfplumber`` (kept for tests)."""
         if isinstance(pdf_source, bytes):
             import io
             pdf_file = io.BytesIO(pdf_source)
@@ -149,7 +164,7 @@ class ReceiptParser:
         return ExtractionContext(
             full_text=full_text,
             pages_text=pages_text,
-            total_pages=total_pages
+            total_pages=total_pages,
         )
 
     def _assign_to_result(self, data: dict[str, Any], result: IRPFReceiptResult) -> None:

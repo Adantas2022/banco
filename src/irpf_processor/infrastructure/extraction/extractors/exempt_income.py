@@ -880,12 +880,12 @@ class ExemptIncomeExtractor(ISectionExtractor):
     ) -> list[dict]:
         """Usa posições de palavras do pdfplumber para separar nome e descrição."""
         try:
-            import pdfplumber
-            
-            with pdfplumber.open(pdf_path) as pdf:
-                page = pdf.pages[page_num - 1]
-                words = page.extract_words()
-            
+            from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_page_words
+
+            words, _warnings = extract_page_words(pdf_path, page_num, timeout_s=30, total_timeout_s=60)
+            if not words:
+                return items
+
             section_start = next((w for w in words if w["text"] == "99."), None)
             if not section_start:
                 return items
