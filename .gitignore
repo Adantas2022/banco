@@ -97,3 +97,6 @@ docs/PROPOSTA_AGENTES_V1.md
 
 # Generated PDFs
 *.pdf
+
+# json with keys
+gcp-super-*.json

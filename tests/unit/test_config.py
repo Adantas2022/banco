@@ -46,6 +46,10 @@ class TestSettings:
 
         assert settings.ocr_engine == "tesseract"
 
+    def test_ocr_engine_documentai(self):
+        settings = Settings(ocr_engine="documentai")
+        assert settings.ocr_engine == "documentai"
+
     def test_api_defaults(self):
         settings = Settings()
 
