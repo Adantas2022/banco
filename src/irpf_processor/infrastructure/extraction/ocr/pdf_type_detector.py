@@ -167,44 +167,23 @@ class PdfTypeDetector:
                 return PdfType.DIGITAL, char_count, image_coverage
             return PdfType.IMAGE, char_count, image_coverage
 
-    def _extract_text_safe(self, page, timeout_seconds: int = 60) -> str:
-        """Extrai texto de uma página com timeout para evitar travamento em PDFs complexos.
+    def _extract_text_safe(self, page) -> str:
+        """Extrai texto de uma página.
 
-        Usa threading com daemon=True em vez de signal.SIGALRM porque os workers
-        do Dramatiq executam em threads filhas, e signal só funciona na main thread.
+        O timeout por threading foi removido porque causava threads zumbis,
+        corrupção de estado compartilhado e contention da GIL.
+        Proteção contra hang é fornecida pelo time_limit do actor Dramatiq
+        e pelo safe_pdf_extractor (subprocess) no extraction worker.
         """
-        import threading
-
-        result_holder: list = []
-        error_holder: list = []
-
-        def _extract():
-            try:
-                result_holder.append(page.extract_text() or "")
-            except Exception as e:
-                error_holder.append(e)
-
-        thread = threading.Thread(target=_extract, daemon=True)
-        thread.start()
-        thread.join(timeout=timeout_seconds)
-
-        if thread.is_alive():
-            logger.warning(
-                "Page text extraction timed out in PdfTypeDetector",
-                page_number=getattr(page, "page_number", "?"),
-                timeout_seconds=timeout_seconds,
-            )
-            return ""
-
-        if error_holder:
+        try:
+            return page.extract_text() or ""
+        except Exception as e:
             logger.warning(
                 "Page text extraction failed in PdfTypeDetector",
                 page_number=getattr(page, "page_number", "?"),
-                error=str(error_holder[0]),
+                error=str(e),
             )
             return ""
-
-        return result_holder[0] if result_holder else ""
 
     def _has_extractable_text(self, pdf_path: Path) -> bool:
         try:
