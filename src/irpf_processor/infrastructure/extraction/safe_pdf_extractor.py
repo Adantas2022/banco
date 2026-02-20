@@ -30,6 +30,7 @@ _HAS_SIGALRM = hasattr(signal, "SIGALRM")
 
 DEFAULT_PAGE_TIMEOUT_S = 30
 DEFAULT_TOTAL_TIMEOUT_S = 300
+DEFAULT_OPEN_TIMEOUT_S = 60
 
 
 class _PageTimeout(Exception):
@@ -59,41 +60,65 @@ def _install_alarm_handler() -> None:
 
 
 def _worker_extract_text(pdf_path_str: str, page_timeout_s: int, conn) -> None:
+    import time as _time
+
     _install_alarm_handler()
     pages_text: dict[int, str] = {}
     total_pages = 0
     warnings: list[str] = []
+    pdf = None
+    timing: dict[str, float] = {}
+    t0 = _time.monotonic()
 
     try:
         import pdfplumber
 
-        with pdfplumber.open(pdf_path_str) as pdf:
-            total_pages = len(pdf.pages)
-            for page_num, page in enumerate(pdf.pages, 1):
-                try:
-                    _set_alarm(page_timeout_s)
-                    text = page.extract_text() or ""
-                    _cancel_alarm()
-                    pages_text[page_num] = text
-                except _PageTimeout:
-                    _cancel_alarm()
-                    warnings.append(
-                        f"PAGE_TIMEOUT: Pagina {page_num} ignorada "
-                        f"- extração excedeu {page_timeout_s}s"
-                    )
-                    pages_text[page_num] = ""
-                except Exception as e:
-                    _cancel_alarm()
-                    warnings.append(
-                        f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {e}"
-                    )
-                    pages_text[page_num] = ""
+        _set_alarm(DEFAULT_OPEN_TIMEOUT_S)
+        pdf = pdfplumber.open(pdf_path_str)
+        _cancel_alarm()
+        timing["open_s"] = _time.monotonic() - t0
 
-        conn.send(("ok", pages_text, total_pages, warnings))
+        t_pages = _time.monotonic()
+        total_pages = len(pdf.pages)
+        for page_num, page in enumerate(pdf.pages, 1):
+            try:
+                _set_alarm(page_timeout_s)
+                text = page.extract_text() or ""
+                _cancel_alarm()
+                pages_text[page_num] = text
+            except _PageTimeout:
+                _cancel_alarm()
+                warnings.append(
+                    f"PAGE_TIMEOUT: Pagina {page_num} ignorada "
+                    f"- extração excedeu {page_timeout_s}s"
+                )
+                pages_text[page_num] = ""
+            except Exception as e:
+                _cancel_alarm()
+                warnings.append(
+                    f"PAGE_ERROR: Pagina {page_num} ignorada - erro: {e}"
+                )
+                pages_text[page_num] = ""
+
+        timing["pages_s"] = _time.monotonic() - t_pages
+        timing["total_s"] = _time.monotonic() - t0
+
+        conn.send(("ok", pages_text, total_pages, warnings, timing))
+    except _PageTimeout:
+        _cancel_alarm()
+        timing["total_s"] = _time.monotonic() - t0
+        conn.send((
+            "error", {}, 0,
+            [f"PDF_OPEN_TIMEOUT: pdfplumber.open() excedeu {DEFAULT_OPEN_TIMEOUT_S}s"],
+            timing,
+        ))
     except Exception as e:
-        conn.send(("error", {}, total_pages, [f"PDF_ERROR: {e}"]))
+        timing["total_s"] = _time.monotonic() - t0
+        conn.send(("error", {}, total_pages, [f"PDF_ERROR: {e}"], timing))
     finally:
         _cancel_alarm()
+        if pdf:
+            pdf.close()
         conn.close()
 
 
@@ -104,66 +129,78 @@ def _worker_analyze_pages(
     results: list[dict] = []
     total_pages = 0
     warnings: list[str] = []
+    pdf = None
 
     try:
         import pdfplumber
 
-        with pdfplumber.open(pdf_path_str) as pdf:
-            total_pages = len(pdf.pages)
+        _set_alarm(DEFAULT_OPEN_TIMEOUT_S)
+        pdf = pdfplumber.open(pdf_path_str)
+        _cancel_alarm()
 
-            if total_pages <= max_sample:
-                indices = list(range(total_pages))
-            else:
-                idx_set: set[int] = set()
-                for i in range(min(3, total_pages)):
-                    idx_set.add(i)
-                idx_set.add(total_pages // 2)
-                for i in range(max(0, total_pages - 3), total_pages):
-                    idx_set.add(i)
-                indices = sorted(idx_set)
+        total_pages = len(pdf.pages)
 
-            for idx in indices:
-                page = pdf.pages[idx]
-                info: dict[str, Any] = {
-                    "page_index": idx,
-                    "width": float(page.width),
-                    "height": float(page.height),
-                    "char_count": 0,
-                    "image_coverage": 0.0,
-                }
+        if total_pages <= max_sample:
+            indices = list(range(total_pages))
+        else:
+            idx_set: set[int] = set()
+            for i in range(min(3, total_pages)):
+                idx_set.add(i)
+            idx_set.add(total_pages // 2)
+            for i in range(max(0, total_pages - 3), total_pages):
+                idx_set.add(i)
+            indices = sorted(idx_set)
 
-                try:
-                    images = page.images or []
-                    page_area = page.width * page.height
-                    if images and page_area > 0:
-                        total_img_area = sum(
-                            (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
-                            for img in images
-                        )
-                        info["image_coverage"] = min(total_img_area / page_area, 1.0)
-                except Exception:
-                    pass
+        for idx in indices:
+            page = pdf.pages[idx]
+            info: dict[str, Any] = {
+                "page_index": idx,
+                "width": float(page.width),
+                "height": float(page.height),
+                "char_count": 0,
+                "image_coverage": 0.0,
+            }
 
-                try:
-                    _set_alarm(page_timeout_s)
-                    text = page.extract_text() or ""
-                    _cancel_alarm()
-                    info["char_count"] = len(text.strip())
-                except _PageTimeout:
-                    _cancel_alarm()
-                    warnings.append(
-                        f"TYPE_DETECT_TIMEOUT: Page {idx + 1} text extraction timed out"
+            try:
+                images = page.images or []
+                page_area = page.width * page.height
+                if images and page_area > 0:
+                    total_img_area = sum(
+                        (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
+                        for img in images
                     )
-                except Exception:
-                    _cancel_alarm()
+                    info["image_coverage"] = min(total_img_area / page_area, 1.0)
+            except Exception:
+                pass
 
-                results.append(info)
+            try:
+                _set_alarm(page_timeout_s)
+                text = page.extract_text() or ""
+                _cancel_alarm()
+                info["char_count"] = len(text.strip())
+            except _PageTimeout:
+                _cancel_alarm()
+                warnings.append(
+                    f"TYPE_DETECT_TIMEOUT: Page {idx + 1} text extraction timed out"
+                )
+            except Exception:
+                _cancel_alarm()
+
+            results.append(info)
 
         conn.send(("ok", results, total_pages, warnings))
+    except _PageTimeout:
+        _cancel_alarm()
+        conn.send((
+            "error", [], 0,
+            [f"PDF_OPEN_TIMEOUT: pdfplumber.open() excedeu {DEFAULT_OPEN_TIMEOUT_S}s"],
+        ))
     except Exception as e:
         conn.send(("error", [], total_pages, [f"PDF_ANALYZE_ERROR: {e}"]))
     finally:
         _cancel_alarm()
+        if pdf:
+            pdf.close()
         conn.close()
 
 
@@ -176,36 +213,48 @@ def _worker_extract_tables(
     _install_alarm_handler()
     tables: list[dict] = []
     warnings: list[str] = []
+    pdf = None
 
     try:
         import pdfplumber
 
-        with pdfplumber.open(pdf_path_str) as pdf:
-            for page_num, page in enumerate(pdf.pages, 1):
-                if page_numbers and page_num not in page_numbers:
-                    continue
-                try:
-                    _set_alarm(page_timeout_s)
-                    page_tables = page.extract_tables()
-                    _cancel_alarm()
-                    for table in page_tables:
-                        if table and len(table) >= 2:
-                            tables.append({"data": table, "page_number": page_num})
-                except _PageTimeout:
-                    _cancel_alarm()
-                    warnings.append(
-                        f"TABLE_TIMEOUT: Tabelas da página {page_num} "
-                        f"ignoradas ({page_timeout_s}s)"
-                    )
-                except Exception as e:
-                    _cancel_alarm()
-                    warnings.append(f"TABLE_ERROR: Página {page_num}: {e}")
+        _set_alarm(DEFAULT_OPEN_TIMEOUT_S)
+        pdf = pdfplumber.open(pdf_path_str)
+        _cancel_alarm()
+
+        for page_num, page in enumerate(pdf.pages, 1):
+            if page_numbers and page_num not in page_numbers:
+                continue
+            try:
+                _set_alarm(page_timeout_s)
+                page_tables = page.extract_tables()
+                _cancel_alarm()
+                for table in page_tables:
+                    if table and len(table) >= 2:
+                        tables.append({"data": table, "page_number": page_num})
+            except _PageTimeout:
+                _cancel_alarm()
+                warnings.append(
+                    f"TABLE_TIMEOUT: Tabelas da página {page_num} "
+                    f"ignoradas ({page_timeout_s}s)"
+                )
+            except Exception as e:
+                _cancel_alarm()
+                warnings.append(f"TABLE_ERROR: Página {page_num}: {e}")
 
         conn.send(("ok", tables, warnings))
+    except _PageTimeout:
+        _cancel_alarm()
+        conn.send((
+            "error", [],
+            [f"PDF_OPEN_TIMEOUT: pdfplumber.open() excedeu {DEFAULT_OPEN_TIMEOUT_S}s"],
+        ))
     except Exception as e:
         conn.send(("error", [], [f"PDF_TABLE_ERROR: {e}"]))
     finally:
         _cancel_alarm()
+        if pdf:
+            pdf.close()
         conn.close()
 
 
@@ -213,46 +262,52 @@ def _worker_extract_words(
     pdf_path_str: str, page_num: int, timeout_s: int, conn
 ) -> None:
     _install_alarm_handler()
+    pdf = None
 
     try:
         import pdfplumber
 
-        with pdfplumber.open(pdf_path_str) as pdf:
-            if page_num < 1 or page_num > len(pdf.pages):
-                conn.send((
-                    "error",
-                    [],
-                    [f"Page {page_num} out of range (1-{len(pdf.pages)})"],
-                ))
-                return
+        _set_alarm(DEFAULT_OPEN_TIMEOUT_S)
+        pdf = pdfplumber.open(pdf_path_str)
+        _cancel_alarm()
 
-            page = pdf.pages[page_num - 1]
-            _set_alarm(timeout_s)
-            words_raw = page.extract_words()
-            _cancel_alarm()
+        if page_num < 1 or page_num > len(pdf.pages):
+            conn.send((
+                "error",
+                [],
+                [f"Page {page_num} out of range (1-{len(pdf.pages)})"],
+            ))
+            return
 
-            words = [
-                {
-                    "text": w["text"],
-                    "x0": w["x0"],
-                    "top": w["top"],
-                    "x1": w["x1"],
-                    "bottom": w["bottom"],
-                }
-                for w in words_raw
-            ]
-            conn.send(("ok", words, []))
+        page = pdf.pages[page_num - 1]
+        _set_alarm(timeout_s)
+        words_raw = page.extract_words()
+        _cancel_alarm()
+
+        words = [
+            {
+                "text": w["text"],
+                "x0": w["x0"],
+                "top": w["top"],
+                "x1": w["x1"],
+                "bottom": w["bottom"],
+            }
+            for w in words_raw
+        ]
+        conn.send(("ok", words, []))
     except _PageTimeout:
         _cancel_alarm()
         conn.send((
             "ok",
             [],
-            [f"WORDS_TIMEOUT: Page {page_num} extract_words timed out ({timeout_s}s)"],
+            [f"WORDS_TIMEOUT: Page {page_num} timed out ({timeout_s}s)"],
         ))
     except Exception as e:
         conn.send(("error", [], [f"WORDS_ERROR: {e}"]))
     finally:
         _cancel_alarm()
+        if pdf:
+            pdf.close()
         conn.close()
 
 
@@ -318,10 +373,11 @@ def extract_all_text(
     pdf_source: Union[str, Path, bytes],
     page_timeout_s: int = DEFAULT_PAGE_TIMEOUT_S,
     total_timeout_s: int = DEFAULT_TOTAL_TIMEOUT_S,
-) -> tuple[dict[int, str], int, list[str]]:
+) -> tuple[dict[int, str], int, list[str], dict[str, float]]:
     """Extract text from every page of a PDF in an isolated subprocess.
 
-    Returns ``(pages_text, total_pages, warnings)``.
+    Returns ``(pages_text, total_pages, warnings, timing)``.
+    ``timing`` contains ``open_s``, ``pages_s``, ``total_s`` when available.
     """
     path, is_temp = _ensure_file_path(pdf_source)
     try:
@@ -336,11 +392,13 @@ def extract_all_text(
                 {},
                 0,
                 [f"PROCESS_TIMEOUT: Extração total excedeu {total_timeout_s}s"],
+                {"timed_out": True},
             )
-        status, pages_text, total_pages, warnings = result
+        status, pages_text, total_pages, warnings, timing = result
         if status == "ok":
-            return pages_text, total_pages, warnings
-        return {}, total_pages, warnings
+            return pages_text, total_pages, warnings, timing
+        timing["had_error"] = True
+        return {}, total_pages, warnings, timing
     finally:
         if is_temp:
             path.unlink(missing_ok=True)

@@ -50,7 +50,7 @@ EXTRACTION_CONFIDENCE = Histogram(
 PROCESSING_DURATION_SECONDS = Histogram(
     "irpf_processing_duration_seconds",
     "Time spent processing documents end-to-end",
-    ["tenant_id", "pdf_type", "template_version"],
+    ["tenant_id", "pdf_type", "template_version", "document_category", "confidence_level", "had_timeout"],
     buckets=[0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300, 600],
 )
 
@@ -58,8 +58,30 @@ PROCESSING_DURATION_SECONDS = Histogram(
 EXTRACTION_DURATION_SECONDS = Histogram(
     "irpf_extraction_duration_seconds",
     "Time spent extracting data from PDF",
-    ["tenant_id", "pdf_type", "template_version"],
+    ["tenant_id", "pdf_type", "template_version", "document_category"],
     buckets=[0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 60],
+)
+
+
+TEXT_EXTRACTION_DURATION_SECONDS = Histogram(
+    "irpf_text_extraction_duration_seconds",
+    "Time spent in pdfplumber subprocess extracting text",
+    ["tenant_id", "phase"],
+    buckets=[0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300],
+)
+
+
+SUBPROCESS_TIMEOUT_TOTAL = Counter(
+    "irpf_subprocess_timeout_total",
+    "Total subprocess timeouts by type",
+    ["tenant_id", "timeout_type"],
+)
+
+
+PAGES_SKIPPED_TOTAL = Counter(
+    "irpf_pages_skipped_total",
+    "Total pages skipped during extraction",
+    ["tenant_id", "reason"],
 )
 
 
@@ -464,36 +486,47 @@ def record_document_processed(
     processing_time_seconds: float,
     total_pages: int,
     document_category: str = "DECLARACAO",
+    had_timeout: bool = False,
 ) -> None:
+    if confidence >= 0.7:
+        confidence_level = "high"
+    elif confidence >= 0.4:
+        confidence_level = "medium"
+    else:
+        confidence_level = "low"
+
     DOCUMENTS_PROCESSED_TOTAL.labels(
         tenant_id=tenant_id,
         status=status,
         pdf_type=pdf_type,
         document_category=document_category,
     ).inc()
-    
+
     EXTRACTION_CONFIDENCE.labels(
         tenant_id=tenant_id,
         template_version=template_version,
         pdf_type=pdf_type,
     ).observe(confidence)
-    
+
     PROCESSING_DURATION_SECONDS.labels(
         tenant_id=tenant_id,
         pdf_type=pdf_type,
         template_version=template_version,
+        document_category=document_category,
+        confidence_level=confidence_level,
+        had_timeout=str(had_timeout).lower(),
     ).observe(processing_time_seconds)
-    
+
     PDF_PAGES_COUNT.labels(
         tenant_id=tenant_id,
         template_version=template_version,
     ).observe(total_pages)
-    
+
     DOCUMENTS_BY_PDF_TYPE.labels(
         tenant_id=tenant_id,
         pdf_type=pdf_type,
     ).inc()
-    
+
     DOCUMENTS_BY_TEMPLATE_VERSION.labels(
         tenant_id=tenant_id,
         template_version=template_version,
@@ -513,12 +546,39 @@ def record_extraction_duration(
     pdf_type: str,
     template_version: str,
     duration_seconds: float,
+    document_category: str = "DECLARACAO",
 ) -> None:
     EXTRACTION_DURATION_SECONDS.labels(
         tenant_id=tenant_id,
         pdf_type=pdf_type,
         template_version=template_version,
+        document_category=document_category,
     ).observe(duration_seconds)
+
+
+def record_text_extraction_duration(
+    tenant_id: str,
+    phase: str,
+    duration_seconds: float,
+) -> None:
+    TEXT_EXTRACTION_DURATION_SECONDS.labels(
+        tenant_id=tenant_id,
+        phase=phase,
+    ).observe(duration_seconds)
+
+
+def record_subprocess_timeout(tenant_id: str, timeout_type: str) -> None:
+    SUBPROCESS_TIMEOUT_TOTAL.labels(
+        tenant_id=tenant_id,
+        timeout_type=timeout_type,
+    ).inc()
+
+
+def record_pages_skipped(tenant_id: str, reason: str, count: int = 1) -> None:
+    PAGES_SKIPPED_TOTAL.labels(
+        tenant_id=tenant_id,
+        reason=reason,
+    ).inc(count)
 
 
 def record_extraction_warning(tenant_id: str, warning_type: str) -> None:

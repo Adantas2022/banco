@@ -50,7 +50,7 @@ class PdfTextExtractor:
     def _extract_text_safe(self, pdf_source: Union[str, Path, bytes]) -> str:
         from .safe_pdf_extractor import extract_all_text
 
-        pages_text, _, _ = extract_all_text(pdf_source)
+        pages_text, _, _, _ = extract_all_text(pdf_source)
         return "\n".join(
             pages_text[k] for k in sorted(pages_text.keys()) if pages_text[k]
         )
@@ -58,13 +58,13 @@ class PdfTextExtractor:
     def _extract_text_by_page_safe(self, pdf_source: Union[str, Path, bytes]) -> list[str]:
         from .safe_pdf_extractor import extract_all_text
 
-        pages_text, _, _ = extract_all_text(pdf_source)
+        pages_text, _, _, _ = extract_all_text(pdf_source)
         return [pages_text[k] for k in sorted(pages_text.keys())]
 
     def _detect_pdf_type_safe(self, pdf_source: Union[str, Path, bytes]) -> PdfType:
         from .safe_pdf_extractor import extract_all_text
 
-        pages_text, total_pages, _ = extract_all_text(pdf_source)
+        pages_text, total_pages, _, _ = extract_all_text(pdf_source)
         if total_pages == 0:
             return PdfType.UNKNOWN
 
