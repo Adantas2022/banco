@@ -16,9 +16,11 @@ from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
     WORKER_JOBS_TOTAL,
     get_registry,
+    record_document_upload,
     record_status_transition,
     record_routing_duration,
     record_pdf_type_detection,
+    PDF_PAGES_COUNT,
 )
 
 logger = get_logger(__name__)
@@ -82,13 +84,18 @@ def route_document(document_id: str, tenant_id: str) -> None:
     try:
         storage_key = extract_storage_key(document["storage_uri"])
         pdf_content = storage.download_sync(storage_key)
+        pdf_size_bytes = len(pdf_content)
+
+        record_document_upload(tenant_id, pdf_size_bytes)
 
         with NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(pdf_content)
             tmp_path = Path(tmp_file.name)
 
         try:
+            detection_start = time.perf_counter()
             detection_result = detector.detect_with_confidence(tmp_path)
+            detection_seconds = time.perf_counter() - detection_start
             pdf_type = detection_result.pdf_type
 
             logger.info(
@@ -97,20 +104,27 @@ def route_document(document_id: str, tenant_id: str) -> None:
                 pdf_type=pdf_type.value,
                 confidence=detection_result.confidence,
                 total_pages=detection_result.total_pages,
+                pdf_size_bytes=pdf_size_bytes,
+                detection_seconds=round(detection_seconds, 2),
             )
 
             update_document_pdf_type(db, document_id, tenant_id, pdf_type.value)
             record_status_transition(tenant_id, "RECEIVED", "ROUTED")
             record_pdf_type_detection(pdf_type.value, detection_result.confidence)
 
+            PDF_PAGES_COUNT.labels(
+                tenant_id=tenant_id,
+                template_version="unknown",
+            ).observe(detection_result.total_pages)
+
+            target_queue = "ocr" if pdf_type in (OcrPdfType.IMAGE, OcrPdfType.MIXED) else "digital"
+
             if pdf_type in (OcrPdfType.IMAGE, OcrPdfType.MIXED):
                 from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
                 process_ocr_document.send(document_id, tenant_id)
-                logger.info("Document routed to OCR queue", document_id=document_id, pdf_type=pdf_type.value)
             else:
                 from irpf_processor.presentation.workers.extraction_worker import process_document
                 process_document.send(document_id, tenant_id)
-                logger.info("Document routed to digital queue", document_id=document_id)
 
             routing_time = time.perf_counter() - start_time
             record_routing_duration(tenant_id, pdf_type.value, routing_time)
@@ -120,7 +134,11 @@ def route_document(document_id: str, tenant_id: str) -> None:
                 "Document routing completed",
                 document_id=document_id,
                 pdf_type=pdf_type.value,
-                routing_time_seconds=routing_time,
+                target_queue=target_queue,
+                routing_time_seconds=round(routing_time, 2),
+                detection_seconds=round(detection_seconds, 2),
+                pdf_size_bytes=pdf_size_bytes,
+                total_pages=detection_result.total_pages,
             )
 
             push_metrics_to_gateway()
@@ -133,6 +151,7 @@ def route_document(document_id: str, tenant_id: str) -> None:
             "Document routing failed",
             document_id=document_id,
             error=str(e),
+            error_type=type(e).__name__,
         )
         WORKER_JOBS_TOTAL.labels(worker_name="router_worker", status="failed").inc()
 

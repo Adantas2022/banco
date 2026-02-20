@@ -22,9 +22,12 @@ from irpf_processor.shared.metrics import (
     record_extraction_duration,
     record_extraction_warning,
     record_failure,
+    record_pages_skipped,
     record_professional_confidence,
     record_section_extraction,
     record_status_transition,
+    record_subprocess_timeout,
+    record_text_extraction_duration,
     WORKER_JOBS_TOTAL,
     get_registry,
 )
@@ -155,11 +158,29 @@ def process_document(document_id: str, tenant_id: str) -> None:
 
             extraction_start = time.perf_counter()
 
-            pages_text, total_pages, extraction_warnings = extract_all_text(tmp_path)
+            pages_text, total_pages, extraction_warnings, extraction_timing = extract_all_text(tmp_path)
+            text_extraction_seconds = time.perf_counter() - extraction_start
+
             full_text = "\n".join(
                 pages_text[k] for k in sorted(pages_text.keys())
             )
             has_text = bool(full_text.strip())
+
+            had_timeout = any("TIMEOUT" in w for w in extraction_warnings)
+            pages_timed_out = sum(1 for w in extraction_warnings if "PAGE_TIMEOUT" in w)
+            pages_with_error = sum(1 for w in extraction_warnings if "PAGE_ERROR" in w)
+
+            record_text_extraction_duration(tenant_id, "pdfplumber_subprocess", text_extraction_seconds)
+
+            if had_timeout:
+                if any("PROCESS_TIMEOUT" in w for w in extraction_warnings):
+                    record_subprocess_timeout(tenant_id, "process_killed")
+                elif any("PDF_OPEN_TIMEOUT" in w for w in extraction_warnings):
+                    record_subprocess_timeout(tenant_id, "pdf_open")
+                if pages_timed_out > 0:
+                    record_pages_skipped(tenant_id, "timeout", pages_timed_out)
+            if pages_with_error > 0:
+                record_pages_skipped(tenant_id, "error", pages_with_error)
 
             if not has_text:
                 logger.warning(
@@ -168,6 +189,8 @@ def process_document(document_id: str, tenant_id: str) -> None:
                     document_id=document_id,
                     total_pages=total_pages,
                     warnings=extraction_warnings,
+                    text_extraction_seconds=round(text_extraction_seconds, 2),
+                    had_timeout=had_timeout,
                 )
 
             document_category = detect_category_from_text(full_text)
@@ -180,9 +203,14 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 document_id=document_id,
                 category=document_category.value,
                 has_text=has_text,
+                text_extraction_seconds=round(text_extraction_seconds, 2),
+                pdf_open_seconds=round(extraction_timing.get("open_s", 0), 2),
+                pages_extraction_seconds=round(extraction_timing.get("pages_s", 0), 2),
             )
 
             pdf_type = PdfType.DIGITAL.value
+
+            parsing_start = time.perf_counter()
 
             if document_category == DocumentCategory.RECIBO:
                 parser = ReceiptParser()
@@ -215,16 +243,20 @@ def process_document(document_id: str, tenant_id: str) -> None:
                     )
                 template_version = parser.detected_version or "unknown"
 
+            parsing_seconds = time.perf_counter() - parsing_start
+
             for w in extraction_warnings:
                 result.warnings.insert(0, w)
 
             extraction_duration = time.perf_counter() - extraction_start
 
+            record_text_extraction_duration(tenant_id, "parsing", parsing_seconds)
             record_extraction_duration(
                 tenant_id=tenant_id,
                 pdf_type=pdf_type,
                 template_version=template_version,
                 duration_seconds=extraction_duration,
+                document_category=document_category.value,
             )
 
             for warning in result.warnings:
@@ -355,6 +387,7 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 processing_time_seconds=processing_duration,
                 total_pages=result.total_pages,
                 document_category=document_category.value,
+                had_timeout=had_timeout,
             )
 
             WORKER_JOBS_TOTAL.labels(worker_name="extraction_worker", status="success").inc()
@@ -364,7 +397,18 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 document_id=document_id,
                 category=document_category.value,
                 status="READY",
-                processing_time_seconds=processing_duration,
+                confidence=result.confidence,
+                total_pages=result.total_pages,
+                template_version=template_version,
+                processing_time_seconds=round(processing_duration, 2),
+                text_extraction_seconds=round(text_extraction_seconds, 2),
+                parsing_seconds=round(parsing_seconds, 2),
+                pdf_open_seconds=round(extraction_timing.get("open_s", 0), 2),
+                had_timeout=had_timeout,
+                pages_timed_out=pages_timed_out,
+                pages_with_error=pages_with_error,
+                warnings_count=len(result.warnings),
+                size_bytes=len(pdf_content),
             )
 
             push_metrics_to_gateway()

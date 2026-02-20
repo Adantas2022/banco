@@ -87,13 +87,15 @@ class TestExtractAllText:
         _create_simple_pdf(pdf_path, ["Hello World", "Second Page"])
 
         from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_all_text
-        pages_text, total_pages, warnings = extract_all_text(pdf_path, total_timeout_s=30)
+        pages_text, total_pages, warnings, timing = extract_all_text(pdf_path, total_timeout_s=30)
 
         assert total_pages == 2
         assert 1 in pages_text
         assert 2 in pages_text
         assert "Hello" in pages_text[1]
         assert "Second" in pages_text[2]
+        assert "total_s" in timing
+        assert timing["total_s"] > 0
 
     def test_extracts_from_bytes(self, tmp_path):
         pdf_path = tmp_path / "bytes_test.pdf"
@@ -101,17 +103,19 @@ class TestExtractAllText:
         pdf_bytes = pdf_path.read_bytes()
 
         from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_all_text
-        pages_text, total_pages, warnings = extract_all_text(pdf_bytes, total_timeout_s=30)
+        pages_text, total_pages, warnings, timing = extract_all_text(pdf_bytes, total_timeout_s=30)
 
         assert total_pages == 1
         assert "Bytes" in pages_text.get(1, "")
+        assert isinstance(timing, dict)
 
     def test_returns_empty_on_missing_file(self):
         from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_all_text
-        pages, total, warnings = extract_all_text("/nonexistent/path.pdf", total_timeout_s=10)
+        pages, total, warnings, timing = extract_all_text("/nonexistent/path.pdf", total_timeout_s=10)
 
         assert pages == {}
         assert any("PDF_ERROR" in w or "PROCESS_TIMEOUT" in w for w in warnings)
+        assert isinstance(timing, dict)
 
     def test_total_timeout_kills_process(self):
         """Reuses module-level _subprocess_forever to verify that the
@@ -131,11 +135,12 @@ class TestExtractAllText:
     def test_nonexistent_pdf_returns_warnings(self):
         from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_all_text
 
-        pages_text, total_pages, warnings = extract_all_text(
+        pages_text, total_pages, warnings, timing = extract_all_text(
             "/does/not/exist.pdf", total_timeout_s=30,
         )
         assert pages_text == {}
         assert len(warnings) > 0
+        assert isinstance(timing, dict)
 
 
 # ---------------------------------------------------------------------------
@@ -259,9 +264,10 @@ class TestPageTimeout:
         result = parent_conn.recv()
         parent_conn.close()
 
-        status, pages_text, total_pages, warnings = result
+        status, pages_text, total_pages, warnings, timing = result
         assert status == "ok"
         assert total_pages == 2
+        assert "total_s" in timing
 
 
 # ---------------------------------------------------------------------------

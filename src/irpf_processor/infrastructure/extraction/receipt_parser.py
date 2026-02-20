@@ -134,7 +134,7 @@ class ReceiptParser:
     def _create_context_safe(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
         from .safe_pdf_extractor import extract_all_text
 
-        pages_text, total_pages, _ = extract_all_text(pdf_source)
+        pages_text, total_pages, _, _ = extract_all_text(pdf_source)
         full_text = "\n".join(pages_text[k] for k in sorted(pages_text.keys()))
         return ExtractionContext(
             full_text=full_text,

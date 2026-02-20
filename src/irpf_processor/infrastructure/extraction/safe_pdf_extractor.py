@@ -60,11 +60,15 @@ def _install_alarm_handler() -> None:
 
 
 def _worker_extract_text(pdf_path_str: str, page_timeout_s: int, conn) -> None:
+    import time as _time
+
     _install_alarm_handler()
     pages_text: dict[int, str] = {}
     total_pages = 0
     warnings: list[str] = []
     pdf = None
+    timing: dict[str, float] = {}
+    t0 = _time.monotonic()
 
     try:
         import pdfplumber
@@ -72,7 +76,9 @@ def _worker_extract_text(pdf_path_str: str, page_timeout_s: int, conn) -> None:
         _set_alarm(DEFAULT_OPEN_TIMEOUT_S)
         pdf = pdfplumber.open(pdf_path_str)
         _cancel_alarm()
+        timing["open_s"] = _time.monotonic() - t0
 
+        t_pages = _time.monotonic()
         total_pages = len(pdf.pages)
         for page_num, page in enumerate(pdf.pages, 1):
             try:
@@ -94,15 +100,21 @@ def _worker_extract_text(pdf_path_str: str, page_timeout_s: int, conn) -> None:
                 )
                 pages_text[page_num] = ""
 
-        conn.send(("ok", pages_text, total_pages, warnings))
+        timing["pages_s"] = _time.monotonic() - t_pages
+        timing["total_s"] = _time.monotonic() - t0
+
+        conn.send(("ok", pages_text, total_pages, warnings, timing))
     except _PageTimeout:
         _cancel_alarm()
+        timing["total_s"] = _time.monotonic() - t0
         conn.send((
             "error", {}, 0,
             [f"PDF_OPEN_TIMEOUT: pdfplumber.open() excedeu {DEFAULT_OPEN_TIMEOUT_S}s"],
+            timing,
         ))
     except Exception as e:
-        conn.send(("error", {}, total_pages, [f"PDF_ERROR: {e}"]))
+        timing["total_s"] = _time.monotonic() - t0
+        conn.send(("error", {}, total_pages, [f"PDF_ERROR: {e}"], timing))
     finally:
         _cancel_alarm()
         if pdf:
@@ -361,10 +373,11 @@ def extract_all_text(
     pdf_source: Union[str, Path, bytes],
     page_timeout_s: int = DEFAULT_PAGE_TIMEOUT_S,
     total_timeout_s: int = DEFAULT_TOTAL_TIMEOUT_S,
-) -> tuple[dict[int, str], int, list[str]]:
+) -> tuple[dict[int, str], int, list[str], dict[str, float]]:
     """Extract text from every page of a PDF in an isolated subprocess.
 
-    Returns ``(pages_text, total_pages, warnings)``.
+    Returns ``(pages_text, total_pages, warnings, timing)``.
+    ``timing`` contains ``open_s``, ``pages_s``, ``total_s`` when available.
     """
     path, is_temp = _ensure_file_path(pdf_source)
     try:
@@ -379,11 +392,13 @@ def extract_all_text(
                 {},
                 0,
                 [f"PROCESS_TIMEOUT: Extração total excedeu {total_timeout_s}s"],
+                {"timed_out": True},
             )
-        status, pages_text, total_pages, warnings = result
+        status, pages_text, total_pages, warnings, timing = result
         if status == "ok":
-            return pages_text, total_pages, warnings
-        return {}, total_pages, warnings
+            return pages_text, total_pages, warnings, timing
+        timing["had_error"] = True
+        return {}, total_pages, warnings, timing
     finally:
         if is_temp:
             path.unlink(missing_ok=True)

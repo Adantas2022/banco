@@ -104,7 +104,7 @@ class TableExtractor:
     ) -> dict[int, str]:
         from .safe_pdf_extractor import extract_all_text
 
-        pages_text, _, _ = extract_all_text(pdf_source)
+        pages_text, _, _, _ = extract_all_text(pdf_source)
         return pages_text
 
     # ─── Direct (injected pdfplumber) paths — kept for tests ─────
