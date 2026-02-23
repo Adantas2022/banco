@@ -17,6 +17,7 @@ from irpf_processor.domain.enums import DocumentStatus, DocumentCategory, PdfTyp
 from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
     record_confidence_details,
+    record_digital_to_ocr_fallback,
     record_document_category,
     record_document_processed,
     record_extraction_duration,
@@ -182,20 +183,29 @@ def process_document(document_id: str, tenant_id: str) -> None:
             if pages_with_error > 0:
                 record_pages_skipped(tenant_id, "error", pages_with_error)
 
-            if not has_text:
-                logger.warning(
-                    "No text extracted from PDF (scanned/image or timeout). "
-                    "Skipping digital parsing.",
+            should_fallback_to_ocr = _should_fallback_to_ocr(
+                has_text, had_timeout, extraction_warnings, pages_text, total_pages,
+            )
+
+            if should_fallback_to_ocr:
+                fallback_reason = _get_fallback_reason(has_text, had_timeout, extraction_warnings)
+                _execute_ocr_fallback(
+                    db=db,
                     document_id=document_id,
-                    total_pages=total_pages,
-                    warnings=extraction_warnings,
-                    text_extraction_seconds=round(text_extraction_seconds, 2),
+                    tenant_id=tenant_id,
+                    reason=fallback_reason,
+                    extraction_warnings=extraction_warnings,
+                    text_extraction_seconds=text_extraction_seconds,
+                    extraction_timing=extraction_timing,
                     had_timeout=had_timeout,
+                    total_pages=total_pages,
+                    size_bytes=len(pdf_content),
+                    start_time=start_time,
                 )
+                push_metrics_to_gateway()
+                return
 
             document_category = detect_category_from_text(full_text)
-            if not has_text:
-                document_category = DocumentCategory.DECLARACAO
 
             record_document_category(tenant_id, document_category.value)
             logger.info(
@@ -220,27 +230,15 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 template_version = "recibo"
             else:
                 parser = IRPFParser()
-                if has_text:
-                    result = parser.parse_from_pages_text(
-                        pages_text=pages_text,
-                        full_text=full_text,
-                        total_pages=total_pages,
-                        warning_message=(
-                            "Documento detectado via extração digital "
-                            "(estrutura por página preservada)"
-                        ),
-                    )
-                else:
-                    result = parser.parse_from_pages_text(
-                        pages_text=pages_text,
-                        full_text=full_text,
-                        total_pages=total_pages,
-                        warning_message=(
-                            "EXTRACTION_EMPTY: Nenhum texto extraído - "
-                            "PDF provavelmente escaneado/imagem. "
-                            "Recomendado reprocessar via OCR."
-                        ),
-                    )
+                result = parser.parse_from_pages_text(
+                    pages_text=pages_text,
+                    full_text=full_text,
+                    total_pages=total_pages,
+                    warning_message=(
+                        "Documento detectado via extração digital "
+                        "(estrutura por página preservada)"
+                    ),
+                )
                 template_version = parser.detected_version or "unknown"
 
             parsing_seconds = time.perf_counter() - parsing_start
@@ -318,25 +316,24 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 }
             else:
                 receipt_data = None
-                if has_text:
-                    try:
-                        receipt_parser = ReceiptParser()
-                        receipt_result = receipt_parser.parse_from_text(
-                            full_text, total_pages=total_pages,
-                        )
-                        if receipt_result and receipt_result.receipt_number:
-                            receipt_data = receipt_result.to_dict()
-                            logger.info(
-                                "Receipt also extracted from declaration document",
-                                document_id=document_id,
-                                receipt_number=receipt_result.receipt_number,
-                            )
-                    except Exception as receipt_error:
-                        logger.debug(
-                            "No receipt found in declaration document",
+                try:
+                    receipt_parser = ReceiptParser()
+                    receipt_result = receipt_parser.parse_from_text(
+                        full_text, total_pages=total_pages,
+                    )
+                    if receipt_result and receipt_result.receipt_number:
+                        receipt_data = receipt_result.to_dict()
+                        logger.info(
+                            "Receipt also extracted from declaration document",
                             document_id=document_id,
-                            error=str(receipt_error),
+                            receipt_number=receipt_result.receipt_number,
                         )
+                except Exception as receipt_error:
+                    logger.debug(
+                        "No receipt found in declaration document",
+                        document_id=document_id,
+                        error=str(receipt_error),
+                    )
 
                 ir_response_data = {
                     "ir_response": {
@@ -438,3 +435,105 @@ def process_document(document_id: str, tenant_id: str) -> None:
         )
 
         raise
+
+
+MIN_USEFUL_TEXT_RATIO = 0.3
+MIN_CHARS_FOR_DIGITAL = 200
+
+
+def _should_fallback_to_ocr(
+    has_text: bool,
+    had_timeout: bool,
+    extraction_warnings: list[str],
+    pages_text: dict[int, str],
+    total_pages: int,
+) -> bool:
+    if not has_text:
+        return True
+
+    if any("PROCESS_TIMEOUT" in w for w in extraction_warnings):
+        return True
+
+    if any("PDF_OPEN_TIMEOUT" in w for w in extraction_warnings):
+        return True
+
+    if total_pages == 0:
+        return True
+
+    total_chars = sum(len(t.strip()) for t in pages_text.values())
+    if total_chars < MIN_CHARS_FOR_DIGITAL:
+        return True
+
+    pages_with_text = sum(1 for t in pages_text.values() if len(t.strip()) > 10)
+    if total_pages > 0 and pages_with_text / total_pages < MIN_USEFUL_TEXT_RATIO:
+        return True
+
+    return False
+
+
+def _get_fallback_reason(
+    has_text: bool,
+    had_timeout: bool,
+    extraction_warnings: list[str],
+) -> str:
+    if any("PROCESS_TIMEOUT" in w for w in extraction_warnings):
+        return "process_timeout"
+    if any("PDF_OPEN_TIMEOUT" in w for w in extraction_warnings):
+        return "pdf_open_timeout"
+    if not has_text:
+        return "no_text_extracted"
+    return "insufficient_text"
+
+
+def _execute_ocr_fallback(
+    *,
+    db,
+    document_id: str,
+    tenant_id: str,
+    reason: str,
+    extraction_warnings: list[str],
+    text_extraction_seconds: float,
+    extraction_timing: dict,
+    had_timeout: bool,
+    total_pages: int,
+    size_bytes: int,
+    start_time: float,
+) -> None:
+    from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
+
+    logger.info(
+        "Digital extraction insufficient, falling back to OCR",
+        document_id=document_id,
+        tenant_id=tenant_id,
+        fallback_reason=reason,
+        text_extraction_seconds=round(text_extraction_seconds, 2),
+        pdf_open_seconds=round(extraction_timing.get("open_s", 0), 2),
+        had_timeout=had_timeout,
+        total_pages=total_pages,
+        size_bytes=size_bytes,
+        warnings=extraction_warnings,
+        elapsed_before_fallback=round(time.perf_counter() - start_time, 2),
+    )
+
+    record_digital_to_ocr_fallback(tenant_id, reason)
+
+    db["documents"].update_one(
+        {"document_id": document_id, "tenant_id": tenant_id},
+        {"$set": {
+            "pdf_type": "IMAGE",
+            "digital_fallback_reason": reason,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+
+    record_status_transition(tenant_id, "ROUTED", "ROUTED")
+    WORKER_JOBS_TOTAL.labels(worker_name="extraction_worker", status="fallback_to_ocr").inc()
+
+    process_ocr_document.send(document_id, tenant_id)
+
+    logger.info(
+        "Document re-routed to OCR queue",
+        document_id=document_id,
+        tenant_id=tenant_id,
+        fallback_reason=reason,
+    )

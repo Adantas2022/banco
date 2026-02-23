@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional
 
-import pdfplumber
-
+from irpf_processor.infrastructure.extraction.safe_pdf_extractor import analyze_pdf_pages
 from irpf_processor.shared.logging import get_logger
 
 from .models import DetectionResult, InvalidPdfError, PdfType, ProtectedPdfError
@@ -12,10 +12,12 @@ logger = get_logger(__name__)
 
 class PdfTypeDetector:
 
-    TEXT_RATIO_THRESHOLD = 0.1
     MIN_CHARS_PER_PAGE = 100
     IMAGE_COVERAGE_THRESHOLD = 0.8
-    MAX_PAGES_TO_ANALYZE = 10  # Analyze max 10 pages for type detection (optimization)
+    MAX_PAGES_TO_ANALYZE = 10
+
+    AMBIGUOUS_CHAR_FLOOR = 30
+    AMBIGUOUS_IMAGE_FLOOR = 0.3
 
     def detect(self, pdf_path: Path) -> PdfType:
         result = self.detect_with_confidence(pdf_path)
@@ -26,46 +28,68 @@ class PdfTypeDetector:
             raise InvalidPdfError(f"PDF file not found: {pdf_path}")
 
         try:
-            with pdfplumber.open(pdf_path) as pdf:
-                return self._analyze_pdf(pdf)
+            return self._detect_via_subprocess(pdf_path)
+        except (InvalidPdfError, ProtectedPdfError):
+            raise
         except Exception as e:
             if "password" in str(e).lower() or "encrypted" in str(e).lower():
                 raise ProtectedPdfError(f"PDF is password protected: {pdf_path}")
-            raise InvalidPdfError(f"Failed to open PDF: {e}")
+            raise InvalidPdfError(f"Failed to analyze PDF: {e}")
 
     def detect_per_page(self, pdf_path: Path) -> list[PdfType]:
         result = self.detect_with_confidence(pdf_path)
         return result.page_types
 
-    def _analyze_pdf(self, pdf: pdfplumber.PDF) -> DetectionResult:
-        total_pages = len(pdf.pages)
-        if total_pages == 0:
-            raise InvalidPdfError("PDF has no pages")
+    def _detect_via_subprocess(self, pdf_path: Path) -> DetectionResult:
+        page_infos, total_pages, warnings = analyze_pdf_pages(
+            pdf_path,
+            max_sample=self.MAX_PAGES_TO_ANALYZE,
+            page_timeout_s=15,
+            total_timeout_s=120,
+        )
+
+        if total_pages == 0 and not page_infos:
+            if any("TIMEOUT" in w for w in warnings):
+                logger.warning(
+                    "PDF analysis timed out, classifying as IMAGE for OCR safety",
+                    pdf_path=str(pdf_path),
+                    warnings=warnings,
+                )
+                return DetectionResult(
+                    pdf_type=PdfType.IMAGE,
+                    confidence=0.6,
+                    page_types=[],
+                    text_ratio=0.0,
+                    image_ratio=1.0,
+                    total_pages=0,
+                    warnings=warnings + ["DETECTION_FALLBACK: timeout -> IMAGE"],
+                )
+            raise InvalidPdfError(f"PDF has no pages or could not be opened: {warnings}")
 
         page_types = []
         total_text_chars = 0
         total_image_coverage = 0.0
-        warnings = []
 
-        # Optimization: analyze only a sample of pages for large PDFs
-        # Sample: first 3 pages, middle page, last 3 pages (max 10 pages)
-        pages_to_analyze = self._select_sample_pages(pdf.pages, total_pages)
-        
-        for page in pages_to_analyze:
-            page_type, chars, img_coverage = self._analyze_page(page)
+        for info in page_infos:
+            char_count = info.get("char_count", 0)
+            image_coverage = info.get("image_coverage", 0.0)
+
+            page_type = self._classify_page(char_count, image_coverage)
             page_types.append(page_type)
-            total_text_chars += chars
-            total_image_coverage += img_coverage
+            total_text_chars += char_count
+            total_image_coverage += image_coverage
 
-        analyzed_count = len(pages_to_analyze)
+        for w in warnings:
+            if "TYPE_DETECT_TIMEOUT" in w:
+                page_types.append(PdfType.IMAGE)
+
+        analyzed_count = len(page_types) or 1
         digital_pages = sum(1 for pt in page_types if pt == PdfType.DIGITAL)
         image_pages = sum(1 for pt in page_types if pt == PdfType.IMAGE)
-        
-        # If we sampled, extrapolate the page types for the full document
-        if analyzed_count < total_pages:
-            warnings.append(f"Sampled {analyzed_count}/{total_pages} pages for detection")
 
-        # Calculate ratios based on analyzed pages
+        if analyzed_count < total_pages:
+            warnings.append(f"Sampled {len(page_infos)}/{total_pages} pages for detection")
+
         text_ratio = digital_pages / analyzed_count
         image_ratio = image_pages / analyzed_count
 
@@ -94,9 +118,10 @@ class PdfTypeDetector:
             pdf_type=pdf_type.value,
             confidence=confidence,
             total_pages=total_pages,
-            analyzed_pages=analyzed_count,
+            analyzed_pages=len(page_infos),
             digital_pages=digital_pages,
             image_pages=image_pages,
+            avg_chars_per_page=round(avg_chars_per_page, 1),
         )
 
         return DetectionResult(
@@ -109,106 +134,19 @@ class PdfTypeDetector:
             warnings=warnings,
         )
 
-    def _select_sample_pages(self, pages: list, total_pages: int) -> list:
-        """Select a representative sample of pages for analysis.
-        
-        For small PDFs (<=10 pages): analyze all pages
-        For large PDFs: sample first 3, middle, and last 3 pages (max 10)
-        
-        This optimization significantly speeds up detection for large documents.
-        """
-        if total_pages <= self.MAX_PAGES_TO_ANALYZE:
-            return pages
-        
-        sample_indices = set()
-        
-        # First 3 pages
-        for i in range(min(3, total_pages)):
-            sample_indices.add(i)
-        
-        # Middle page
-        middle = total_pages // 2
-        sample_indices.add(middle)
-        
-        # Last 3 pages
-        for i in range(max(0, total_pages - 3), total_pages):
-            sample_indices.add(i)
-        
-        # Sort indices and get corresponding pages
-        sorted_indices = sorted(sample_indices)
-        return [pages[i] for i in sorted_indices]
-
-    def _analyze_page(self, page: pdfplumber.PDF) -> tuple[PdfType, int, float]:
-        text = self._extract_text_safe(page)
-        char_count = len(text.strip())
-
-        images = page.images or []
-        page_area = page.width * page.height
-        image_coverage = 0.0
-
-        if images and page_area > 0:
-            total_image_area = sum(
-                (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
-                for img in images
-            )
-            image_coverage = min(total_image_area / page_area, 1.0)
-
+    def _classify_page(self, char_count: int, image_coverage: float) -> PdfType:
         has_sufficient_text = char_count >= self.MIN_CHARS_PER_PAGE
         has_large_images = image_coverage >= self.IMAGE_COVERAGE_THRESHOLD
 
         if has_sufficient_text and not has_large_images:
-            return PdfType.DIGITAL, char_count, image_coverage
-        elif has_large_images and not has_sufficient_text:
-            return PdfType.IMAGE, char_count, image_coverage
-        elif has_sufficient_text and has_large_images:
-            return PdfType.DIGITAL, char_count, image_coverage
-        else:
-            if char_count > 50:
-                return PdfType.DIGITAL, char_count, image_coverage
-            return PdfType.IMAGE, char_count, image_coverage
+            return PdfType.DIGITAL
+        if has_large_images and not has_sufficient_text:
+            return PdfType.IMAGE
+        if has_sufficient_text and has_large_images:
+            return PdfType.DIGITAL
 
-    def _extract_text_safe(self, page) -> str:
-        """Extrai texto de uma página.
-
-        O timeout por threading foi removido porque causava threads zumbis,
-        corrupção de estado compartilhado e contention da GIL.
-        Proteção contra hang é fornecida pelo time_limit do actor Dramatiq
-        e pelo safe_pdf_extractor (subprocess) no extraction worker.
-        """
-        try:
-            return page.extract_text() or ""
-        except Exception as e:
-            logger.warning(
-                "Page text extraction failed in PdfTypeDetector",
-                page_number=getattr(page, "page_number", "?"),
-                error=str(e),
-            )
-            return ""
-
-    def _has_extractable_text(self, pdf_path: Path) -> bool:
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for page in pdf.pages[:3]:
-                    text = self._extract_text_safe(page)
-                    if len(text.strip()) >= self.MIN_CHARS_PER_PAGE:
-                        return True
-            return False
-        except Exception:
-            return False
-
-    def _analyze_images(self, pdf_path: Path) -> bool:
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for page in pdf.pages[:3]:
-                    images = page.images or []
-                    if images:
-                        page_area = page.width * page.height
-                        total_image_area = sum(
-                            (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
-                            for img in images
-                        )
-                        if page_area > 0 and total_image_area / page_area >= self.IMAGE_COVERAGE_THRESHOLD:
-                            return True
-            return False
-        except Exception:
-            return False
+        if char_count < self.AMBIGUOUS_CHAR_FLOOR:
+            return PdfType.IMAGE
+        if image_coverage >= self.AMBIGUOUS_IMAGE_FLOOR:
+            return PdfType.IMAGE
+        return PdfType.IMAGE
