@@ -85,6 +85,13 @@ PAGES_SKIPPED_TOTAL = Counter(
 )
 
 
+DIGITAL_TO_OCR_FALLBACK_TOTAL = Counter(
+    "irpf_digital_to_ocr_fallback_total",
+    "Total documents re-routed from digital extraction to OCR",
+    ["tenant_id", "reason"],
+)
+
+
 PDF_SIZE_BYTES = Histogram(
     "irpf_pdf_size_bytes",
     "Size distribution of uploaded PDF files",
@@ -579,6 +586,13 @@ def record_pages_skipped(tenant_id: str, reason: str, count: int = 1) -> None:
         tenant_id=tenant_id,
         reason=reason,
     ).inc(count)
+
+
+def record_digital_to_ocr_fallback(tenant_id: str, reason: str) -> None:
+    DIGITAL_TO_OCR_FALLBACK_TOTAL.labels(
+        tenant_id=tenant_id,
+        reason=reason,
+    ).inc()
 
 
 def record_extraction_warning(tenant_id: str, warning_type: str) -> None:
