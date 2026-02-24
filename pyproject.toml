@@ -39,6 +39,7 @@ dependencies = [
     "pdf2image>=1.16.0",
     "pillow>=10.0.0",
     "opencv-python-headless>=4.8.0",
+    "google-cloud-documentai>=2.30.0",
     
     # Validation
     "pydantic>=2.5.0",
@@ -155,6 +156,7 @@ module = [
     "pdf2image.*",
     "cv2.*",
     "docling.*",
+    "google.cloud.*",
     "opentelemetry.*",
 ]
 ignore_missing_imports = true
