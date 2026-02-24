@@ -29,24 +29,9 @@ class TestGetSyncDb:
 
 class TestCreateOcrOrchestrator:
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.DoclingEngine")
-    @patch("irpf_processor.presentation.workers.ocr_worker.DocumentAIEngine")
     @patch("irpf_processor.presentation.workers.ocr_worker.TesseractEngine")
-    @patch("irpf_processor.presentation.workers.ocr_worker.get_settings")
-    def test_creates_orchestrator_with_tesseract(
-        self, mock_get_settings, mock_tesseract, mock_documentai, mock_docling
-    ):
+    def test_creates_orchestrator_with_tesseract(self, mock_tesseract):
         from irpf_processor.presentation.workers.ocr_worker import create_ocr_orchestrator
-
-        mock_get_settings.return_value = MagicMock(ocr_engine="tesseract")
-
-        mock_documentai_instance = MagicMock()
-        mock_documentai_instance.is_available.return_value = False
-        mock_documentai.return_value = mock_documentai_instance
-
-        mock_docling_instance = MagicMock()
-        mock_docling_instance.is_available.return_value = False
-        mock_docling.return_value = mock_docling_instance
 
         mock_tesseract_instance = MagicMock()
         mock_tesseract_instance.is_available.return_value = True
@@ -57,28 +42,13 @@ class TestCreateOcrOrchestrator:
         assert result is not None
         mock_tesseract.assert_called_once_with(lang="por", timeout=180)
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.DoclingEngine")
-    @patch("irpf_processor.presentation.workers.ocr_worker.DocumentAIEngine")
     @patch("irpf_processor.presentation.workers.ocr_worker.TesseractEngine")
-    @patch("irpf_processor.presentation.workers.ocr_worker.get_settings")
-    def test_raises_when_no_engines_available(
-        self, mock_get_settings, mock_tesseract, mock_documentai, mock_docling
-    ):
+    def test_raises_when_no_engines_available(self, mock_tesseract):
         from irpf_processor.presentation.workers.ocr_worker import create_ocr_orchestrator
-
-        mock_get_settings.return_value = MagicMock(ocr_engine="documentai")
-
-        mock_documentai_instance = MagicMock()
-        mock_documentai_instance.is_available.return_value = False
-        mock_documentai.return_value = mock_documentai_instance
 
         mock_tesseract_instance = MagicMock()
         mock_tesseract_instance.is_available.return_value = False
         mock_tesseract.return_value = mock_tesseract_instance
-
-        mock_docling_instance = MagicMock()
-        mock_docling_instance.is_available.return_value = False
-        mock_docling.return_value = mock_docling_instance
 
         with pytest.raises(RuntimeError, match="No OCR engines available"):
             create_ocr_orchestrator()
@@ -131,7 +101,6 @@ class TestProcessOcrDocument:
     @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.create_ocr_orchestrator")
     @patch("irpf_processor.presentation.workers.ocr_worker.PostProcessor")
-    @patch("irpf_processor.presentation.workers.ocr_worker.OcrToPdfplumberAdapter")
     @patch("irpf_processor.presentation.workers.ocr_worker.IRPFParser")
     @patch("irpf_processor.presentation.workers.ocr_worker.is_receipt_document")
     @patch("irpf_processor.presentation.workers.ocr_worker.push_metrics_to_gateway")
@@ -148,8 +117,7 @@ class TestProcessOcrDocument:
         self, mock_jobs_total, mock_record_section, mock_record_processed,
         mock_record_status, mock_record_category, mock_record_duration,
         mock_record_conf, mock_record_dur, mock_record_usage, mock_push,
-        mock_is_receipt, mock_parser, mock_adapter, mock_postproc,
-        mock_orchestrator, mock_storage_factory, mock_get_db
+        mock_is_receipt, mock_parser, mock_postproc, mock_orchestrator, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
@@ -179,7 +147,6 @@ class TestProcessOcrDocument:
         mock_ocr_result.engine_used = "tesseract"
         mock_ocr_result.confidence = 0.85
         mock_ocr_result.total_pages = 5
-        mock_ocr_result.pages = []
         mock_ocr_result.warnings = []
 
         mock_orchestrator_instance = MagicMock()
@@ -190,13 +157,6 @@ class TestProcessOcrDocument:
         mock_postproc_instance.process.return_value = "DECLARACAO DE AJUSTE ANUAL"
         mock_postproc.return_value = mock_postproc_instance
 
-        mock_adapter_instance = MagicMock()
-        mock_adapter_instance.convert.return_value = (
-            {1: "DECLARACAO DE AJUSTE ANUAL"},
-            "DECLARACAO DE AJUSTE ANUAL",
-        )
-        mock_adapter.return_value = mock_adapter_instance
-
         mock_is_receipt.return_value = False
 
         mock_irpf_result = MagicMock()
@@ -206,7 +166,7 @@ class TestProcessOcrDocument:
         mock_irpf_result.total_pages = 5
 
         mock_parser_instance = MagicMock()
-        mock_parser_instance.parse_from_pages_text.return_value = mock_irpf_result
+        mock_parser_instance.parse_from_text.return_value = mock_irpf_result
         mock_parser_instance.detected_version = "2025"
         mock_parser_instance.get_confidence_details.return_value = None
         mock_parser.return_value = mock_parser_instance
@@ -214,14 +174,13 @@ class TestProcessOcrDocument:
         process_ocr_document.fn("doc-123", "tenant-456")
 
         mock_orchestrator_instance.process.assert_called_once()
-        mock_parser_instance.parse_from_pages_text.assert_called_once()
+        mock_parser_instance.parse_from_text.assert_called_once()
         mock_collection.update_one.assert_called()
 
     @patch("irpf_processor.presentation.workers.ocr_worker.get_sync_db")
     @patch("irpf_processor.presentation.workers.ocr_worker.get_storage_service")
     @patch("irpf_processor.presentation.workers.ocr_worker.create_ocr_orchestrator")
     @patch("irpf_processor.presentation.workers.ocr_worker.PostProcessor")
-    @patch("irpf_processor.presentation.workers.ocr_worker.OcrToPdfplumberAdapter")
     @patch("irpf_processor.presentation.workers.ocr_worker.ReceiptParser")
     @patch("irpf_processor.presentation.workers.ocr_worker.IRPFParser")
     @patch("irpf_processor.presentation.workers.ocr_worker.is_receipt_document")
@@ -239,9 +198,8 @@ class TestProcessOcrDocument:
         self, mock_jobs_total, mock_record_section, mock_record_processed,
         mock_record_status, mock_record_category, mock_record_duration,
         mock_record_conf, mock_record_dur, mock_record_usage, mock_push,
-        mock_is_receipt, mock_irpf_parser, mock_receipt_parser,
-        mock_adapter, mock_postproc, mock_orchestrator,
-        mock_storage_factory, mock_get_db
+        mock_is_receipt, mock_irpf_parser, mock_receipt_parser, mock_postproc,
+        mock_orchestrator, mock_storage_factory, mock_get_db
     ):
         from irpf_processor.presentation.workers.ocr_worker import process_ocr_document
 
@@ -271,7 +229,6 @@ class TestProcessOcrDocument:
         mock_ocr_result.engine_used = "tesseract"
         mock_ocr_result.confidence = 0.80
         mock_ocr_result.total_pages = 1
-        mock_ocr_result.pages = []
         mock_ocr_result.warnings = []
 
         mock_orchestrator_instance = MagicMock()
@@ -281,13 +238,6 @@ class TestProcessOcrDocument:
         mock_postproc_instance = MagicMock()
         mock_postproc_instance.process.return_value = "RECIBO DE ENTREGA"
         mock_postproc.return_value = mock_postproc_instance
-
-        mock_adapter_instance = MagicMock()
-        mock_adapter_instance.convert.return_value = (
-            {1: "RECIBO DE ENTREGA"},
-            "RECIBO DE ENTREGA",
-        )
-        mock_adapter.return_value = mock_adapter_instance
 
         mock_is_receipt.return_value = True
 

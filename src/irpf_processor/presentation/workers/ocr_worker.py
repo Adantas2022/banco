@@ -11,9 +11,7 @@ from irpf_processor.config import get_settings
 from irpf_processor.domain.enums import DocumentStatus, DocumentCategory
 from irpf_processor.infrastructure.extraction import IRPFParser, ReceiptParser, is_receipt_document
 from irpf_processor.infrastructure.extraction.ocr import (
-    DocumentAIEngine,
     OcrOrchestrator,
-    OcrToPdfplumberAdapter,
     PostProcessor,
     TesseractEngine,
 )
@@ -21,6 +19,7 @@ from irpf_processor.infrastructure.storage import get_storage_service, extract_s
 from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
     WORKER_JOBS_TOTAL,
+    get_registry,
     record_confidence_details,
     record_document_category,
     record_document_processed,
@@ -57,48 +56,21 @@ def get_sync_db():
 
 
 def create_ocr_orchestrator() -> OcrOrchestrator:
-    settings = get_settings()
     engines = []
 
-    def _build_documentai():
-        engine = DocumentAIEngine(timeout=300)
-        if engine.is_available():
-            logger.info("Document AI engine available")
-            return engine
-        return None
+    tesseract = TesseractEngine(lang="por", timeout=180)
+    if tesseract.is_available():
+        engines.append(tesseract)
+        logger.info("Tesseract engine available (primary)")
 
-    def _build_tesseract():
-        engine = TesseractEngine(lang="por", timeout=180)
-        if engine.is_available():
-            logger.info("Tesseract engine available")
-            return engine
-        return None
-
-    def _build_docling():
-        try:
-            from irpf_processor.infrastructure.extraction.ocr import DoclingEngine
-
-            engine = DoclingEngine(timeout=300, vision_model="default")
-            if engine.is_available():
-                logger.info("Docling engine available")
-                return engine
-            return None
-        except ImportError:
-            logger.info("Docling not installed")
-            return None
-
-    builders = {
-        "documentai": _build_documentai,
-        "tesseract": _build_tesseract,
-        "docling": _build_docling,
-    }
-    preferred = settings.ocr_engine
-    order = [preferred] + [name for name in builders.keys() if name != preferred]
-
-    for name in order:
-        engine = builders[name]()
-        if engine:
-            engines.append(engine)
+    try:
+        from irpf_processor.infrastructure.extraction.ocr import DoclingEngine
+        docling = DoclingEngine(timeout=300, vision_model="default")
+        if docling.is_available():
+            engines.append(docling)
+            logger.info("Docling engine available (fallback)")
+    except ImportError:
+        logger.info("Docling not installed")
 
     if not engines:
         raise RuntimeError("No OCR engines available")
@@ -163,9 +135,6 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
             )
 
             processed_text = post_processor.process(ocr_result.text)
-            ocr_adapter = OcrToPdfplumberAdapter(post_processor=post_processor)
-            pages_text, structured_text = ocr_adapter.convert(ocr_result)
-            normalized_ocr_text = structured_text or processed_text
 
             record_ocr_usage(tenant_id, ocr_result.engine_used)
             record_ocr_duration(tenant_id, ocr_result.engine_used, ocr_duration)
@@ -177,11 +146,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                 duration_seconds=ocr_duration,
             )
 
-            document_category = (
-                DocumentCategory.RECIBO
-                if is_receipt_document(normalized_ocr_text)
-                else DocumentCategory.DECLARACAO
-            )
+            document_category = DocumentCategory.RECIBO if is_receipt_document(processed_text) else DocumentCategory.DECLARACAO
             record_document_category(tenant_id, document_category.value)
             
             logger.info(
@@ -195,16 +160,15 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
             if document_category == DocumentCategory.RECIBO:
                 receipt_parser = ReceiptParser()
                 irpf_result = receipt_parser.parse_from_text(
-                    normalized_ocr_text,
+                    processed_text, 
                     ocr_result.total_pages,
                     ocr_confidence=ocr_result.confidence,
                 )
                 template_version = "recibo-ocr"
             else:
-                irpf_result = parser.parse_from_pages_text(
-                    pages_text=pages_text,
-                    full_text=normalized_ocr_text,
-                    total_pages=ocr_result.total_pages,
+                irpf_result = parser.parse_from_text(
+                    processed_text, 
+                    ocr_result.total_pages,
                     ocr_confidence=ocr_result.confidence,
                 )
                 template_version = parser.detected_version or "ocr"
@@ -285,7 +249,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                 try:
                     receipt_parser_for_receipt = ReceiptParser()
                     receipt_result = receipt_parser_for_receipt.parse_from_text(
-                        normalized_ocr_text,
+                        processed_text,
                         ocr_result.total_pages,
                         ocr_confidence=ocr_result.confidence,
                     )

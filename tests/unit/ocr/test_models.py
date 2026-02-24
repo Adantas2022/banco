@@ -6,7 +6,6 @@ from irpf_processor.infrastructure.extraction.ocr.models import (
     PageResult,
     PdfType,
     TableData,
-    WordBox,
 )
 
 
@@ -97,23 +96,6 @@ class TestPageResult:
         assert result["text"] == "Test"
         assert result["confidence"] == 0.75
         assert "Low quality" in result["warnings"]
-
-    def test_page_result_has_spatial_data(self):
-        page = PageResult(
-            page_number=1,
-            text="",
-            words=[WordBox(text="A", left=0, top=0, right=10, bottom=10)],
-        )
-        assert page.has_spatial_data is True
-
-
-class TestWordBox:
-
-    def test_wordbox_dimensions(self):
-        word = WordBox(text="abc", left=10, top=20, right=40, bottom=50)
-        assert word.width == 30
-        assert word.height == 30
-        assert word.center_y == 35
 
 
 class TestOcrResult:

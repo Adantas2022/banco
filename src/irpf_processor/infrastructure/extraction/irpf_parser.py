@@ -530,91 +530,49 @@ class IRPFParser:
     ) -> IRPFDeclarationResult:
         # Tentar dividir o texto por páginas usando marcador "Pagina X de Y"
         pages_text = self._split_text_by_pages(text, total_pages)
-        return self.parse_from_pages_text(
-            pages_text=pages_text,
-            full_text=text,
-            total_pages=total_pages,
-            version=version,
-            ocr_confidence=ocr_confidence,
-            warning_message="Texto extraido via OCR",
-        )
-
-    def parse_from_pages_text(
-        self,
-        pages_text: dict[int, str],
-        full_text: Optional[str] = None,
-        total_pages: Optional[int] = None,
-        version: Optional[str] = None,
-        ocr_confidence: Optional[float] = None,
-        warning_message: str = "Texto extraido via OCR (estrutura por pagina preservada)",
-    ) -> IRPFDeclarationResult:
-        ordered_pages = {
-            page_num: pages_text[page_num]
-            for page_num in sorted(pages_text.keys())
-        }
-        if not ordered_pages:
-            fallback_text = full_text or ""
-            ordered_pages = {1: fallback_text}
-
-        if full_text is None:
-            full_text = "\n".join(ordered_pages.values())
-
-        context_total_pages = total_pages or len(ordered_pages)
+        
         context = ExtractionContext(
-            full_text=full_text,
-            pages_text=ordered_pages,
-            total_pages=context_total_pages,
+            full_text=text,
+            pages_text=pages_text,
+            total_pages=total_pages
         )
-        return self._parse_ocr_context(
-            context=context,
-            version=version,
-            ocr_confidence=ocr_confidence,
-            warning_message=warning_message,
-        )
-
-    def _parse_ocr_context(
-        self,
-        context: ExtractionContext,
-        version: Optional[str],
-        ocr_confidence: Optional[float],
-        warning_message: str,
-    ) -> IRPFDeclarationResult:
-        result = IRPFDeclarationResult(total_pages=context.total_pages)
-
-        self._detected_version = version or self._template_registry.detect_version(context.full_text)
+        
+        result = IRPFDeclarationResult(total_pages=total_pages)
+        
+        self._detected_version = version or self._template_registry.detect_version(text)
         self._current_template = self._template_registry.get_template_or_latest(self._detected_version)
-
+        
         if self._current_template:
             context.add_warning(
                 f"Template: {self._current_template.description} (v{self._current_template.version})"
             )
         else:
             context.add_warning("Nenhum template encontrado, usando extracao generica")
-
-        context.add_warning(warning_message)
-
+        
+        context.add_warning("Texto extraido via OCR")
+        
         if self._auto_detect and not self._custom_extractors:
             profile = self._version_detector.detect(context)
             self._last_profile = profile
             extractors = self._create_extractors_for_profile(profile)
-
+            
             context.add_warning(
                 f"Documento detectado: IRPF {profile.exercise_year} "
                 f"({len(profile.detected_sections)} secoes encontradas)"
             )
         else:
             extractors = self._custom_extractors or self._create_default_extractors()
-
+        
         for extractor in extractors:
             self._run_extractor(extractor, context, result)
-
+        
         result.warnings = context.warnings
         result.confidence = self._calculate_confidence(
-            result,
+            result, 
             extraction_method="ocr",
             ocr_confidence=ocr_confidence,
         )
         result.total_value = self._calculate_total_value(result)
         result.equity_evolution = self._calculate_equity_evolution(result)
-
+        
         return result
