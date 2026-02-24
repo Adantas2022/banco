@@ -245,13 +245,12 @@ class RuralPropertiesExtractor(ISectionExtractor):
 
         # Formato: codigo participacao condicao nome area cib
         # Ex: "10 15,00 3 FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
-        # BUG #84111 fix: Suportar area em formato US (800.0) além do BR (800,0)
         pattern = re.match(
             r"^(\d{1,2})\s+"  # código: 10, 11
             r"([\d.,]+)\s+"  # participação: 15,00 ou 100,00
             r"(\d)\s+"  # condição: 1, 3, 4
             r"(.+?)\s+"  # nome e localização
-            r"([\d.]+[.,]\d+)\s+"  # área: 1.200,0 ou 800.0
+            r"([\d.]+,\d+)\s+"  # área: 1.200,0 ou 8.366,7
             r"([\d.-]+)$",  # CIB: 4.695.449-0
             line,
         )
@@ -274,8 +273,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             exploration = int(partial_pattern.group(3))
             remaining = partial_pattern.group(4).strip()
 
-            # BUG #84111 fix: Suportar area em formato US (800.0) além do BR (800,0)
-            area_cib_match = re.search(r"([\d.]+[.,]\d+)\s+([\d.-]+)$", remaining)
+            area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", remaining)
 
             if area_cib_match:
                 name_location = remaining[: area_cib_match.start()].strip()
@@ -344,9 +342,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         continue
 
                     # Tentar extrair area e cib da linha atual
-                    # Pattern 1: "nome parcial 1.200,0 4.695.449-0" ou "nome 800.0 2.345.566-7"
-                    # BUG #84111 fix: Suportar area em formato US
-                    area_cib_end = re.search(r"([\d.]+[.,]\d+)\s+([\d.-]+)$", next_line)
+                    # Pattern 1: "nome parcial 1.200,0 4.695.449-0"
+                    area_cib_end = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
                     if area_cib_end:
                         name_part = next_line[: area_cib_end.start()].strip()
                         if name_part:
@@ -356,8 +353,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         found_area_cib = True
                         break
 
-                    # BUG #84111 fix: Suportar area em formato US (800.0) além do BR (800,0)
-                    if re.match(r"^[\d.]+[.,]\d+$", next_line):
+                    if re.match(r"^[\d.]+,\d+$", next_line):
                         area = parse_currency(next_line)
                         # Próxima linha pode ser CIB
                         if j + 1 < len(lines):
@@ -509,9 +505,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 j += 1
                 continue
 
-            # Linha com área e CIB juntos: "nome 1.200,0 4.695.449-0" ou "nome 800.0 2.345.566-7"
-            # BUG #84111 fix: Suportar area em formato US
-            area_cib_match = re.search(r"([\d.]+[.,]\d+)\s+([\d.-]+)$", next_line)
+            # Linha com área e CIB juntos: "nome 1.200,0 4.695.449-0"
+            area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
             if area_cib_match:
                 name_part = next_line[: area_cib_match.start()].strip()
                 if name_part:
@@ -521,8 +516,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 j += 1
                 break
 
-            # BUG #84111 fix: Suportar area em formato US (800.0) além do BR (800,0)
-            if re.match(r"^[\d.]+[.,]\d+$", next_line):
+            if re.match(r"^[\d.]+,\d+$", next_line):
                 area = parse_currency(next_line)
                 j += 1
                 # Próximo deve ser CIB

@@ -80,21 +80,16 @@ OPTIONAL_SECTIONS = {
     "accumulated_income_from_legal_person_to_dependents",
 }
 
-NON_MONETARY_KEYS = {
-    "page", "total_pages", "total_properties", "code",
-    "country_code", "exploration_condition", "num_months",
-}
+NON_MONETARY_KEYS = {"page", "total_pages", "total_properties", "code", "country_code", "exploration_condition"}
 
 
-def _normalize_floats(obj, _key=None):
+def _normalize_floats(obj):
     if isinstance(obj, dict):
-        return {k: _normalize_floats(v, _key=k) for k, v in obj.items()}
+        return {k: _normalize_floats(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [_normalize_floats(v) for v in obj]
-    if isinstance(obj, bool):
-        return obj
-    if isinstance(obj, (int, float)) and _key not in NON_MONETARY_KEYS:
-        return round(float(obj), 2)
+    if isinstance(obj, float):
+        return round(obj, 2)
     return obj
 
 
@@ -103,9 +98,9 @@ class IRPFDeclarationResult:
     """Resultado da extração de uma declaração IRPF."""
     
     taxpayer_identification: dict = field(default_factory=dict)
-    total_value: float = 0.0
+    total_value: int = 0
     valid_total: bool = True
-    equity_evolution: float = 0.0
+    equity_evolution: int = 0
     assets_declaration: Optional[dict] = None
     debts_and_encumbrances: Optional[dict] = None
     exempt_income: Optional[dict] = None
@@ -355,67 +350,34 @@ class IRPFParser:
         return self._last_profile
     
     def _create_context(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
-        if self._pdfplumber is not None:
-            return self._create_context_direct(pdf_source)
-        return self._create_context_safe(pdf_source)
-
-    def _create_context_safe(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
-        from .safe_pdf_extractor import extract_all_text
-
-        pages_text, total_pages, warnings, _ = extract_all_text(pdf_source)
-        full_text = "\n".join(
-            pages_text[k] for k in sorted(pages_text.keys())
-        )
-
-        pdf_path_str = str(pdf_source) if not isinstance(pdf_source, bytes) else None
-        context = ExtractionContext(
-            full_text=full_text,
-            pages_text=pages_text,
-            total_pages=total_pages,
-            pdf_path=pdf_path_str,
-        )
-        for w in warnings:
-            context.add_warning(w)
-
-        if self._is_scanned_pdf(full_text, total_pages):
-            context.add_warning(
-                "PDF_SCANNED: Este documento parece ser escaneado (imagem). "
-                "Recomendado processar via OCR para melhor extracao."
-            )
-            logger.warning(
-                "PDF escaneado detectado",
-                total_pages=total_pages,
-                text_chars=len(full_text.strip()),
-            )
-        return context
-
-    def _create_context_direct(self, pdf_source: Union[str, Path, bytes]) -> ExtractionContext:
-        """Fallback that uses an injected ``_pdfplumber`` (kept for tests)."""
+        self._ensure_pdfplumber()
+        
         if isinstance(pdf_source, bytes):
             import io
             pdf_file = io.BytesIO(pdf_source)
         else:
             pdf_file = pdf_source
-
+        
         full_text = ""
         pages_text: dict[int, str] = {}
         total_pages = 0
-
+        
         with self._pdfplumber.open(pdf_file) as pdf:
             total_pages = len(pdf.pages)
             for page_num, page in enumerate(pdf.pages, 1):
                 page_text = page.extract_text() or ""
                 pages_text[page_num] = page_text
                 full_text += page_text + "\n"
-
+        
         pdf_path_str = str(pdf_source) if not isinstance(pdf_source, bytes) else None
+        
         context = ExtractionContext(
             full_text=full_text,
             pages_text=pages_text,
             total_pages=total_pages,
-            pdf_path=pdf_path_str,
+            pdf_path=pdf_path_str
         )
-
+        
         if self._is_scanned_pdf(full_text, total_pages):
             context.add_warning(
                 "PDF_SCANNED: Este documento parece ser escaneado (imagem). "
@@ -424,10 +386,11 @@ class IRPFParser:
             logger.warning(
                 "PDF escaneado detectado",
                 total_pages=total_pages,
-                text_chars=len(full_text.strip()),
+                text_chars=len(full_text.strip())
             )
+        
         return context
-
+    
     def _is_scanned_pdf(self, full_text: str, total_pages: int) -> bool:
         text_stripped = full_text.strip()
         chars_per_page = len(text_stripped) / max(total_pages, 1)
@@ -496,103 +459,67 @@ class IRPFParser:
     def get_confidence_details(self) -> ConfidenceResult | None:
         return getattr(self, "_last_confidence_result", None)
     
-    def _calculate_total_value(self, result: IRPFDeclarationResult) -> float:
+    def _calculate_total_value(self, result: IRPFDeclarationResult) -> int:
         if result.assets_declaration:
-            value = result.assets_declaration.get("current_year_total_value", 0.0)
-            return round(float(value), 2)
-        return 0.0
+            value = result.assets_declaration.get("current_year_total_value", 0)
+            return int(value)
+        return 0
     
-    def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> float:
+    def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> int:
         if not result.assets_declaration:
-            return 0.0
+            return 0
         
-        current_year = float(result.assets_declaration.get("current_year_total_value", 0.0))
-        last_year = float(result.assets_declaration.get("last_year_total_value", 0.0))
+        current_year = result.assets_declaration.get("current_year_total_value", 0.0)
+        last_year = result.assets_declaration.get("last_year_total_value", 0.0)
         
-        return round(current_year - last_year, 2)
+        return int(current_year - last_year)
 
     def _split_text_by_pages(self, text: str, total_pages: int) -> dict[int, str]:
         """Tenta dividir o texto por páginas usando o marcador 'Pagina X de Y'.
         
         O OCR concatena todo o texto mas preserva os marcadores de página.
         Este método tenta reconstruir a estrutura por páginas.
-        
-        Trata o caso onde o OCR coloca valores de colunas à direita APÓS
-        o marcador de página (ex: valores monetários em tabelas de 2 colunas).
-        Essas linhas órfãs são reincorporadas à página atual.
         """
         import re
         
+        # Padrão para "Pagina X de Y" ou "Página X de Y"
         page_pattern = r"P[aá]gina\s*(\d+)\s*(?:de|DE)\s*(\d+)"
         
+        # Encontrar todas as ocorrências
         matches = list(re.finditer(page_pattern, text, re.IGNORECASE))
         
         if not matches:
+            # Sem marcadores de página, retorna todo texto como página 1
             return {1: text}
-        
-        orphan_end_pos = {}
-        for i, match in enumerate(matches):
-            post_start = match.end()
-            boundary = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            orphan_end = self._find_orphan_end_position(text, post_start, boundary)
-            orphan_end_pos[i] = orphan_end
         
         pages_text = {}
         
         for i, match in enumerate(matches):
             page_num = int(match.group(1))
+            start_pos = match.end()
             
-            if i == 0:
-                content_start = 0
+            # Fim é o início do próximo marcador ou fim do texto
+            if i + 1 < len(matches):
+                end_pos = matches[i + 1].start()
             else:
-                content_start = orphan_end_pos[i - 1]
+                end_pos = len(text)
             
-            page_content = text[content_start:match.start()].strip()
+            # Incluir também o texto ANTES do marcador (o conteúdo da página atual)
+            if i == 0:
+                # Primeira página: incluir desde o início
+                prev_end = 0
+            else:
+                prev_end = matches[i - 1].end()
             
-            if orphan_end_pos[i] > match.end():
-                orphan_text = text[match.end():orphan_end_pos[i]].strip()
-                if orphan_text:
-                    page_content = page_content + "\n" + orphan_text
-            
+            page_content = text[prev_end:match.start()].strip()
             if page_content:
                 pages_text[page_num] = page_content
         
+        # Se não conseguiu extrair páginas adequadamente, fallback para página única
         if not pages_text:
             return {1: text}
         
         return pages_text
-
-    @staticmethod
-    def _find_orphan_end_position(text: str, start: int, boundary: int) -> int:
-        """Encontra a posição final das linhas órfãs após um marcador de página.
-        
-        Retorna a posição no texto original até onde as linhas órfãs vão.
-        Linhas órfãs são valores monetários soltos que o OCR colocou após
-        o rodapé da página (ex: valores de coluna direita).
-        """
-        import re
-        currency_re = re.compile(r"^[\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2}$")
-        
-        pos = start
-        while pos < boundary:
-            line_end = text.find("\n", pos)
-            if line_end == -1 or line_end >= boundary:
-                line_end = boundary
-            
-            line = text[pos:line_end].strip()
-            
-            if not line:
-                pos = line_end + 1
-                continue
-            
-            if currency_re.match(line):
-                pos = line_end + 1
-                continue
-            
-            break
-        
-        return pos
-
 
     def parse_from_text(
         self,
@@ -603,91 +530,49 @@ class IRPFParser:
     ) -> IRPFDeclarationResult:
         # Tentar dividir o texto por páginas usando marcador "Pagina X de Y"
         pages_text = self._split_text_by_pages(text, total_pages)
-        return self.parse_from_pages_text(
-            pages_text=pages_text,
-            full_text=text,
-            total_pages=total_pages,
-            version=version,
-            ocr_confidence=ocr_confidence,
-            warning_message="Texto extraido via OCR",
-        )
-
-    def parse_from_pages_text(
-        self,
-        pages_text: dict[int, str],
-        full_text: Optional[str] = None,
-        total_pages: Optional[int] = None,
-        version: Optional[str] = None,
-        ocr_confidence: Optional[float] = None,
-        warning_message: str = "Texto extraido via OCR (estrutura por pagina preservada)",
-    ) -> IRPFDeclarationResult:
-        ordered_pages = {
-            page_num: pages_text[page_num]
-            for page_num in sorted(pages_text.keys())
-        }
-        if not ordered_pages:
-            fallback_text = full_text or ""
-            ordered_pages = {1: fallback_text}
-
-        if full_text is None:
-            full_text = "\n".join(ordered_pages.values())
-
-        context_total_pages = total_pages or len(ordered_pages)
+        
         context = ExtractionContext(
-            full_text=full_text,
-            pages_text=ordered_pages,
-            total_pages=context_total_pages,
+            full_text=text,
+            pages_text=pages_text,
+            total_pages=total_pages
         )
-        return self._parse_ocr_context(
-            context=context,
-            version=version,
-            ocr_confidence=ocr_confidence,
-            warning_message=warning_message,
-        )
-
-    def _parse_ocr_context(
-        self,
-        context: ExtractionContext,
-        version: Optional[str],
-        ocr_confidence: Optional[float],
-        warning_message: str,
-    ) -> IRPFDeclarationResult:
-        result = IRPFDeclarationResult(total_pages=context.total_pages)
-
-        self._detected_version = version or self._template_registry.detect_version(context.full_text)
+        
+        result = IRPFDeclarationResult(total_pages=total_pages)
+        
+        self._detected_version = version or self._template_registry.detect_version(text)
         self._current_template = self._template_registry.get_template_or_latest(self._detected_version)
-
+        
         if self._current_template:
             context.add_warning(
                 f"Template: {self._current_template.description} (v{self._current_template.version})"
             )
         else:
             context.add_warning("Nenhum template encontrado, usando extracao generica")
-
-        context.add_warning(warning_message)
-
+        
+        context.add_warning("Texto extraido via OCR")
+        
         if self._auto_detect and not self._custom_extractors:
             profile = self._version_detector.detect(context)
             self._last_profile = profile
             extractors = self._create_extractors_for_profile(profile)
-
+            
             context.add_warning(
                 f"Documento detectado: IRPF {profile.exercise_year} "
                 f"({len(profile.detected_sections)} secoes encontradas)"
             )
         else:
             extractors = self._custom_extractors or self._create_default_extractors()
-
+        
         for extractor in extractors:
             self._run_extractor(extractor, context, result)
-
+        
         result.warnings = context.warnings
         result.confidence = self._calculate_confidence(
-            result,
+            result, 
             extraction_method="ocr",
             ocr_confidence=ocr_confidence,
         )
         result.total_value = self._calculate_total_value(result)
         result.equity_evolution = self._calculate_equity_evolution(result)
-
+        
         return result

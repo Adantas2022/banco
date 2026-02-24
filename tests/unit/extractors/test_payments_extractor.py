@@ -68,7 +68,7 @@ class TestPaymentsExtractorCanExtract:
 
 class TestPaymentsExtractorExtract:
 
-    def test_returns_empty_items_when_no_items_found(self, extractor):
+    def test_returns_none_when_no_items_found(self, extractor):
         context = ExtractionContext(
             full_text="PAGAMENTOS EFETUADOS\nSem informações",
             pages_text={1: "PAGAMENTOS EFETUADOS\nSEM INFORMAÇÕES"},
@@ -77,9 +77,7 @@ class TestPaymentsExtractorExtract:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
-        assert result["total_value"] == 0.0
+        assert result is None
 
     def test_extract_is_callable(self, extractor):
         assert callable(extractor.extract)
@@ -246,8 +244,7 @@ class TestPaymentsExtractorEdgeCases:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
+        assert result is None
 
     def test_handles_page_without_section_marker(self, extractor):
         context = ExtractionContext(
@@ -258,8 +255,7 @@ class TestPaymentsExtractorEdgeCases:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
+        assert result is None
 
     def test_stops_at_section_end_marker(self, extractor):
         page_text = """

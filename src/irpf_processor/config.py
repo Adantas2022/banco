@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     gcp_emulator_endpoint: str = ""
 
     # OCR
-    ocr_engine: Literal["tesseract", "docling", "documentai"] = "tesseract"
+    ocr_engine: Literal["tesseract", "docling"] = "tesseract"
 
     # API
     api_host: str = "0.0.0.0"

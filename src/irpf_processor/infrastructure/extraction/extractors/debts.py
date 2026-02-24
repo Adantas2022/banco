@@ -51,21 +51,21 @@ class DebtsExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
         seen_ids = set()
-        pdf_totals = []
+        pdf_totals = []  # Totais do PDF
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
         section_ended = False
-        section_pages: list[tuple[int, str]] = []
-        
-        empty_pages: list[tuple[int, str]] = []
         
         for page_num, page_text in sorted_pages:
             upper_text = page_text.upper()
             
+            # Verificar se a página contém o marcador de dívidas
             has_debts_marker = any(marker in upper_text for marker in self.SECTION_MARKERS)
             
+            # CORREÇÃO: Não pular página inteira se ela também contém nossa seção
+            # Isso acontece quando todo o texto OCR está em uma única página
             if has_debts_marker:
                 in_section = True
             
@@ -75,34 +75,20 @@ class DebtsExtractor(ISectionExtractor):
             if section_ended:
                 break
             
-            section_pages.append((page_num, page_text))
-            
-            items_before = len(items)
+            # Extrair itens da página ANTES de verificar fim
+            # (a página pode ter itens E o marcador de fim depois deles)
+            # Passar flag indicando que já estamos dentro da seção (para páginas de continuação)
             page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section=in_section)
             items.extend(page_items)
-            
-            if len(items) == items_before:
-                empty_pages.append((page_num, page_text))
             
             if not pdf_totals:
                 page_totals = self._extract_debts_total(page_text)
                 if page_totals:
                     pdf_totals = page_totals
             
+            # Verificar se a seção terminou APÓS extrair
             if self._is_definitive_section_end(page_text):
                 section_ended = True
-        
-        if not items and section_pages:
-            items = self._extract_ocr_fallback(section_pages)
-        elif empty_pages:
-            fallback_items = self._extract_ocr_fallback(
-                empty_pages, assume_in_section=True
-            )
-            if fallback_items:
-                for fi in fallback_items:
-                    if fi["id"] not in seen_ids:
-                        seen_ids.add(fi["id"])
-                        items.append(fi)
         
         if not items:
             return None
@@ -305,17 +291,14 @@ class DebtsExtractor(ISectionExtractor):
         
         normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-        v1 = parse_currency(values[0])
-        v2 = parse_currency(values[1])
-        v3 = parse_currency(values[2])
-        item_id = generate_item_id(f"{normalized_desc}_{v1}_{v2}_{v3}")
+        item_id = generate_item_id(normalized_desc)
         
         return {
             "debt_code": code,
             "debt_description": full_desc,
-            "year_before_last_value": v1,
-            "last_year_value": v2,
-            "current_year_value": v3,
+            "year_before_last_value": parse_currency(values[0]),
+            "last_year_value": parse_currency(values[1]),
+            "current_year_value": parse_currency(values[2]),
             "id": item_id,
             "page": page_num,
             "_next_index": j
@@ -385,7 +368,7 @@ class DebtsExtractor(ISectionExtractor):
         
         normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-        item_id = generate_item_id(f"{normalized_desc}_{before_val}_{current_val}_{paid_val}_{page_num}")
+        item_id = generate_item_id(normalized_desc)
         
         return {
             "debt_code": code,
@@ -398,289 +381,8 @@ class DebtsExtractor(ISectionExtractor):
             "_next_index": j
         }
     
-    @staticmethod
-    def _prev_line_ends_with_currency_prefix(current_block: list[str],
-                                              raw_blocks: list) -> bool:
-        """Verifica se a linha anterior termina com 'R$' (indicando valor embutido na descrição).
-        
-        Quando o OCR quebra "R$ 367.000,00" em duas linhas, a segunda linha
-        ("367.000,00") parece um valor de coluna mas na verdade faz parte da descrição.
-        """
-        prev_line = None
-        if current_block:
-            prev_line = current_block[-1].strip()
-        elif raw_blocks:
-            prev_line = raw_blocks[-1][0][-1].strip()
-        
-        if prev_line and re.search(r'R\$\s*[-]?\s*$', prev_line, re.IGNORECASE):
-            return True
-        return False
-
-    def _extract_ocr_fallback(
-        self,
-        section_pages: list[tuple[int, str]],
-        assume_in_section: bool = False,
-    ) -> list[dict]:
-        CURRENCY_RE = r"(\d[\d.]*,\d{2})"
-        # SKIP_RE: pula linhas de cabeçalho.
-        # CPF: agora exige formato completo para não pular referências a CPF dentro de descrições.
-        SKIP_RE = re.compile(
-            r"^(NOME:|DECLARAÇÃO DE AJUSTE|DECLARACAO DE AJUSTE|IMPOSTO SOBRE|"
-            r"EXERC[IÍ]CIO\s+\d|\(Valores em|CÓDIGO|CODIGO|"
-            r"DISCRIMINA[CÇ][AÃ]O|SITUA[CÇ][AÃ]O|VALOR PAGO|"
-            r"AN[O0]-CALEND[AÁ]RIO|\d{2}/\d{2}/\d{4}\s+EM\s+\d{4})",
-            re.IGNORECASE,
-        )
-        # CPF de cabeçalho: linha curta com apenas CPF (ex: "CPF: 004.044.951-33")
-        CPF_HEADER_RE = re.compile(
-            r"^CPF:\s*\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\s*$",
-            re.IGNORECASE,
-        )
-        
-        raw_blocks: list[tuple[list[str], int]] = []
-        value_lines_info: list[int] = []
-        flat_values: list[str] = []
-        
-        in_section = assume_in_section
-        past_header = assume_in_section
-        collecting_values = False
-        current_block: list[str] = []
-        current_page = 0
-        
-        for page_num, page_text in section_pages:
-            for raw_line in page_text.split("\n"):
-                s = raw_line.strip()
-                upper = s.upper()
-                
-                if any(m in upper for m in self.SECTION_MARKERS):
-                    if "ATIVIDADE RURAL" not in upper and "VINCULADA" not in upper:
-                        in_section = True
-                        continue
-                
-                if not in_section:
-                    continue
-                
-                if any(m in upper for m in self.SECTION_END_MARKERS):
-                    in_section = False
-                    break
-                if "ATIVIDADE RURAL" in upper:
-                    in_section = False
-                    break
-                
-                if not past_header and ("CÓDIGO" in upper or "CODIGO" in upper
-                                        or "DISCRIMINA" in upper):
-                    past_header = True
-                    continue
-                
-                if not past_header:
-                    continue
-                
-                if upper.startswith("TOTAL"):
-                    if current_block and not collecting_values:
-                        raw_blocks.append((current_block, current_page))
-                        current_block = []
-                    if collecting_values:
-                        collecting_values = False
-                    continue
-                
-                if re.match(r"^P[aá]gina\s+\d+\s+de\s+\d+", s, re.IGNORECASE):
-                    continue
-                
-                if SKIP_RE.match(s):
-                    continue
-                
-                # Pular apenas CPF de cabeçalho (linha curta com CPF isolado)
-                if CPF_HEADER_RE.match(s):
-                    continue
-                
-                if not s:
-                    if current_block and not collecting_values:
-                        raw_blocks.append((current_block, current_page))
-                        current_block = []
-                    continue
-                
-                normalized = self._normalize_ocr_numbers(s)
-                is_value_only = re.match(
-                    rf"^{CURRENCY_RE}(?:\s+{CURRENCY_RE})*\s*$", normalized
-                )
-                
-                if is_value_only:
-                    # BUG FIX #82488: Verificar se este valor é embutido na descrição
-                    # Ex: "R$ 367.000,00" quebrado pelo OCR em duas linhas:
-                    #   "...E 30/09/2024 - R$"
-                    #   "367.000,00"
-                    # Neste caso, "367.000,00" faz parte da descrição, não é valor de coluna.
-                    if not collecting_values and self._prev_line_ends_with_currency_prefix(
-                        current_block, raw_blocks
-                    ):
-                        # Valor embutido na descrição - incorporar ao bloco atual
-                        if current_block:
-                            current_block.append(s)
-                        elif raw_blocks:
-                            raw_blocks[-1][0].append(s)
-                        continue
-                    
-                    if current_block and not collecting_values:
-                        raw_blocks.append((current_block, current_page))
-                        current_block = []
-                    collecting_values = True
-                    vals = re.findall(CURRENCY_RE, normalized)
-                    value_lines_info.append(len(vals))
-                    flat_values.extend(vals)
-                    continue
-                
-                if collecting_values:
-                    continue
-                
-                if not current_block:
-                    current_page = page_num
-                current_block.append(s)
-            
-            if not in_section and past_header:
-                break
-        
-        if current_block and not collecting_values:
-            raw_blocks.append((current_block, current_page))
-        
-        if not raw_blocks or not flat_values:
-            return []
-        
-        NEW_ITEM_KEYWORDS = [
-            "SALDO", "BANCO", "CDC", "EMPRESTIMO", "EMPRÉSTIMO",
-            "FINANCIAMENTO", "FINACIAMENTO", "CHEQUE", "CONSÓRCIO",
-            "CONSORCIO", "CREDITO", "CRÉDITO",
-        ]
-        
-        desc_items: list[tuple[str, int]] = []
-        for block_lines, page in raw_blocks:
-            first_line = block_lines[0]
-            upper_first = first_line.upper()
-            
-            is_new_item = bool(
-                re.match(r"^\d{2}\s+[A-Z]", first_line)
-                and self._is_valid_debt_code(first_line[:2])
-            )
-            if not is_new_item:
-                is_new_item = bool(
-                    re.match(r"^\d+%", first_line)
-                )
-            if not is_new_item:
-                first_word = upper_first.split()[0] if upper_first.split() else ""
-                is_new_item = any(
-                    first_word.startswith(kw) for kw in NEW_ITEM_KEYWORDS
-                )
-            
-            block_text = " ".join(block_lines)
-            
-            if not is_new_item and desc_items:
-                prev_desc, prev_page = desc_items[-1]
-                desc_items[-1] = (prev_desc + " " + block_text, prev_page)
-            else:
-                desc_items.append((block_text, page))
-        
-        n_items = len(desc_items)
-        n_vals = len(flat_values)
-        
-        if n_vals < n_items * 3:
-            return []
-        
-        is_triplet = (value_lines_info
-                      and all(v == 3 for v in value_lines_info))
-        
-        items = []
-        
-        if is_triplet:
-            n_triplets = n_vals // 3
-            limit = min(n_items, n_triplets)
-            for i, (desc, page) in enumerate(desc_items[:limit]):
-                base = i * 3
-                v1 = flat_values[base]
-                v2 = flat_values[base + 1]
-                v3 = flat_values[base + 2]
-                code = self._infer_debt_code(desc)
-                clean_desc = self._clean_description(desc, code)
-                pv1, pv2, pv3 = parse_currency(v1), parse_currency(v2), parse_currency(v3)
-                item_id = generate_item_id(f"{clean_desc}_{pv1}_{pv2}_{pv3}")
-                items.append({
-                    "debt_code": code,
-                    "debt_description": clean_desc,
-                    "year_before_last_value": pv1,
-                    "last_year_value": pv2,
-                    "current_year_value": pv3,
-                    "id": item_id,
-                    "page": page,
-                })
-        else:
-            for i, (desc, page) in enumerate(desc_items):
-                v1 = flat_values[i]
-                v2 = flat_values[n_items + i] if n_items + i < n_vals else "0,00"
-                v3 = flat_values[2 * n_items + i] if 2 * n_items + i < n_vals else "0,00"
-                code = self._infer_debt_code(desc)
-                clean_desc = self._clean_description(desc, code)
-                pv1, pv2, pv3 = parse_currency(v1), parse_currency(v2), parse_currency(v3)
-                item_id = generate_item_id(f"{clean_desc}_{pv1}_{pv2}_{pv3}")
-                items.append({
-                    "debt_code": code,
-                    "debt_description": clean_desc,
-                    "year_before_last_value": pv1,
-                    "last_year_value": pv2,
-                    "current_year_value": pv3,
-                    "id": item_id,
-                    "page": page,
-                })
-        
-        return items
-
-    BANK_KEYWORDS = [
-        "BANCO", "BRADESCO", "ITAU", "ITAÚ", "SICREDI", "SICOB",
-        "CAIXA ECONOMICA", "CAIXA ECONÔMICA", "UNIBANCO", "SANTANDER",
-        "NUBANK", "INTER ", "BB ", "CEF ", "BANRISUL", "BANCOOB",
-        "COOPERATIVA DE CREDITO", "COOPERATIVA DE CRÉDITO",
-    ]
-
-    def _infer_debt_code(self, description: str) -> str:
-        upper = description.upper()
-        if re.match(r"^\d{2}\s+", description):
-            code = description[:2]
-            if code in self.VALID_DEBT_CODES:
-                return code
-        
-        is_bank = any(b in upper for b in self.BANK_KEYWORDS)
-        
-        if is_bank:
-            return "11"
-        
-        if "SALDO NEGATIVO" in upper or "SALDO DEVEDOR" in upper:
-            return "11"
-        if "CDC" in upper:
-            return "11"
-        if "CHEQUE ESPECIAL" in upper:
-            return "11"
-        
-        if "CNPJ" in upper or "EMPRESA" in upper:
-            return "13"
-        
-        if "CONSÓRCIO" in upper or "CONSORCIO" in upper:
-            return "12"
-        
-        if "CPF" in upper:
-            return "14"
-        
-        if "EMPRESTIMO" in upper or "EMPRÉSTIMO" in upper:
-            return "14"
-        if "FINANCIAMENTO" in upper or "FINACIAMENTO" in upper:
-            return "14"
-        if "CREDITO" in upper or "CRÉDITO" in upper:
-            return "11"
-        return "14"
-
-    def _clean_description(self, desc: str, code: str) -> str:
-        cleaned = re.sub(r"^\d{2}\s+", "", desc)
-        cleaned = re.sub(r"\s*Página\s+\d+\s+de\s*\d+\s*", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"\s+", " ", cleaned).strip()
-        return cleaned
-
     def _extract_debts_total(self, page_text: str) -> list[float]:
+        # Normalizar números OCR
         page_text_normalized = self._normalize_ocr_numbers(page_text)
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         lines = page_text_normalized.split("\n")
@@ -689,6 +391,7 @@ class DebtsExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper().strip()
             
+            # Verificar todos os marcadores
             if any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_debts_section = True
                 continue

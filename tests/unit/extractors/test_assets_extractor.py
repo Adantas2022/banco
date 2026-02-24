@@ -455,9 +455,9 @@ class TestAssetsExtractorAdditionalInfo:
     def test_extracts_real_estate_address_info(self, extractor):
         page_text = """DECLARACAO DE BENS E DIREITOS
         01 01 APARTAMENTO 200.000,00 250.000,00
-        Inscrição Municipal: 12345678
+        Inscrição Municipal 12345678
         Logradouro Rua das Flores Nº 100
-        Comp.: Apto 10 Bairro Centro
+        Complemento Apto 10
         Município São Paulo UF SP
         """
         context = ExtractionContext(

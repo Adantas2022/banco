@@ -31,61 +31,21 @@ class TableData:
 
 
 @dataclass
-class WordBox:
-    """Word-level OCR token with bounding box coordinates."""
-
-    text: str
-    left: float
-    top: float
-    right: float
-    bottom: float
-    confidence: float = 0.0
-
-    @property
-    def width(self) -> float:
-        return max(0.0, self.right - self.left)
-
-    @property
-    def height(self) -> float:
-        return max(0.0, self.bottom - self.top)
-
-    @property
-    def center_y(self) -> float:
-        return (self.top + self.bottom) / 2.0
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "text": self.text,
-            "left": self.left,
-            "top": self.top,
-            "right": self.right,
-            "bottom": self.bottom,
-            "confidence": self.confidence,
-        }
-
-
-@dataclass
 class PageResult:
     page_number: int
     text: str
     tables: list[TableData] = field(default_factory=list)
-    words: list[WordBox] = field(default_factory=list)
     confidence: float = 0.0
     width: Optional[int] = None
     height: Optional[int] = None
     dpi: Optional[int] = None
     warnings: list[str] = field(default_factory=list)
 
-    @property
-    def has_spatial_data(self) -> bool:
-        return len(self.words) > 0
-
     def to_dict(self) -> dict:
         return {
             "page_number": self.page_number,
             "text": self.text,
             "tables": [t.to_dict() for t in self.tables],
-            "words": [w.to_dict() for w in self.words],
             "confidence": self.confidence,
             "warnings": self.warnings,
         }

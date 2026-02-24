@@ -17,16 +17,10 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     SECTION_END_MARKERS = [
         "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO",
-        "RENDIMENTOS SUJEITOS A TRIBUTAÇÃO",
-        "RENDIMENTOS SUJEITOS A TRIBUTACAO",
-        "TRIBUTAÇÃO EXCLUSIVA",
-        "TRIBUTACAO EXCLUSIVA",
         "RENDIMENTOS TRIBUTÁVEIS",
-        "RENDIMENTOS TRIBUTAVEIS",
         "PAGAMENTOS EFETUADOS",
         "DOAÇÕES EFETUADAS",
-        "DOACOES EFETUADAS",
-        "BENS E DIREITOS",
+        "BENS E DIREITOS"
     ]
     
     # Todas as 17 subsections conforme gabarito
@@ -163,9 +157,6 @@ class ExemptIncomeExtractor(ISectionExtractor):
     def section_name(self) -> str:
         return "exempt_income"
     
-    def _is_section_end_line(self, upper_line: str) -> bool:
-        return any(m in upper_line for m in self.SECTION_END_MARKERS)
-    
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
@@ -174,18 +165,17 @@ class ExemptIncomeExtractor(ISectionExtractor):
         if not self.can_extract(context):
             return None
         
-        section_context = self._build_section_context(context)
-        
         subsections = {}
         
         for key, config in self.SUBSECTIONS.items():
-            subsection = self._extract_subsection_by_format(section_context, key, config)
+            subsection = self._extract_subsection_by_format(context, key, config)
             if subsection and (subsection.get("items") or subsection.get("total_value", 0) > 0):
                 subsections[key] = subsection
         
         total_value = sum(s.get("total_value", 0) for s in subsections.values()) if subsections else 0.0
         
-        pdf_total = self._extract_total_from_pdf(section_context)
+        # Tentar extrair total do PDF
+        pdf_total = self._extract_total_from_pdf(context)
         
         return {
             "section_name": "Rendimentos Isentos e Não Tributáveis",
@@ -194,47 +184,6 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "subsections": subsections,
             "items_count": sum(len(s.get("items", []) or []) for s in subsections.values())
         }
-    
-    def _build_section_context(self, context: ExtractionContext) -> ExtractionContext:
-        """Constrói contexto filtrado contendo apenas as linhas da seção exempt_income."""
-        filtered_pages: dict[int, str] = {}
-        in_section = False
-        
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        
-        for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            lines = page_text.split("\n")
-            kept_lines = []
-            
-            for line in lines:
-                upper_line = line.upper()
-                
-                if any(m in upper_line for m in self.SECTION_MARKERS):
-                    in_section = True
-                
-                if in_section:
-                    if any(m in upper_line for m in self.SECTION_END_MARKERS):
-                        in_section = False
-                        break
-                    kept_lines.append(line)
-            
-            if kept_lines:
-                filtered_pages[page_num] = "\n".join(kept_lines)
-        
-        if not filtered_pages:
-            return context
-        
-        full_text = "\n".join(
-            text for _, text in sorted(filtered_pages.items())
-        )
-        
-        return ExtractionContext(
-            full_text=full_text,
-            pages_text=filtered_pages,
-            total_pages=context.total_pages,
-            pdf_path=context.pdf_path,
-        )
     
     def _extract_subsection_by_format(
         self,
@@ -283,10 +232,11 @@ class ExemptIncomeExtractor(ISectionExtractor):
             upper_page = page_text.upper()
             
             # Parar se encontrar início de outra seção principal
-            if self._is_section_end_line(upper_page):
+            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_page:
+                # Verificar se já encontramos o código nesta página antes do fim
                 lines = page_text.split("\n")
                 for i, line in enumerate(lines):
-                    if self._is_section_end_line(line.upper()):
+                    if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in line.upper():
                         # Só processar linhas antes desta
                         lines = lines[:i]
                         break
@@ -369,7 +319,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção principal
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
@@ -513,7 +463,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     if current_item:
                         items.append(current_item)
                         current_item = None
@@ -634,7 +584,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 lower_line = line.lower()
                 
                 # Detectar fim da seção
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
@@ -733,7 +683,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
@@ -808,7 +758,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
             for i, line in enumerate(lines):
                 upper_line = line.upper()
                 
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
@@ -880,12 +830,12 @@ class ExemptIncomeExtractor(ISectionExtractor):
     ) -> list[dict]:
         """Usa posições de palavras do pdfplumber para separar nome e descrição."""
         try:
-            from irpf_processor.infrastructure.extraction.safe_pdf_extractor import extract_page_words
-
-            words, _warnings = extract_page_words(pdf_path, page_num, timeout_s=30, total_timeout_s=60)
-            if not words:
-                return items
-
+            import pdfplumber
+            
+            with pdfplumber.open(pdf_path) as pdf:
+                page = pdf.pages[page_num - 1]
+                words = page.extract_words()
+            
             section_start = next((w for w in words if w["text"] == "99."), None)
             if not section_start:
                 return items
@@ -1006,7 +956,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção principal
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     section_ended = True
                     break
                 
@@ -1122,7 +1072,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 upper_line = line.upper()
                 
                 # Detectar fim da seção - o TOTAL vem logo antes
-                if self._is_section_end_line(upper_line):
+                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
                     # O total deve estar nas linhas anteriores
                     for j in range(max(0, i - 5), i):
                         prev_line = lines[j].strip()
@@ -1136,8 +1086,9 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 if upper_line.strip().startswith("TOTAL") and not re.search(r'TITULAR|DEPENDENTE', upper_line):
                     total_match = re.match(r'^TOTAL\s+([\d.,]+)\s*$', line.strip(), re.IGNORECASE)
                     if total_match:
+                        # Verificar se após o total vem RENDIMENTOS SUJEITOS (próximas linhas)
                         for j in range(i + 1, min(i + 5, len(lines))):
-                            if self._is_section_end_line(lines[j].upper()):
+                            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in lines[j].upper():
                                 return parse_currency(total_match.group(1))
         
         return None

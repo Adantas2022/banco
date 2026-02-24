@@ -288,7 +288,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
         # BUG FIX: Incluir hífen no padrão do nome para capturar nomes como
         # "EMPREENDIMENTOS IMOBILIARIOS - EXIGIBILIDADE SUSPENSA"
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,\-&()]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
@@ -317,7 +317,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
 
         # Padrão alternativo: NOME + valores (CNPJ na próxima linha)
         pattern_alt = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,\-&()]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-]+?)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
             line.strip(),
@@ -418,7 +418,7 @@ class IncomeSuspendedHolderExtractor(ISectionExtractor):
             if len(values) >= 2:
                 # Verificar se é um nome válido (texto em maiúsculas, não header)
                 if re.match(
-                    r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&\-]+$", next_line
+                    r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,&\-]+$", next_line
                 ) and not self._should_skip_line(next_line):
                     payer_name = next_line
                     break

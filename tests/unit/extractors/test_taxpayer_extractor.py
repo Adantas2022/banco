@@ -23,9 +23,9 @@ def sample_irpf_text():
     CPF: 886.978.040-60
     Nome: GENESIS LOPES
     
-    Natureza da Ocupacao: 12 - EMPRESARIO
-    Ocupacao Principal: 610 - DIRETOR DE EMPRESA
-    Tipo de declaracao: Declaracao de Ajuste Anual COMPLETA
+    Natureza da Ocupacao: EMPRESARIO
+    Ocupacao Principal: DIRETOR DE EMPRESA
+    Tipo de declaracao: COMPLETA
     
     Endereco: RUA DAS FLORES
     Numero: 123
@@ -165,7 +165,7 @@ class TestTaxpayerExtractorExtractOccupation:
 
         result = extractor.extract(context)
 
-        assert "EMPRESARIO" in result["occupation_nature"]
+        assert result["occupation_nature"] == "EMPRESARIO"
 
     def test_extracts_main_occupation(self, extractor, sample_irpf_text):
         context = ExtractionContext(
@@ -176,7 +176,7 @@ class TestTaxpayerExtractorExtractOccupation:
 
         result = extractor.extract(context)
 
-        assert "DIRETOR DE EMPRESA" in result["main_occupation"]
+        assert result["main_occupation"] == "DIRETOR DE EMPRESA"
 
 
 class TestTaxpayerExtractorExtractDeclarationType:
@@ -190,7 +190,7 @@ class TestTaxpayerExtractorExtractDeclarationType:
 
         result = extractor.extract(context)
 
-        assert "AJUSTE ANUAL" in result["type_ir"]
+        assert result["type_ir"] == "COMPLETA"
 
 
 class TestTaxpayerExtractorExtractAddress:
@@ -218,7 +218,7 @@ class TestTaxpayerExtractorExtractAddress:
         result = extractor.extract(context)
         address = result["contact_and_address"]
 
-        assert "GENESIS@EXAMPLE.COM" in address["email"]
+        assert "genesis@example.com" in address["email"]
 
 
 class TestTaxpayerExtractorFullExtraction:

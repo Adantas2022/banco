@@ -68,7 +68,7 @@ class TestDonationsExtractorCanExtract:
 
 class TestDonationsExtractorExtract:
 
-    def test_returns_empty_items_when_no_items_found(self, extractor):
+    def test_returns_none_when_no_items_found(self, extractor):
         context = ExtractionContext(
             full_text="DOAÇÕES EFETUADAS\nSem informações",
             pages_text={1: "DOAÇÕES EFETUADAS\nSEM INFORMAÇÕES"},
@@ -77,9 +77,7 @@ class TestDonationsExtractorExtract:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
-        assert result["total_value"] == 0.0
+        assert result is None
 
     def test_extract_is_callable(self, extractor):
         assert callable(extractor.extract)
@@ -229,8 +227,7 @@ class TestDonationsExtractorEdgeCases:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
+        assert result is None
 
     def test_handles_page_without_section_marker(self, extractor):
         context = ExtractionContext(
@@ -241,8 +238,7 @@ class TestDonationsExtractorEdgeCases:
 
         result = extractor.extract(context)
 
-        assert result is not None
-        assert result["items"] == []
+        assert result is None
 
     def test_stops_at_section_end_marker(self, extractor):
         page_text = """

@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -11,206 +11,263 @@ from irpf_processor.infrastructure.extraction.ocr.models import (
 from irpf_processor.infrastructure.extraction.ocr.pdf_type_detector import PdfTypeDetector
 
 
-def _make_mock_page(char_count: int, image_coverage: float = 0.0, page_number: int = 1):
-    page = MagicMock()
-    page.width = 612.0
-    page.height = 792.0
-    page.page_number = page_number
+class TestPdfTypeDetector:
 
-    text = "x" * char_count if char_count > 0 else ""
-    page.extract_text.return_value = text
+    @pytest.fixture
+    def detector(self):
+        return PdfTypeDetector()
 
-    if image_coverage > 0:
-        page_area = page.width * page.height
-        img_area = page_area * image_coverage
-        page.images = [{"width": img_area ** 0.5, "height": img_area ** 0.5}]
-    else:
+    @pytest.fixture
+    def mock_digital_page(self):
+        page = MagicMock()
+        page.extract_text.return_value = "A" * 500
         page.images = []
-
-    return page
-
-
-def _make_mock_pdf(pages):
-    pdf = MagicMock()
-    pdf.pages = pages
-    pdf.__enter__ = MagicMock(return_value=pdf)
-    pdf.__exit__ = MagicMock(return_value=False)
-    return pdf
-
-
-class TestClassifyPage:
+        page.width = 612
+        page.height = 792
+        return page
 
     @pytest.fixture
-    def detector(self):
-        return PdfTypeDetector()
-
-    def test_high_text_low_image_is_digital(self, detector):
-        assert detector._classify_page(500, 0.1) == PdfType.DIGITAL
-
-    def test_low_text_high_image_is_image(self, detector):
-        assert detector._classify_page(10, 0.9) == PdfType.IMAGE
-
-    def test_high_text_high_image_is_digital(self, detector):
-        assert detector._classify_page(500, 0.9) == PdfType.DIGITAL
-
-    def test_no_text_no_image_is_image(self, detector):
-        assert detector._classify_page(0, 0.0) == PdfType.IMAGE
-
-    def test_ambiguous_low_chars_is_image(self, detector):
-        assert detector._classify_page(20, 0.0) == PdfType.IMAGE
-
-    def test_ambiguous_mid_chars_with_some_image_is_image(self, detector):
-        assert detector._classify_page(60, 0.4) == PdfType.IMAGE
-
-    def test_ambiguous_mid_chars_no_image_still_image(self, detector):
-        assert detector._classify_page(60, 0.0) == PdfType.IMAGE
-
-    def test_exactly_min_chars_is_digital(self, detector):
-        assert detector._classify_page(100, 0.0) == PdfType.DIGITAL
-
-
-class TestDetectWithConfidence:
+    def mock_scanned_page(self):
+        page = MagicMock()
+        page.extract_text.return_value = ""
+        page.images = [{"width": 600, "height": 780}]
+        page.width = 612
+        page.height = 792
+        return page
 
     @pytest.fixture
-    def detector(self):
-        return PdfTypeDetector()
+    def mock_mixed_page_digital(self):
+        page = MagicMock()
+        page.extract_text.return_value = "A" * 200
+        page.images = [{"width": 100, "height": 100}]
+        page.width = 612
+        page.height = 792
+        return page
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_all_digital_pages(self, mock_pdfplumber, detector, tmp_path):
-        pages = [_make_mock_page(500), _make_mock_page(600, page_number=2)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+    def test_detect_returns_pdf_type(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_page = MagicMock()
+            mock_page.extract_text.return_value = "A" * 500
+            mock_page.images = []
+            mock_page.width = 612
+            mock_page.height = 792
+            mock_pdf.pages = [mock_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        pdf_path = tmp_path / "digital.pdf"
-        pdf_path.touch()
+            pdf_path = tmp_path / "test.pdf"
+            pdf_path.touch()
 
-        result = detector.detect_with_confidence(pdf_path)
+            result = detector.detect(pdf_path)
 
-        assert result.pdf_type == PdfType.DIGITAL
-        assert result.confidence >= 0.90
-        assert result.total_pages == 2
+            assert result in [PdfType.DIGITAL, PdfType.IMAGE, PdfType.MIXED, PdfType.UNKNOWN]
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_all_image_pages(self, mock_pdfplumber, detector, tmp_path):
-        pages = [_make_mock_page(0, 0.9), _make_mock_page(5, 0.95, page_number=2)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+    def test_detect_digital_pdf_with_text_layer(self, detector, tmp_path, mock_digital_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        pdf_path = tmp_path / "scanned.pdf"
-        pdf_path.touch()
+            pdf_path = tmp_path / "digital.pdf"
+            pdf_path.touch()
 
-        result = detector.detect_with_confidence(pdf_path)
+            result = detector.detect(pdf_path)
 
-        assert result.pdf_type == PdfType.IMAGE
-        assert result.confidence >= 0.85
+            assert result == PdfType.DIGITAL
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_mixed_pages(self, mock_pdfplumber, detector, tmp_path):
-        pages = [_make_mock_page(500, 0.0), _make_mock_page(5, 0.95, page_number=2)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+    def test_detect_scanned_pdf_no_text_layer(self, detector, tmp_path, mock_scanned_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_scanned_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        pdf_path = tmp_path / "mixed.pdf"
-        pdf_path.touch()
+            pdf_path = tmp_path / "scanned.pdf"
+            pdf_path.touch()
 
-        result = detector.detect_with_confidence(pdf_path)
+            result = detector.detect(pdf_path)
 
-        assert result.pdf_type == PdfType.MIXED
-        assert result.confidence == 0.75
+            assert result == PdfType.IMAGE
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_empty_pdf_raises_error(self, mock_pdfplumber, detector, tmp_path):
-        mock_pdfplumber.open.return_value = _make_mock_pdf([])
+    def test_detect_mixed_pdf_some_pages_scanned(
+        self, detector, tmp_path, mock_digital_page, mock_scanned_page
+    ):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page, mock_scanned_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        pdf_path = tmp_path / "empty.pdf"
-        pdf_path.touch()
+            pdf_path = tmp_path / "mixed.pdf"
+            pdf_path.touch()
 
+            result = detector.detect(pdf_path)
+
+            assert result == PdfType.MIXED
+
+    def test_detect_with_confidence_returns_detection_result(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_page = MagicMock()
+            mock_page.extract_text.return_value = "A" * 500
+            mock_page.images = []
+            mock_page.width = 612
+            mock_page.height = 792
+            mock_pdf.pages = [mock_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
+
+            pdf_path = tmp_path / "test.pdf"
+            pdf_path.touch()
+
+            result = detector.detect_with_confidence(pdf_path)
+
+            assert hasattr(result, "pdf_type")
+            assert hasattr(result, "confidence")
+            assert 0.0 <= result.confidence <= 1.0
+
+    def test_detect_confidence_high_for_clear_digital(self, detector, tmp_path, mock_digital_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page] * 3
+            mock_open.return_value.__enter__.return_value = mock_pdf
+
+            pdf_path = tmp_path / "digital.pdf"
+            pdf_path.touch()
+
+            result = detector.detect_with_confidence(pdf_path)
+
+            assert result.confidence >= 0.90
+
+    def test_detect_confidence_high_for_clear_scan(self, detector, tmp_path, mock_scanned_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_scanned_page] * 3
+            mock_open.return_value.__enter__.return_value = mock_pdf
+
+            pdf_path = tmp_path / "scanned.pdf"
+            pdf_path.touch()
+
+            result = detector.detect_with_confidence(pdf_path)
+
+            assert result.confidence >= 0.85
+
+    def test_detect_per_page_returns_page_types(
+        self, detector, tmp_path, mock_digital_page, mock_scanned_page
+    ):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page, mock_scanned_page, mock_digital_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
+
+            pdf_path = tmp_path / "multi.pdf"
+            pdf_path.touch()
+
+            result = detector.detect_per_page(pdf_path)
+
+            assert isinstance(result, list)
+            assert len(result) == 3
+            assert all(isinstance(t, PdfType) for t in result)
+
+    def test_detect_handles_nonexistent_file(self, detector):
         with pytest.raises(InvalidPdfError):
-            detector.detect_with_confidence(pdf_path)
+            detector.detect(Path("/nonexistent/path/file.pdf"))
 
-    def test_nonexistent_file_raises_error(self, detector):
-        with pytest.raises(InvalidPdfError):
-            detector.detect_with_confidence(Path("/nonexistent/file.pdf"))
+    def test_detect_handles_empty_pdf(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = []
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_password_protected_raises_error(self, mock_pdfplumber, detector, tmp_path):
-        mock_pdfplumber.open.side_effect = Exception("PDF is password protected")
+            pdf_path = tmp_path / "empty.pdf"
+            pdf_path.touch()
 
-        pdf_path = tmp_path / "protected.pdf"
-        pdf_path.touch()
+            with pytest.raises(InvalidPdfError):
+                detector.detect(pdf_path)
 
-        with pytest.raises(ProtectedPdfError):
-            detector.detect_with_confidence(pdf_path)
+    def test_detect_handles_password_protected_pdf(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_open.side_effect = Exception("PDF is password protected")
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_corrupted_pdf_raises_error(self, mock_pdfplumber, detector, tmp_path):
-        mock_pdfplumber.open.side_effect = Exception("Invalid PDF structure")
+            pdf_path = tmp_path / "protected.pdf"
+            pdf_path.touch()
 
-        pdf_path = tmp_path / "corrupted.pdf"
-        pdf_path.touch()
+            with pytest.raises(ProtectedPdfError):
+                detector.detect(pdf_path)
 
-        with pytest.raises(InvalidPdfError):
-            detector.detect_with_confidence(pdf_path)
+    def test_detect_handles_corrupted_pdf(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_open.side_effect = Exception("Invalid PDF structure")
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_sampled_pages_warning(self, mock_pdfplumber, detector, tmp_path):
-        pages = [_make_mock_page(500, page_number=i + 1) for i in range(50)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+            pdf_path = tmp_path / "corrupted.pdf"
+            pdf_path.touch()
 
-        pdf_path = tmp_path / "large.pdf"
-        pdf_path.touch()
+            with pytest.raises(InvalidPdfError):
+                detector.detect(pdf_path)
 
-        result = detector.detect_with_confidence(pdf_path)
+    def test_has_extractable_text_returns_true_for_digital(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_page = MagicMock()
+            mock_page.extract_text.return_value = "A" * 500
+            mock_pdf.pages = [mock_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        assert result.total_pages == 50
-        assert any("Sampled" in w for w in result.warnings)
+            pdf_path = tmp_path / "digital.pdf"
+            pdf_path.touch()
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_low_text_digital_reduces_confidence(self, mock_pdfplumber, detector, tmp_path):
-        pages = [_make_mock_page(100, 0.0)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+            result = detector._has_extractable_text(pdf_path)
 
-        pdf_path = tmp_path / "low_text.pdf"
-        pdf_path.touch()
+            assert result is True
 
-        result = detector.detect_with_confidence(pdf_path)
+    def test_has_extractable_text_returns_false_for_image(self, detector, tmp_path):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_page = MagicMock()
+            mock_page.extract_text.return_value = ""
+            mock_pdf.pages = [mock_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-        assert result.pdf_type == PdfType.DIGITAL
-        assert result.confidence == 0.95
+            pdf_path = tmp_path / "scanned.pdf"
+            pdf_path.touch()
 
-        pages2 = [_make_mock_page(100, 0.0), _make_mock_page(50, 0.0, page_number=2)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages2)
-        result2 = detector.detect_with_confidence(pdf_path)
-        assert result2.confidence < 0.95
+            result = detector._has_extractable_text(pdf_path)
 
+            assert result is False
 
-class TestDetect:
+    def test_analyze_images_detects_full_page_images(self, detector, tmp_path, mock_scanned_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_scanned_page]
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_detect_returns_pdf_type(self, mock_pdfplumber, tmp_path):
-        pages = [_make_mock_page(500)]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+            pdf_path = tmp_path / "scanned.pdf"
+            pdf_path.touch()
 
-        detector = PdfTypeDetector()
-        pdf_path = tmp_path / "test.pdf"
-        pdf_path.touch()
+            result = detector._analyze_images(pdf_path)
 
-        result = detector.detect(pdf_path)
+            assert result is True
 
-        assert result in [PdfType.DIGITAL, PdfType.IMAGE, PdfType.MIXED, PdfType.UNKNOWN]
+    def test_detection_result_includes_text_ratio(self, detector, tmp_path, mock_digital_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page] * 2
+            mock_open.return_value.__enter__.return_value = mock_pdf
 
-    @patch("irpf_processor.infrastructure.extraction.ocr.pdf_type_detector.pdfplumber")
-    def test_detect_per_page_returns_list(self, mock_pdfplumber, tmp_path):
-        pages = [
-            _make_mock_page(500, 0.0),
-            _make_mock_page(0, 0.9, page_number=2),
-            _make_mock_page(400, 0.0, page_number=3),
-        ]
-        mock_pdfplumber.open.return_value = _make_mock_pdf(pages)
+            pdf_path = tmp_path / "digital.pdf"
+            pdf_path.touch()
 
-        detector = PdfTypeDetector()
-        pdf_path = tmp_path / "multi.pdf"
-        pdf_path.touch()
+            result = detector.detect_with_confidence(pdf_path)
 
-        result = detector.detect_per_page(pdf_path)
+            assert hasattr(result, "text_ratio")
+            assert 0.0 <= result.text_ratio <= 1.0
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert all(isinstance(t, PdfType) for t in result)
+    def test_detection_result_includes_total_pages(self, detector, tmp_path, mock_digital_page):
+        with patch("pdfplumber.open") as mock_open:
+            mock_pdf = MagicMock()
+            mock_pdf.pages = [mock_digital_page] * 5
+            mock_open.return_value.__enter__.return_value = mock_pdf
+
+            pdf_path = tmp_path / "multi.pdf"
+            pdf_path.touch()
+
+            result = detector.detect_with_confidence(pdf_path)
+
+            assert result.total_pages == 5

@@ -352,7 +352,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 if in_subsection:
-                    # BUG #82491: Chave de dedup inclui page_num
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
@@ -362,7 +361,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                             next_page_text = all_pages[page_idx + 1][1]
                             item = self._try_extend_payer_name_cross_page(item, lines, i, next_page_text)
                         
-                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
@@ -370,7 +369,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item multiline (CNPJ na linha sozinho)
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -378,7 +377,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 5 linhas
                     five_line_item = self._parse_5line_income_item(lines, i, page_num)
                     if five_line_item:
-                        key = f"{page_num}:{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(five_line_item)
@@ -386,7 +385,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 2 linhas
                     two_line_item = self._parse_2line_income_item(lines, i, page_num)
                     if two_line_item:
-                        key = f"{page_num}:{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(two_line_item)
@@ -524,12 +523,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_financial_income(self, context: ExtractionContext) -> dict:
-        """Extrai 06. Rendimentos de aplicações financeiras.
-        
-        BUG #82491: A chave de deduplicação agora inclui page_num para evitar
-        remover entradas legítimas que aparecem em páginas diferentes com mesmo
-        CNPJ+valor. A dedup intra-página é mantida para evitar duplicatas de parsing.
-        """
+        """Extrai 06. Rendimentos de aplicações financeiras."""
         items = []
         seen_keys = set()
         
@@ -585,12 +579,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     continue
                 
                 if in_subsection:
-                    # BUG #82491: Chave de dedup inclui page_num para permitir
-                    # entradas legítimas com mesmo CNPJ+valor em páginas diferentes.
                     # Tentar parsear item inline
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
-                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
@@ -598,7 +590,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item multiline (CNPJ na linha sozinho)
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -606,7 +598,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 5 linhas (Beneficiário em linha separada)
                     five_line_item = self._parse_5line_income_item(lines, i, page_num)
                     if five_line_item:
-                        key = f"{page_num}:{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(five_line_item)
@@ -614,7 +606,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                     # Tentar parsear item de 2 linhas (CNPJ+Nome / Benef+Valor+CPF)
                     two_line_item = self._parse_2line_income_item(lines, i, page_num)
                     if two_line_item:
-                        key = f"{page_num}:{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(two_line_item)
@@ -791,17 +783,16 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         break
                 
                 if in_subsection:
-                    # BUG #82491: Chave de dedup inclui page_num
                     item = self._parse_income_item(line, lines, i, page_num)
                     if item:
-                        key = f"{page_num}:{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
                     
                     multiline_item = self._parse_multiline_income_item(lines, i, page_num)
                     if multiline_item:
-                        key = f"{page_num}:{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(multiline_item)
@@ -819,87 +810,34 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
     def _extract_financial_abroad(self, context: ExtractionContext) -> Optional[dict]:
         """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior.
         
-        BUG #84113 fix: Subsecao 12 nao aparecia no JSON.
-        
-        Causas raiz:
-        1. O padrao antigo so capturava valor inline no formato BR (3.580,00),
-           mas pdfplumber extrai PDFs digitais no formato US (3,580.00).
-        2. Quando a subsecao 12 esta em pagina diferente do marcador da secao
-           principal (ex: pagina 6 vs pagina 5), o extrator nao a encontrava.
-        
-        Solucao:
-        - Usar [d.,]+ para capturar valores em ambos os formatos (BR e US).
-        - Capturar o ULTIMO valor da linha para evitar pegar o nr da Lei (14.754/2023).
-        - Manter estado cross-page (in_section persiste entre paginas).
-        - Suportar valor na mesma linha do titulo OU na linha seguinte (multiline).
+        BUG #81758 fix: Corrigido pattern para capturar o valor correto (não a Lei).
+        O texto tem formato: "12. Aplicações Financeiras... (Lei 14.754/2023) 3.580,00"
+        O pattern antigo capturava 14.754 (número da Lei) em vez de 3.580,00.
         """
         in_section = False
-        in_subsection = False
-        
-        # Pattern para detectar a linha do título da subseção 12
-        title_pattern = re.compile(
-            r"12[.\s]+(?:APLICA[CÇG][AÃOÕ]ES?|APLICACOE?S?)\s+FINANCEIRAS?.*?(?:EXTERIOR|DIVIDENDOS?)",
-            re.IGNORECASE
-        )
-        # Pattern para detectar próxima subseção (fim da 12)
-        next_subsection_pattern = re.compile(r"^(?:13)[.\s]+[A-Z]", re.IGNORECASE)
-        # Pattern para capturar valor monetário no FINAL da linha.
-        # Suporta formato BR (3.580,00) e US (3,580.00).
-        # Ancorado no final ($) para pegar o último token numérico,
-        # evitando capturar o número da Lei (14.754/2023).
-        inline_value_pattern = re.compile(r"([\d.,]+)\s*$")
-
         for page_num, page_text in sorted(context.pages_text.items()):
             upper_text = page_text.upper()
             
-            # Detectar início da seção principal (persiste entre páginas)
+            # Detectar início da seção
             if any(marker in upper_text for marker in self.SECTION_MARKERS):
                 in_section = True
-            if not in_section:
-                continue
             
+            # Para esta subseção, procurar mesmo se já passou o marcador de fim
+            # pois pode estar em outra página ainda dentro da seção
+            
+            # Procurar linha com item 12
             lines = page_text.split('\n')
-            for idx, line in enumerate(lines):
-                stripped_line = line.strip()
-
-                if title_pattern.search(line):
-                    in_subsection = True
-
-                    # Caso inline: valor no final da mesma linha do título
-                    inline_match = inline_value_pattern.search(line)
-                    if inline_match:
-                        candidate = inline_match.group(1)
-                        # Exigir separador decimal (. ou ,) para descartar
-                        # tokens como "2023" que podem ficar no final se
-                        # não houver valor monetário
-                        if '.' in candidate or ',' in candidate:
-                            value = parse_currency(candidate)
-                            if value > 0:
-                                return {
-                                    "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
-                                    "code": "12",
-                                    "total_value": value,
-                                    "valid_total": True,
-                                    "items": None
-                                }
-                    continue
-
-                if not in_subsection:
-                    continue
-
-                # Fim da subseção 12 ao encontrar próxima subseção ou total
-                if next_subsection_pattern.match(stripped_line):
-                    in_subsection = False
-                    continue
-                if re.match(r"^\s*TOTAL(?:\s+[\d.,]+)?\s*$", stripped_line, re.IGNORECASE):
-                    in_subsection = False
-                    continue
-
-                # Caso multiline: valor em linha separada após o título
-                # Aceita formatos BR e US
-                value_match = re.match(r"^\s*([\d.,]+)\s*$", stripped_line)
-                if value_match:
-                    value = parse_currency(value_match.group(1))
+            for line in lines:
+                # Pattern para linha completa com item 12
+                # Formato: "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00"
+                # Precisamos capturar o ÚLTIMO valor monetário da linha (após a Lei)
+                match = re.search(
+                    r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
+                    line,
+                    re.IGNORECASE
+                )
+                if match:
+                    value = parse_currency(match.group(1))
                     if value > 0:
                         return {
                             "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
@@ -908,12 +846,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                             "valid_total": True,
                             "items": None
                         }
-        
-            # Encerrar busca quando seção claramente termina
-            if any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                if in_subsection:
-                    break
-        
         return None
     
     def _extract_others(self, context: ExtractionContext) -> dict:
@@ -958,10 +890,9 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         break
                 
                 if in_subsection:
-                    # BUG #82491: Chave de dedup inclui page_num
                     item = self._parse_others_item(line, lines, i, page_num)
                     if item:
-                        key = f"{page_num}:{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
                         if key not in seen_keys:
                             seen_keys.add(key)
                             items.append(item)
@@ -975,40 +906,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "valid_total": True,
             "items": items if items else None
         }
-    
-    def _collect_name_continuation(self, lines: list[str], item_line_idx: int) -> str:
-        """Coleta continuação do nome do pagador nas linhas seguintes.
-        
-        Quando o nome da fonte pagadora quebra entre linhas no PDF,
-        a parte restante fica na(s) linha(s) seguinte(s) como texto em maiúsculas.
-        Ex: "CSN - COMPANHIA SIDERÚRGICA" (linha do item) + "NACIONAL" (próxima linha)
-        """
-        parts = []
-        for offset in range(1, 4):
-            if item_line_idx + offset >= len(lines):
-                break
-            next_line = lines[item_line_idx + offset].strip()
-            if not next_line:
-                continue
-            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", next_line):
-                break
-            if re.search(r"\d{2}\.\d{3}\.\d{3}", next_line):
-                break
-            if re.search(r"\d{3}\.\d{3}\.\d{3}", next_line):
-                break
-            if re.search(r"\d+,\d{2}", next_line):
-                break
-            if re.match(r"^\d{2}[.\s]+", next_line):
-                break
-            if re.match(r"^(Titular|Dependente)\s", next_line, re.IGNORECASE):
-                break
-            if any(kw in next_line.upper() for kw in [
-                "TOTAL", "BENEFICIÁRIO", "BENEFICIARIO", "PAGADORA", "CPF/CNPJ",
-                "VALORES EM REAIS",
-            ]):
-                break
-            parts.append(next_line)
-        return " ".join(parts)
     
     def _parse_income_item(
         self,
@@ -1034,10 +931,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             cnpj = pattern1.group(3)
             payer_name = pattern1.group(4).strip()
             value = parse_currency(pattern1.group(5))
-            
-            continuation = self._collect_name_continuation(lines, idx)
-            if continuation:
-                payer_name = f"{payer_name} {continuation}"
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
@@ -1100,10 +993,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             payer_name = pattern3.group(4).strip()
             value = parse_currency(pattern3.group(5))
             
-            continuation = self._collect_name_continuation(lines, idx)
-            if continuation:
-                payer_name = f"{payer_name} {continuation}"
-            
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
             return {
@@ -1134,10 +1023,6 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             cnpj = pattern4.group(3)
             payer_name = pattern4.group(4).strip()
             value = parse_currency(pattern4.group(5))
-            
-            continuation = self._collect_name_continuation(lines, idx)
-            if continuation:
-                payer_name = f"{payer_name} {continuation}"
             
             item_id = generate_item_id(f"{cnpj}{cpf}{value}")
             
@@ -1221,22 +1106,23 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         start_idx: int,
         page_num: int
     ) -> Optional[dict]:
-        """Parseia item com formato de 2 linhas (com possível continuação de nome).
+        """Parseia item com formato de 2 linhas.
         
-        Formato base:
+        Formato:
         Linha 1: CNPJ NOME DA FONTE
         Linha 2: Beneficiário Valor	CPF
         
-        Formato com continuação:
-        Linha 1: CNPJ NOME DA FONTE PARCIAL
-        Linha 2: CONTINUAÇÃO DO NOME
-        Linha 3: Beneficiário Valor	CPF
+        Exemplo:
+        07.667.259/0001-30 BRADESCO FIC DE FI REFERENCIADO DI ONIX
+        Titular 1.529,69	779.701.955-04
         """
         if start_idx + 1 >= len(lines):
             return None
         
         line1 = lines[start_idx].strip()
+        line2 = lines[start_idx + 1].strip()
         
+        # Linha 1: CNPJ + Nome (CNPJ no início seguido de espaço e nome)
         match1 = re.match(
             r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+(.+)$",
             line1
@@ -1247,46 +1133,32 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         cnpj = match1.group(1)
         payer_name = match1.group(2).strip()
         
-        beneficiary_line_idx = start_idx + 1
+        # Linha 2: Beneficiário Valor CPF (separados por espaços ou tabs)
+        # Formatos possíveis:
+        # "Titular 1.529,69	779.701.955-04"
+        # "Dependente 24.232,72	783.468.005-68"
+        match2 = re.match(
+            r"^(Titular|Dependente)\s+([\d.,]+)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",
+            line2
+        )
+        if not match2:
+            return None
         
-        for offset in range(1, 4):
-            if start_idx + offset >= len(lines):
-                break
-            candidate = lines[start_idx + offset].strip()
-            
-            beneficiary_match = re.match(
-                r"^(Titular|Dependente)\s+([\d.,]+)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$",
-                candidate
-            )
-            if beneficiary_match:
-                beneficiary_line_idx = start_idx + offset
-                
-                for cont_offset in range(1, offset):
-                    cont_line = lines[start_idx + cont_offset].strip()
-                    if cont_line and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", cont_line):
-                        payer_name = f"{payer_name} {cont_line}"
-                
-                beneficiary = beneficiary_match.group(1)
-                value = parse_currency(beneficiary_match.group(2))
-                cpf = beneficiary_match.group(3)
-                
-                if value > 0:
-                    item_id = generate_item_id(f"{cnpj}{cpf}{value}")
-                    return {
-                        "beneficiary": beneficiary,
-                        "cpf": cpf,
-                        "payer_cnpj": cnpj,
-                        "payer_name": payer_name,
-                        "value": value,
-                        "id": item_id,
-                        "page": page_num
-                    }
-                return None
-            
-            if not candidate:
-                continue
-            if not re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,-]*$", candidate):
-                break
+        beneficiary = match2.group(1)
+        value = parse_currency(match2.group(2))
+        cpf = match2.group(3)
+        
+        if value > 0:
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            return {
+                "beneficiary": beneficiary,
+                "cpf": cpf,
+                "payer_cnpj": cnpj,
+                "payer_name": payer_name,
+                "value": value,
+                "id": item_id,
+                "page": page_num
+            }
         
         return None
     

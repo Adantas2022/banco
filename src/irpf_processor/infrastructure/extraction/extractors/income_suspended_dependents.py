@@ -234,7 +234,7 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         
         # Padrão: NOME CNPJ RENDIMENTOS IMPOSTO
         pattern = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
@@ -271,7 +271,7 @@ class IncomeSuspendedDependentsExtractor(ISectionExtractor):
         
         # Padrão alternativo: NOME + valores (CNPJ na próxima linha)
         pattern_alt = re.match(
-            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&()\-]+?)\s+"
+            r"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+?)\s+"
             r"([\d.,]+)\s+"
             r"([\d.,]+)\s*$",
             line.strip()
