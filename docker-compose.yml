@@ -236,6 +236,7 @@ services:
       - OCR_TIMEOUT_SECONDS=300
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/documentai-key.json
     command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 1 --threads 1
     depends_on:
       mongo:
@@ -250,6 +251,7 @@ services:
       - irpf-processor-network
     volumes:
       - ./src:/app/src:ro
+      - ./credentials:/app/credentials:ro
 
   prometheus:
     image: prom/prometheus:v2.48.0
