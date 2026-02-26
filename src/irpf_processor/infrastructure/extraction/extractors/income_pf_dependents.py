@@ -155,10 +155,10 @@ class IncomePFDependentsExtractor(ISectionExtractor):
                 elif in_deduction_section:
                     if len(values) >= 4:
                         deductions_data[month_lower] = {
-                            "official_social_security": values[0],
-                            "dependents_number": int(values[1]) if values[1] == int(values[1]) else 0,
-                            "alimony": values[2],
-                            "cashbook": values[3]
+                            "official_social_security": float(values[0]),
+                            "dependents_number": int(round(values[1])),
+                            "alimony": float(values[2]),
+                            "cashbook": float(values[3]),
                         }
                 continue
             
@@ -251,6 +251,6 @@ class IncomePFDependentsExtractor(ISectionExtractor):
         parts = re.findall(r"[\d.,]+", text)
         for part in parts:
             val = parse_currency(part)
-            if val != 0.0 or part in ("0,00", "0.00"):
+            if val != 0.0 or part in ("0,00", "0.00", "0"):
                 values.append(val)
         return values
