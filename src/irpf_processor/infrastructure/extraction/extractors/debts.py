@@ -291,14 +291,18 @@ class DebtsExtractor(ISectionExtractor):
         
         normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-        item_id = generate_item_id(normalized_desc)
+        v0 = parse_currency(values[0])
+        v1 = parse_currency(values[1])
+        v2 = parse_currency(values[2])
+        id_content = f"{normalized_desc}|{v0}|{v1}|{v2}"
+        item_id = generate_item_id(id_content)
         
         return {
             "debt_code": code,
             "debt_description": full_desc,
-            "year_before_last_value": parse_currency(values[0]),
-            "last_year_value": parse_currency(values[1]),
-            "current_year_value": parse_currency(values[2]),
+            "year_before_last_value": v0,
+            "last_year_value": v1,
+            "current_year_value": v2,
             "id": item_id,
             "page": page_num,
             "_next_index": j
@@ -318,6 +322,18 @@ class DebtsExtractor(ISectionExtractor):
         
         return False
     
+    def _line_starts_new_debt_item(self, line: str) -> bool:
+        """Detecta se a linha inicia um novo item de dívida."""
+        normalized = self._normalize_ocr_numbers(line)
+        if re.match(r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", normalized):
+            code = normalized[:2]
+            if self._is_valid_debt_code(code):
+                return True
+        code_match = re.match(r"^(\d{2})\s+[A-Z]", normalized)
+        if code_match and self._is_valid_debt_code(code_match.group(1)):
+            return True
+        return False
+
     def _is_valid_debt_code(self, code: str) -> bool:
         return code in self.VALID_DEBT_CODES
     
@@ -338,26 +354,21 @@ class DebtsExtractor(ISectionExtractor):
         j = idx + 1
         
         while j < len(lines):
-            next_line = lines[j].strip()
+            next_line = self._normalize_ocr_numbers(lines[j].strip())
             upper_next = next_line.upper()
             
-            # Parar em TOTAL
             if "TOTAL" in upper_next and not re.match(r"^\d{2}\s+", next_line):
                 break
             
-            # Parar em marcadores de fim
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
             
-            # Parar se encontrar novo item
-            is_new_item = re.match(r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
-            if is_new_item:
+            if self._line_starts_new_debt_item(next_line):
                 break
             
-            # Adicionar como continuação da descrição
             if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+\s+[\d.,]+$", next_line):
-                if not next_line.upper().startswith("CÓDIGO"):
-                    if not next_line.upper().startswith("DISCRIMINAÇÃO"):
+                if not upper_next.startswith("CÓDIGO") and not upper_next.startswith("CODIGO"):
+                    if not upper_next.startswith("DISCRIMINAÇÃO") and not upper_next.startswith("DISCRIMINACAO"):
                         desc_parts.append(next_line)
             
             j += 1
@@ -368,7 +379,8 @@ class DebtsExtractor(ISectionExtractor):
         
         normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-        item_id = generate_item_id(normalized_desc)
+        id_content = f"{normalized_desc}|{before_val}|{current_val}|{paid_val}"
+        item_id = generate_item_id(id_content)
         
         return {
             "debt_code": code,
