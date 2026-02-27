@@ -8,6 +8,17 @@ from ...table_extractor import parse_currency, generate_item_id, sum_currency_va
 from ...validation_utils import extract_section_total, create_validated_total
 
 
+_WATERMARK_WORDS = {"PROTEGIDA", "SIGILO", "FISCAL", "SIGN", "SIGILOFISCAL"}
+
+_ITEM_3VAL_RE = re.compile(
+    r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$"
+)
+_ITEM_2VAL_RE = re.compile(
+    r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$"
+)
+_ITEM_START_RE = re.compile(r"^(\d{1,3})\s+")
+
+
 class RuralDebtsExtractor(ISectionExtractor):
     """Extrai dívidas vinculadas à atividade rural."""
     
@@ -22,7 +33,7 @@ class RuralDebtsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
-        pdf_totals = []  # Totais extraídos do PDF
+        pdf_totals: list[float] = []
         
         for page_num, page_text in context.pages_text.items():
             upper_text = page_text.upper()
@@ -30,15 +41,12 @@ class RuralDebtsExtractor(ISectionExtractor):
             if self.SECTION_MARKER not in upper_text:
                 continue
             
-            # Garantir que é BRASIL e não EXTERIOR
             if "EXTERIOR" in upper_text and "BRASIL" not in upper_text:
                 continue
             
-            # Se a página tem ambos (BRASIL e EXTERIOR), só extrair a parte BRASIL
             page_items = self._extract_from_page(page_text, page_num)
             items.extend(page_items)
             
-            # Extrair total do PDF APENAS após o marcador da seção
             if not pdf_totals:
                 page_totals = self._extract_section_total(page_text)
                 if page_totals:
@@ -47,12 +55,10 @@ class RuralDebtsExtractor(ISectionExtractor):
         if not items:
             return None
         
-        # Somar valores extraídos
         sum_before = sum_currency_values([i["year_before_last_value"] for i in items], as_int=False)
         sum_last = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
         sum_paid = sum_currency_values([i["paid_value_in_last_year"] for i in items], as_int=False)
         
-        # Totais do PDF (se disponíveis)
         pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
         pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
         pdf_paid = pdf_totals[2] if len(pdf_totals) > 2 else None
@@ -69,12 +75,11 @@ class RuralDebtsExtractor(ISectionExtractor):
             "total_values": totals
         }
     
+    # ------------------------------------------------------------------
+    # Extração de total
+    # ------------------------------------------------------------------
+
     def _extract_section_total(self, page_text: str) -> list[float]:
-        """Extrai o TOTAL específico da seção de Dívidas Rurais - BRASIL.
-        
-        Busca a linha TOTAL apenas APÓS encontrar o marcador da seção BRASIL,
-        evitando pegar totais de seções anteriores (BENS) ou EXTERIOR.
-        """
         lines = page_text.split("\n")
         in_section = False
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
@@ -82,31 +87,29 @@ class RuralDebtsExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper()
             
-            # Entrar na seção BRASIL (não EXTERIOR)
             if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
                 in_section = True
                 continue
             
-            # Sair se encontrar EXTERIOR
             if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
                 break
             
             if not in_section:
                 continue
             
-            # Encontrar linha de TOTAL dentro da seção
-            if upper_line.strip().startswith("TOTAL"):
+            if self._is_section_total_line(line):
                 matches = re.findall(num_pattern, line)
                 if matches:
-                    return [self._parse_currency(m) for m in matches]
+                    return [parse_currency(m) for m in matches]
         
         return []
     
-    def _parse_currency(self, value_str: str) -> float:
-        return parse_currency(value_str)
-    
+    # ------------------------------------------------------------------
+    # Extração de itens
+    # ------------------------------------------------------------------
+
     def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
-        items = []
+        items: list[dict] = []
         lines = page_text.split("\n")
         
         in_section = False
@@ -115,31 +118,38 @@ class RuralDebtsExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início da seção BRASIL
             if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
                 in_section = True
                 i += 1
                 continue
             
-            # Parar se encontrar seção EXTERIOR ou outra seção
             if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
                 break
             
-            # Parar no TOTAL da seção
-            if in_section and upper_line.startswith("TOTAL"):
+            if in_section and self._is_section_total_line(line):
                 break
             
             if not in_section:
                 i += 1
                 continue
             
-            pattern = re.match(
-                r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$",
-                line
-            )
+            if "ITEM" in upper_line and "DISCRIMINAÇÃO" in upper_line:
+                i += 1
+                continue
             
-            if pattern and "ITEM" not in upper_line and "TOTAL" not in upper_line:
-                item = self._parse_debt(pattern, lines, i, page_num)
+            cleaned = self._clean_ocr_prefix(line)
+            
+            m3 = _ITEM_3VAL_RE.match(cleaned)
+            if m3:
+                item = self._parse_debt_3val(m3, lines, i, page_num)
+                if item:
+                    items.append(item)
+                    i = item.pop("_next_index", i + 1)
+                    continue
+            
+            m2 = _ITEM_2VAL_RE.match(cleaned)
+            if m2:
+                item = self._parse_debt_2val(m2, lines, i, page_num)
                 if item:
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
@@ -149,12 +159,43 @@ class RuralDebtsExtractor(ISectionExtractor):
         
         return items
     
-    def _parse_debt(
-        self, 
-        match: re.Match, 
-        lines: list[str], 
-        idx: int,
-        page_num: int
+    # ------------------------------------------------------------------
+    # Helpers de detecção
+    # ------------------------------------------------------------------
+
+    def _is_section_total_line(self, line: str) -> bool:
+        """True somente para linhas 'TOTAL  val  val  val' (total da seção).
+        
+        Retorna False para 'TOTAL $830.317 LIQUIDADO...' que faz parte de descrição.
+        """
+        stripped = line.strip()
+        upper = stripped.upper()
+        if not upper.startswith("TOTAL"):
+            return False
+        rest = re.sub(r"^TOTAL\s*", "", stripped, flags=re.IGNORECASE)
+        if not rest.strip():
+            return True
+        if re.match(r"^[\d.,\s]+$", rest):
+            return True
+        return False
+    
+    def _clean_ocr_prefix(self, line: str) -> str:
+        """Remove prefixos OCR espúrios antes do número do item (ex: 'CO 6' -> '6')."""
+        return re.sub(r"^[A-Z]{1,3}\s+(?=\d+\s+)", "", line.strip())
+    
+    def _is_watermark(self, line: str) -> bool:
+        return line.strip().upper() in _WATERMARK_WORDS
+    
+    def _line_starts_new_item(self, line: str) -> bool:
+        cleaned = self._clean_ocr_prefix(line)
+        return bool(_ITEM_START_RE.match(cleaned))
+    
+    # ------------------------------------------------------------------
+    # Parsing de itens
+    # ------------------------------------------------------------------
+
+    def _parse_debt_3val(
+        self, match: re.Match, lines: list[str], idx: int, page_num: int
     ) -> dict:
         item_num = int(match.group(1))
         desc_start = match.group(2).strip()
@@ -162,25 +203,12 @@ class RuralDebtsExtractor(ISectionExtractor):
         current_val = parse_currency(match.group(4))
         paid_val = parse_currency(match.group(5))
         
-        prefix_parts = self._get_prefix_lines(lines, idx)
-        desc_parts = prefix_parts + [desc_start]
-        j = idx + 1
-        
-        while j < len(lines):
-            next_line = lines[j].strip()
-            
-            if re.match(r"^\d+\s+", next_line) or "TOTAL" in next_line.upper():
-                break
-            
-            if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+", next_line):
-                desc_parts.append(next_line)
-            
-            j += 1
-        
-        full_desc = " ".join(desc_parts)
-        full_desc = re.sub(r"\s+", " ", full_desc).strip()
-        
-        item_id = generate_item_id(f"{item_num}{full_desc[:30]}")
+        desc_parts = [desc_start]
+        j = self._collect_description_lines(lines, idx + 1, desc_parts)
+        full_desc = self._build_description(desc_parts)
+        item_id = generate_item_id(
+            f"{item_num}|{full_desc[:30]}|{before_val}|{current_val}|{paid_val}"
+        )
         
         return {
             "item": item_num,
@@ -193,54 +221,73 @@ class RuralDebtsExtractor(ISectionExtractor):
             "_next_index": j
         }
     
-    def _get_prefix_lines(self, lines: list[str], idx: int) -> list[str]:
-        prefix_parts = []
-        k = idx - 1
-        while k >= 0:
-            prev_line = lines[k].strip()
-            
-            if not prev_line:
-                break
-            
-            if re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", prev_line):
-                break
-            
-            if re.match(r"^[\d.,]+\s+[\d.,]+\s*$", prev_line):
-                break
-            
-            if "TOTAL" in prev_line.upper() or "ITEM" in prev_line.upper():
-                break
-            
-            if re.match(r"^Página\s+\d+\s+de", prev_line, re.IGNORECASE):
-                break
-            
-            if "DÍVIDAS VINCULADAS" in prev_line.upper():
-                break
-            
-            if self._is_description_fragment(prev_line):
-                prefix_parts.insert(0, prev_line)
-                k -= 1
-            else:
-                break
+    def _parse_debt_2val(
+        self, match: re.Match, lines: list[str], idx: int, page_num: int
+    ) -> dict:
+        """Parseia item com apenas 2 valores (OCR perdeu coluna year_before_last)."""
+        item_num = int(match.group(1))
+        desc_start = match.group(2).strip()
+        val1 = parse_currency(match.group(3))
+        val2 = parse_currency(match.group(4))
         
-        return prefix_parts
+        desc_parts = [desc_start]
+        j = self._collect_description_lines(lines, idx + 1, desc_parts)
+        full_desc = self._build_description(desc_parts)
+        item_id = generate_item_id(f"{item_num}|{full_desc[:30]}|{val1}|{val2}")
+        
+        return {
+            "item": item_num,
+            "description": full_desc,
+            "year_before_last_value": 0.0,
+            "last_year_value": val1,
+            "paid_value_in_last_year": val2,
+            "id": item_id,
+            "page": page_num,
+            "_next_index": j
+        }
     
-    def _is_description_fragment(self, line: str) -> bool:
-        if re.match(r"^\d+$", line):
-            return False
-        
-        if re.match(r"^[\d.,]+$", line):
-            return False
-        
-        if len(line) < 3:
-            return False
-        
-        # Ignorar datas de cabeçalho (ex: "31/12/2023 31/12/2024")
-        if re.match(r"^\d{2}/\d{2}/\d{4}", line):
-            return False
-        
-        # Ignorar cabeçalhos de coluna
-        if "SITUAÇÃO EM" in line.upper() or "VALOR PAGO" in line.upper():
-            return False
-        
-        return True
+    # ------------------------------------------------------------------
+    # Coleta de descrição
+    # ------------------------------------------------------------------
+
+    def _collect_description_lines(
+        self, lines: list[str], start: int, desc_parts: list[str]
+    ) -> int:
+        j = start
+        while j < len(lines):
+            next_line = lines[j].strip()
+            
+            if self._line_starts_new_item(next_line):
+                break
+            
+            if self._is_section_total_line(next_line):
+                break
+            
+            if "DÍVIDAS VINCULADAS" in next_line.upper():
+                break
+            
+            if re.match(r"^Página\s+\d+\s+de", next_line, re.IGNORECASE):
+                j += 1
+                continue
+            
+            if self._is_watermark(next_line):
+                j += 1
+                continue
+            
+            is_pure_values = (
+                re.match(r"^[\d.,\s]+$", next_line) and "," in next_line
+            )
+            if next_line and not is_pure_values:
+                desc_parts.append(next_line)
+            
+            j += 1
+        return j
+    
+    def _build_description(self, desc_parts: list[str]) -> str:
+        full_desc = " ".join(desc_parts)
+        full_desc = re.sub(
+            r"\s*Página\s+\d+\s+de\s*\d+\s*", " ", full_desc, flags=re.IGNORECASE
+        )
+        for wm in _WATERMARK_WORDS:
+            full_desc = re.sub(rf"\b{wm}\b", "", full_desc, flags=re.IGNORECASE)
+        return re.sub(r"\s+", " ", full_desc).strip()
