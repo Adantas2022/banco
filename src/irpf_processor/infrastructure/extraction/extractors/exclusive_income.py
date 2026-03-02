@@ -48,70 +48,61 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
+        section_lines = self._get_section_lines(context)
+        if not section_lines:
+            return None
+        
+        section_text = "\n".join(line for _, line in section_lines)
+        
         subsections = {}
         
-        # 01. 13º salário (titular)
-        thirteenth = self._extract_thirteenth_salary(context)
+        thirteenth = self._extract_thirteenth_salary(section_text)
         if thirteenth:
             subsections["thirteenth_salary"] = thirteenth
         
-        # 02. 13º salário (dependentes) - BUG #81758 fix
-        thirteenth_dependents = self._extract_thirteenth_salary_dependents(context)
+        thirteenth_dependents = self._extract_thirteenth_salary_dependents(section_text)
         if thirteenth_dependents:
             subsections["thirteen_salary_received_by_dependents"] = thirteenth_dependents
         
-        # 11. Participação nos lucros ou resultados (PLR) - BUG #81758 fix
-        plr = self._extract_profit_sharing(context)
+        plr = self._extract_profit_sharing(section_lines)
         if plr:
             subsections["profit_or_results_sharing"] = plr
         
-        # 05. Ganhos líquidos em renda variável
-        variable_income = self._extract_variable_income_gains(context)
+        variable_income = self._extract_variable_income_gains(section_text)
         if variable_income:
             subsections["net_gains_from_variable_income_stocks_futures_and_reits"] = variable_income
         
-        # 06. Rendimentos de aplicações financeiras
-        financial = self._extract_financial_income(context)
-        # Incluir se tem itens OU se tem total extraído diretamente
+        financial = self._extract_financial_income(section_lines, context)
         if financial and (financial.get("items") or financial.get("total_value", 0) > 0):
             subsections["income_from_financial_investments"] = financial
         
-        # 07. Rendimentos recebidos acumuladamente (titular)
-        accumulated = self._extract_accumulated_income(context)
+        accumulated = self._extract_accumulated_income(section_text)
         if accumulated:
             subsections["accumulated_income_received"] = accumulated
         
-        # 09. Rendimentos recebidos acumuladamente (dependentes) - BUG #81758 fix
-        accumulated_dependents = self._extract_accumulated_income_dependents(context)
+        accumulated_dependents = self._extract_accumulated_income_dependents(section_text)
         if accumulated_dependents:
             subsections["accumulated_income_received_by_dependents"] = accumulated_dependents
         
-        # 10. Juros sobre capital próprio
-        interest = self._extract_interest_on_capital(context)
+        interest = self._extract_interest_on_capital(section_lines)
         if interest and interest.get("items"):
             subsections["interest_on_own_capital"] = interest
         
-        # 12. Aplicações financeiras e lucros/dividendos no exterior
-        abroad = self._extract_financial_abroad(context)
+        abroad = self._extract_financial_abroad(section_text)
         if abroad:
             subsections["financial_investments_and_profits_and_dividends_abroad"] = abroad
         
-        # 13. Outros
-        others = self._extract_others(context)
+        others = self._extract_others(section_lines)
         if others and others.get("items"):
             subsections["others_13"] = others
         
-        # Calcular total das subsections
         total_value = sum(s.get("total_value", 0) for s in subsections.values())
         
-        # Se não há subsections, tentar extrair o TOTAL da seção diretamente
-        # Isso acontece quando a seção existe mas está vazia (TOTAL 0,00)
         if not subsections:
-            section_total = self._extract_section_total(context)
+            section_total = self._extract_section_total_from_lines(section_lines)
             if section_total is not None:
                 total_value = section_total
             else:
-                # Seção detectada mas não conseguimos extrair nada
                 return None
         
         return {
@@ -121,283 +112,178 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "subsections": subsections
         }
     
-    def _is_in_exclusive_section(self, page_text: str) -> bool:
-        """Verifica se a página contém a seção de tributação exclusiva."""
-        upper_text = page_text.upper()
-        return any(marker in upper_text for marker in self.SECTION_MARKERS)
-    
-    def _extract_section_total(self, context: ExtractionContext) -> Optional[float]:
-        """Extrai o TOTAL da seção quando não há subsections (seção vazia).
+    def _get_section_lines(
+        self, context: ExtractionContext
+    ) -> list[tuple[int, str]]:
+        """Retorna APENAS as linhas dentro dos limites da seção exclusive_taxation.
         
-        Formatos suportados:
-        1. Mesma linha: "TOTAL 0,00"
-        2. Linhas separadas:
-           TOTAL
-           0,00
-        3. Com "(Valores em Reais)" entre:
-           TOTAL
-           1.434.346,97  (valor da seção anterior - ignorar)
-           (Valores em Reais)
-           0,00  (valor correto)
+        Usa markers restritivos: exige "RENDIMENTOS SUJEITOS" antes de
+        "TRIBUTAÇÃO EXCLUSIVA" para evitar falsos positivos em descrições.
         """
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_page = page_text.upper()
-            
-            # Verificar se contém o marker da seção
-            has_section = any(marker in upper_page for marker in self.SECTION_MARKERS)
-            if not has_section:
-                continue
-            
-            lines = page_text.split('\n')
-            in_section = False
-            found_total_line = False
-            found_valores_em_reais = False
-            
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                stripped_line = line.strip()
-                
-                # Detectar início da seção
-                if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                    in_section = True
-                    # Se "(Valores em Reais)" já está na mesma linha do marker, marcar
-                    if "(VALORES EM REAIS)" in upper_line:
-                        found_valores_em_reais = True
-                    continue
+        result: list[tuple[int, str]] = []
+        in_section = False
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        for page_num, page_text in sorted_pages:
+            for line in page_text.split("\n"):
+                upper = line.upper()
                 
                 if not in_section:
+                    if (
+                        "RENDIMENTOS SUJEITOS" in upper
+                        and ("TRIBUTAÇÃO EXCLUSIVA" in upper
+                             or "TRIBUTACAO EXCLUSIVA" in upper
+                             or "TRIBUTAGAO EXCLUSIVA" in upper)
+                    ):
+                        in_section = True
                     continue
                 
-                # Detectar fim da seção (próxima seção)
-                if any(marker in upper_line for marker in self.SECTION_END_MARKERS):
-                    break
+                if any(m in upper for m in self.SECTION_END_MARKERS):
+                    return result
                 
-                # Formato 1: TOTAL e valor na mesma linha
-                match = re.match(r"^\s*TOTAL\s+([\d.,]+)\s*$", line, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return value
-                
-                # Detectar linha "TOTAL" sozinha
-                if re.match(r"^\s*TOTAL\s*$", stripped_line, re.IGNORECASE):
-                    found_total_line = True
-                    continue
-                
-                # Detectar "(Valores em Reais)"
-                if "(VALORES EM REAIS)" in upper_line:
-                    found_valores_em_reais = True
-                    continue
-                
-                # Formato 2 e 3: Valor em linha separada após TOTAL
-                if found_total_line:
-                    # Pular linhas vazias
-                    if not stripped_line:
-                        continue
-                    
-                    # Buscar valor monetário
-                    value_match = re.match(r"^\s*([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", stripped_line)
-                    if value_match:
-                        value = parse_currency(value_match.group(1))
-                        # Se já encontrou "(Valores em Reais)", este é o valor correto
-                        if found_valores_em_reais:
-                            return value
-                        # Se ainda não encontrou "(Valores em Reais)", pode ser valor da seção anterior
-                        # Continuar procurando
-                        continue
-                    
-                    # Se não é valor nem "(Valores em Reais)", resetar estado
-                    if not "(VALORES EM REAIS)" in upper_line:
-                        # Se encontrou outra coisa, e ainda não tinha "(Valores em Reais)",
-                        # o valor encontrado anteriormente pode ser o correto
-                        pass
+                result.append((page_num, line))
         
-        return None
+        return result
     
-    def _extract_thirteenth_salary(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 01. 13º salário."""
-        # Procurar em todas as páginas sequencialmente
-        in_section = False
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
+    def _extract_section_total_from_lines(
+        self, section_lines: list[tuple[int, str]]
+    ) -> Optional[float]:
+        """Extrai o TOTAL da seção a partir das linhas filtradas."""
+        found_total_line = False
+        
+        for _, line in section_lines:
+            stripped = line.strip()
             
-            # Detectar início da seção
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
-                in_section = True
+            match = re.match(r"^\s*TOTAL\s+([\d.,]+)\s*$", line, re.IGNORECASE)
+            if match:
+                return parse_currency(match.group(1))
             
-            # Detectar fim da seção
-            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if not in_section:
+            if re.match(r"^\s*TOTAL\s*$", stripped, re.IGNORECASE):
+                found_total_line = True
                 continue
             
-            # Patterns mais flexíveis para OCR
-            patterns = [
-                r"01[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+([\d.,]+)",
-                r"01[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)[^\d]*([\d.,]+)",
-            ]
-            
-            for pattern in patterns:
-                match = re.search(pattern, page_text, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return {
-                        "name": "01. 13º salário",
-                        "code": "01",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
+            if found_total_line:
+                if not stripped:
+                    continue
+                value_match = re.match(r"^\s*([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", stripped)
+                if value_match:
+                    return parse_currency(value_match.group(1))
+        
         return None
     
-    def _extract_thirteenth_salary_dependents(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 08. 13º salário recebido pelos dependentes.
-        
-        BUG #81758 fix: Adicionar extração para subseção de dependentes.
-        NOTA: O código correto é 08, não 02 (conforme padrão IRPF).
-        
-        IMPORTANTE: Procura em TODAS as páginas que contêm a seção de tributação
-        exclusiva, mesmo que a página também contenha marcadores de fim.
-        O 13º dependentes pode estar na mesma página que "PAGAMENTOS EFETUADOS".
-        """
-        # Patterns para 13º salário de dependentes (código 08)
+    def _extract_thirteenth_salary(self, section_text: str) -> Optional[dict]:
+        """Extrai 01. 13º salário."""
+        patterns = [
+            r"01[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+([\d.,]+)",
+            r"01[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)[^\d]*([\d.,]+)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, section_text, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
+                return {
+                    "name": "01. 13º salário",
+                    "code": "01",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
+        return None
+    
+    def _extract_thirteenth_salary_dependents(self, section_text: str) -> Optional[dict]:
+        """Extrai 08. 13º salário recebido pelos dependentes."""
         patterns = [
             r"08[.\s]+13[º°]?\s*(?:sal[aá]rio|SALARIO)\s+(?:recebido\s+)?(?:pelos?\s+)?(?:dependentes?)[^\d]*([\d.,]+)",
             r"08[.\s]+(?:DECIMO\s+TERCEIRO|13.?\s*SALARIO)\s+(?:RECEBIDO\s+)?(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
             r"08[.\s]+13[º°]?\s*sal[aá]rio\s+dependentes?\s+([\d.,]+)",
         ]
-        
-        # Buscar em TODAS as páginas (não parar no fim da seção)
-        # porque o 13º pode estar na mesma página que o marcador de fim
-        for page_num, page_text in sorted(context.pages_text.items()):
-            for pattern in patterns:
-                match = re.search(pattern, page_text, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return {
-                        "name": "08. 13º salário recebido pelos dependentes",
-                        "code": "08",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
+        for pattern in patterns:
+            match = re.search(pattern, section_text, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
+                return {
+                    "name": "08. 13º salário recebido pelos dependentes",
+                    "code": "08",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
         return None
     
-    def _extract_profit_sharing(self, context: ExtractionContext) -> Optional[dict]:
+    def _extract_profit_sharing(self, section_lines: list[tuple[int, str]]) -> Optional[dict]:
         """Extrai 11. Participação nos lucros ou resultados (PLR).
         
         BUG #81758 fix: Corrigido código de 03 para 11 (código correto conforme IRPF).
         BUG #81758 fix v2: Adicionada extração de items detalhados (beneficiary, cpf, cnpj, etc.)
-        BUG fix: Corrigido nome truncado entre páginas (ex: "INDUSTRIA DE INSUMOS" + "AGROPECUARIOS")
         """
         items = []
         seen_keys = set()
         total_value = 0.0
-        
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        in_section = False
         in_subsection = False
         
-        # Patterns para detectar início da subseção 11
         subsection_11_patterns = [
             r"11[.\s]+(?:PARTICIPA[CÇ][AÃ]O\s+)?(?:NOS\s+)?LUCROS",
             r"11[.\s]+PLR",
             r"11[.\s]+PARTICIPA[CÇ][AÃ]O\s+DOS\s+TRABALHADORES",
         ]
         
-        # Coletar todas as páginas para verificar continuação cross-page
-        all_pages = list(sorted_pages)
+        lines_list = [line for _, line in section_lines]
         
-        for page_idx, (page_num, page_text) in enumerate(all_pages):
-            lines = page_text.split("\n")
-            upper_page = page_text.upper()
+        for i, (page_num, line) in enumerate(section_lines):
+            upper_line = line.upper()
             
-            # Detectar início da seção principal
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_section = True
+            for pattern in subsection_11_patterns:
+                if re.search(pattern, upper_line, re.IGNORECASE):
+                    in_subsection = True
+                    total_match = re.search(r"([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", line)
+                    if total_match:
+                        total_value = parse_currency(total_match.group(1))
+                    break
             
-            if not in_section:
+            if re.match(r"^(?:12|13)[.\s]+[A-Z]", line.strip()):
+                in_subsection = False
                 continue
             
-            # Flag para verificar se devemos parar APÓS processar esta página
-            should_break_after_page = False
-            if any(marker in upper_page for marker in self.SECTION_END_MARKERS):
-                should_break_after_page = True
+            if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
+                in_subsection = False
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar início da subseção 11 e extrair total
-                for pattern in subsection_11_patterns:
-                    if re.search(pattern, upper_line, re.IGNORECASE):
-                        in_subsection = True
-                        # Extrair total da mesma linha
-                        total_match = re.search(r"([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$", line)
-                        if total_match:
-                            total_value = parse_currency(total_match.group(1))
-                        break
-                
-                # Detectar fim da subseção (próximo código)
-                if re.match(r"^(?:12|13)[.\s]+[A-Z]", line.strip()):
-                    in_subsection = False
-                    continue
-                
-                # Detectar TOTAL como fim
-                if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
-                    in_subsection = False
-                    continue
-                
-                # Pular linha de cabeçalho
-                if "Beneficiário" in line and "CPF" in line and "CNPJ" in line:
-                    continue
-                
-                if in_subsection:
-                    # Tentar parsear item inline
-                    item = self._parse_income_item(line, lines, i, page_num)
-                    if item:
-                        # Verificar se nome pode estar truncado (item no final da página)
-                        # e há continuação na próxima página
-                        if page_idx + 1 < len(all_pages):
-                            next_page_text = all_pages[page_idx + 1][1]
-                            item = self._try_extend_payer_name_cross_page(item, lines, i, next_page_text)
-                        
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
-                    
-                    # Tentar parsear item multiline (CNPJ na linha sozinho)
-                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
-                    if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(multiline_item)
-                    
-                    # Tentar parsear item de 5 linhas
-                    five_line_item = self._parse_5line_income_item(lines, i, page_num)
-                    if five_line_item:
-                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(five_line_item)
-                    
-                    # Tentar parsear item de 2 linhas
-                    two_line_item = self._parse_2line_income_item(lines, i, page_num)
-                    if two_line_item:
-                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(two_line_item)
+            if "Beneficiário" in line and "CPF" in line and "CNPJ" in line:
+                continue
             
-            if should_break_after_page:
-                break
+            if in_subsection:
+                item = self._parse_income_item(line, lines_list, i, page_num)
+                if item:
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
+                
+                multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
+                if multiline_item:
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(multiline_item)
+                
+                five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
+                if five_line_item:
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(five_line_item)
+                
+                two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
+                if two_line_item:
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(two_line_item)
         
-        # Se não encontrou total, calcular a partir dos items
         if total_value == 0 and items:
             total_value = round(sum(i["value"] for i in items), 2)
         
-        # Se não encontrou nada, retornar None
         if total_value == 0 and not items:
             return None
         
@@ -409,218 +295,93 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
-    def _try_extend_payer_name_cross_page(
-        self,
-        item: dict,
-        current_lines: list[str],
-        item_line_idx: int,
-        next_page_text: str
-    ) -> dict:
-        """Tenta estender o payer_name com continuação da próxima página.
-        
-        Cenário: Nome do pagador truncado no final da página, com continuação
-        na próxima página (ex: "INDUSTRIA DE INSUMOS" na pág 6 + "AGROPECUARIOS" na pág 7).
-        
-        Heurísticas:
-        1. Item está nas últimas linhas da página (antes de "Página X de Y")
-        2. Próxima página começa com texto que parece continuação de nome
-        """
-        # Verificar se item está próximo ao final da página
-        lines_after_item = len(current_lines) - item_line_idx - 1
-        if lines_after_item > 3:
-            # Item não está no final da página
-            return item
-        
-        # Verificar se as linhas após o item são "Página X de Y" ou vazias
-        is_near_page_end = False
-        for j in range(item_line_idx + 1, len(current_lines)):
-            line = current_lines[j].strip()
-            if not line:
-                continue
-            if re.match(r"^P[aá]gina\s+\d+\s*de\s*\d+", line, re.IGNORECASE):
-                is_near_page_end = True
-                break
-            # Se encontrar outro item ou seção, não está no final
-            if re.match(r"^(Titular|Dependente)\s+\d{3}\.\d{3}", line):
-                return item
-            if re.match(r"^\d{2}[.\s]+[A-Z]", line):
-                return item
-        
-        if not is_near_page_end:
-            return item
-        
-        # Verificar próxima página para continuação do nome
-        next_lines = next_page_text.split("\n")
-        
-        # Procurar nas primeiras linhas da próxima página (após cabeçalho)
-        for i, line in enumerate(next_lines[:10]):
-            line = line.strip()
-            upper_line = line.upper()
-            
-            # Pular cabeçalho do documento (NOME:, CPF:, DECLARAÇÃO, etc.)
-            if re.match(r"^NOME:", upper_line) or re.match(r"^CPF:", upper_line):
-                continue
-            if "DECLARAÇÃO" in upper_line or "EXERCÍCIO" in upper_line:
-                continue
-            if not line:
-                continue
-            
-            # Se linha parece continuação de nome:
-            # - É texto em maiúsculas
-            # - Não contém CNPJ/CPF/valor
-            # - Não é código de seção
-            # - Não é cabeçalho de tabela
-            if (
-                re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]*$", line) and
-                not re.search(r"\d{2}\.\d{3}\.\d{3}", line) and  # CNPJ
-                not re.search(r"\d{3}\.\d{3}\.\d{3}", line) and  # CPF
-                not re.search(r"\d+,\d{2}", line) and  # Valor
-                not re.match(r"^\d{2}[.\s]+", line) and  # Código seção
-                not any(kw in upper_line for kw in ["BENEFICIÁRIO", "VALOR", "PAGADORA", "TOTAL"])
-            ):
-                # Concatenar ao nome
-                item["payer_name"] = f"{item['payer_name']} {line}"
-                break
-            
-            # Se encontrar linha que não é continuação, parar
-            if re.match(r"^\d{2}[.\s]+", line):  # Código de seção
-                break
-        
-        return item
-    
-    def _extract_variable_income_gains(self, context: ExtractionContext) -> Optional[dict]:
+    def _extract_variable_income_gains(self, section_text: str) -> Optional[dict]:
         """Extrai 05. Ganhos líquidos em renda variável."""
-        in_section = False
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
-            
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if not in_section:
-                continue
-            
-            # Patterns mais flexíveis para OCR
-            patterns = [
-                r"05[.\s]+Ganhos\s+l[ií]quidos\s+(?:em\s+)?renda\s+vari[aá]vel[^\d]*([\d.,]+)",
-                r"05[.\s]+GANHOS\s+LIQUIDOS[^\d]*([\d.,]+)",
-            ]
-            
-            for pattern in patterns:
-                match = re.search(pattern, page_text, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return {
-                        "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
-                        "code": "05",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
+        patterns = [
+            r"05[.\s]+Ganhos\s+l[ií]quidos\s+(?:em\s+)?renda\s+vari[aá]vel[^\d]*([\d.,]+)",
+            r"05[.\s]+GANHOS\s+LIQUIDOS[^\d]*([\d.,]+)",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, section_text, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
+                return {
+                    "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
+                    "code": "05",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
         return None
     
-    def _extract_financial_income(self, context: ExtractionContext) -> dict:
+    def _extract_financial_income(self, section_lines: list[tuple[int, str]], context: ExtractionContext) -> dict:
         """Extrai 06. Rendimentos de aplicações financeiras."""
         items = []
         seen_keys = set()
+        in_subsection = False
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        in_section = False
-        in_subsection = False  # Mantido entre páginas para cross-page sections
-        
-        # Patterns para detectar início da subseção 06 (expandido para OCR)
         subsection_06_patterns = [
             r"06[.\s]+(?:RENDIMENTOS|REND\.?)\s*(?:DE\s*)?(?:APLIC|FINANC)",
             r"06[.\s]+APLICACOES\s+FINANCEIRAS",
-            r"06[.\s]+APLICAGOES\s+FINANCEIRAS",  # OCR Ç→G
-            r"06[.\s]+RENDIMENTOS\s+DE\s+APLICACOES\s+FINANCEIRAS",  # OCR sem acentos
-            r"06\.?\s*Rendimentos\s+de\s+aplica",  # Minúsculas
-            r"06\.?\s+REND",  # OCR truncado
-            r"06\s+Rendimentos",  # Sem ponto
-            r"06[.\s]+Aplica[cç][oõ]es",  # Variações de acento
+            r"06[.\s]+APLICAGOES\s+FINANCEIRAS",
+            r"06[.\s]+RENDIMENTOS\s+DE\s+APLICACOES\s+FINANCEIRAS",
+            r"06\.?\s*Rendimentos\s+de\s+aplica",
+            r"06\.?\s+REND",
+            r"06\s+Rendimentos",
+            r"06[.\s]+Aplica[cç][õo]es",
         ]
         
-        for page_num, page_text in sorted_pages:
-            lines = page_text.split("\n")
-            upper_page = page_text.upper()
+        lines_list = [line for _, line in section_lines]
+        
+        for i, (page_num, line) in enumerate(section_lines):
+            upper_line = line.upper()
             
-            # Detectar início da seção principal
-            if any(marker in upper_page for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            if not in_section:
+            if any(re.search(p, upper_line, re.IGNORECASE) for p in subsection_06_patterns):
+                in_subsection = True
                 continue
             
-            # Flag para verificar se devemos parar APÓS processar esta página
-            should_break_after_page = False
-            if any(marker in upper_page for marker in self.SECTION_END_MARKERS):
-                should_break_after_page = True
+            if re.match(r"^(?:07|08|09|10|11|12|13)[.\s]+[A-Z]", line.strip()):
+                in_subsection = False
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar início da subseção 06
-                if any(re.search(p, upper_line, re.IGNORECASE) for p in subsection_06_patterns):
-                    in_subsection = True
-                    continue
-                
-                # Detectar fim da subseção (próximo código)
-                if re.match(r"^(?:07|08|09|10|11|12|13)[.\s]+[A-Z]", line.strip()):
-                    in_subsection = False
-                    continue
-                
-                # Detectar TOTAL como fim (mas não "TITULAR")
-                # Aceitar TOTAL sozinho também (valor na próxima linha)
-                if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
-                    in_subsection = False
-                    continue
-                
-                if in_subsection:
-                    # Tentar parsear item inline
-                    item = self._parse_income_item(line, lines, i, page_num)
-                    if item:
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
-                    
-                    # Tentar parsear item multiline (CNPJ na linha sozinho)
-                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
-                    if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(multiline_item)
-                    
-                    # Tentar parsear item de 5 linhas (Beneficiário em linha separada)
-                    five_line_item = self._parse_5line_income_item(lines, i, page_num)
-                    if five_line_item:
-                        key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(five_line_item)
-                    
-                    # Tentar parsear item de 2 linhas (CNPJ+Nome / Benef+Valor+CPF)
-                    two_line_item = self._parse_2line_income_item(lines, i, page_num)
-                    if two_line_item:
-                        key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(two_line_item)
+            if re.match(r"^TOTAL\s*(?:[\d.,]+)?\s*$", line.strip(), re.IGNORECASE):
+                in_subsection = False
+                continue
             
-            # Parar APÓS processar todas as linhas da página que contém END_MARKER
-            if should_break_after_page:
-                break
+            if in_subsection:
+                item = self._parse_income_item(line, lines_list, i, page_num)
+                if item:
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
+                
+                multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
+                if multiline_item:
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(multiline_item)
+                
+                five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
+                if five_line_item:
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(five_line_item)
+                
+                two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
+                if two_line_item:
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(two_line_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
-        # Se não encontrou itens, tentar capturar total diretamente da página
-        # OCR pode separar tabela em duas partes: dados e valores no final
         if not items and total == 0:
-            extracted_total = self._extract_section_06_total(context)
+            extracted_total = self._extract_section_06_total(section_lines, context)
             if extracted_total > 0:
                 total = extracted_total
         
@@ -632,170 +393,123 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
-    def _extract_section_06_total(self, context: ExtractionContext) -> float:
+    def _extract_section_06_total(self, section_lines: list[tuple[int, str]], context: ExtractionContext) -> float:
         """Extrai total da seção 06 diretamente do OCR quando itens estão separados.
         
         O OCR pode separar tabela em duas partes:
         - Beneficiários e CNPJs no início
         - Valores no final da página, após "(Valores em Reais)" e "Pagina X de Y"
         """
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_page = page_text.upper()
-            
-            # Verificar se esta página contém "06." e "APLICAÇÕES/FINANCEIRAS"
-            # e também "TRIBUTACAO EXCLUSIVA" (para não confundir com ISENTOS)
-            has_section_06 = bool(re.search(r"06[.\s]+.*(?:APLICAC|FINANC)", upper_page))
-            has_exclusive = "TRIBUTACAO EXCLUSIVA" in upper_page or "TRIBUTAÇÃO EXCLUSIVA" in upper_page
-            
-            if has_section_06 and has_exclusive:
-                lines = page_text.split('\n')
-                
-                # Estratégia 1: Buscar TOTAL seguido de valor (na página 5, no final da seção)
-                for line in lines:
-                    match = re.match(r"^\s*TOTAL\s+([\d.,\s]+)\s*$", line, re.IGNORECASE)
-                    if match:
-                        value = parse_currency(match.group(1))
-                        # O total de TRIBUTAÇÃO EXCLUSIVA neste doc é ~359.000
-                        # O total de ISENTOS é ~1.200.000
-                        if value < 500000:  # Filtro para evitar pegar ISENTOS
+        section_text = "\n".join(line for _, line in section_lines)
+        upper_section = section_text.upper()
+        
+        has_section_06 = bool(re.search(r"06[.\s]+.*(?:APLICAC|FINANC)", upper_section))
+        if not has_section_06:
+            return 0.0
+        
+        lines_list = [line for _, line in section_lines]
+        
+        for line in lines_list:
+            match = re.match(r"^\s*TOTAL\s+([\d.,\s]+)\s*$", line, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
+                if value < 500000:
+                    return value
+        
+        for i, line in enumerate(lines_list):
+            if re.search(r"Pagina\s+\d+\s*de\s*\d+", line, re.IGNORECASE):
+                for j in range(i + 1, min(i + 10, len(lines_list))):
+                    value_match = re.match(r"^\s*([\d]{1,3}(?:[\s.]?\d{3})*\s*,\s*\d{2})\s*$", lines_list[j])
+                    if value_match:
+                        value = parse_currency(value_match.group(1))
+                        if value > 100 and value < 500000:
                             return value
-                
-                # Estratégia 2: Buscar primeiro valor grande após "Pagina X de Y"
-                # que indica o total da seção OCR separada
-                for i, line in enumerate(lines):
-                    if re.search(r"Pagina\s+\d+\s*de\s*\d+", line, re.IGNORECASE):
-                        # Buscar nas próximas linhas
-                        for j in range(i + 1, min(i + 10, len(lines))):
-                            # Buscar valor monetário sozinho em uma linha
-                            value_match = re.match(r"^\s*([\d]{1,3}(?:[\s.]?\d{3})*\s*,\s*\d{2})\s*$", lines[j])
-                            if value_match:
-                                value = parse_currency(value_match.group(1))
-                                # Valor plausível para tributação exclusiva (< 500000)
-                                if value > 100 and value < 500000:
-                                    return value
         return 0.0
     
-    def _extract_accumulated_income(self, context: ExtractionContext) -> Optional[dict]:
+    def _extract_accumulated_income(self, section_text: str) -> Optional[dict]:
         """Extrai 07. Rendimentos recebidos acumuladamente."""
-        for page_text in context.pages_text.values():
-            if not self._is_in_exclusive_section(page_text):
-                continue
-            
-            pattern = re.search(
-                r"07[.\s]+Rendimentos\s+recebidos\s+acumuladamente[^\d]+([\d.,]+)",
-                page_text,
-                re.IGNORECASE
-            )
-            if pattern:
-                value = parse_currency(pattern.group(1))
+        match = re.search(
+            r"07[.\s]+Rendimentos\s+recebidos\s+acumuladamente[^\d]+([\d.,]+)",
+            section_text,
+            re.IGNORECASE
+        )
+        if match:
+            value = parse_currency(match.group(1))
+            return {
+                "name": "07. Rendimentos recebidos acumuladamente",
+                "code": "07",
+                "total_value": value,
+                "valid_total": True,
+                "items": None
+            }
+        return None
+    
+    def _extract_accumulated_income_dependents(self, section_text: str) -> Optional[dict]:
+        """Extrai 09. Rendimentos recebidos acumuladamente pelos dependentes.
+        
+        BUG #81758 fix: Corrigido código de 08 para 09 (código correto conforme IRPF).
+        """
+        patterns = [
+            r"09[.\s]+Rendimentos\s+recebidos\s+acumuladamente\s+(?:pelos?\s+)?dependentes?[^\d]*([\d.,]+)",
+            r"09[.\s]+RENDIMENTOS\s+RECEBIDOS\s+ACUMULADAMENTE\s+(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
+            r"09[.\s]+(?:rend\.?\s+)?(?:rec\.?\s+)?acumulad(?:os|amente)\s+(?:pelos?\s+)?dep(?:endentes?)?[^\d]*([\d.,]+)",
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, section_text, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
                 return {
-                    "name": "07. Rendimentos recebidos acumuladamente",
-                    "code": "07",
+                    "name": "09. Rendimentos recebidos acumuladamente pelos dependentes",
+                    "code": "09",
                     "total_value": value,
                     "valid_total": True,
                     "items": None
                 }
         return None
     
-    def _extract_accumulated_income_dependents(self, context: ExtractionContext) -> Optional[dict]:
-        """Extrai 09. Rendimentos recebidos acumuladamente pelos dependentes.
-        
-        BUG #81758 fix: Corrigido código de 08 para 09 (código correto conforme IRPF).
-        """
-        in_section = False
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
-            
-            # Detectar início da seção
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            # Detectar fim da seção
-            if in_section and any(marker in upper_text for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if not in_section:
-                continue
-            
-            # Patterns para rendimentos acumulados de dependentes (código 09)
-            patterns = [
-                r"09[.\s]+Rendimentos\s+recebidos\s+acumuladamente\s+(?:pelos?\s+)?dependentes?[^\d]*([\d.,]+)",
-                r"09[.\s]+RENDIMENTOS\s+RECEBIDOS\s+ACUMULADAMENTE\s+(?:PELOS?\s+)?DEPENDENTES?[^\d]*([\d.,]+)",
-                r"09[.\s]+(?:rend\.?\s+)?(?:rec\.?\s+)?acumulad(?:os|amente)\s+(?:pelos?\s+)?dep(?:endentes?)?[^\d]*([\d.,]+)",
-            ]
-            
-            for pattern in patterns:
-                match = re.search(pattern, page_text, re.IGNORECASE)
-                if match:
-                    value = parse_currency(match.group(1))
-                    return {
-                        "name": "09. Rendimentos recebidos acumuladamente pelos dependentes",
-                        "code": "09",
-                        "total_value": value,
-                        "valid_total": True,
-                        "items": None
-                    }
-        return None
-    
-    def _extract_interest_on_capital(self, context: ExtractionContext) -> dict:
+    def _extract_interest_on_capital(self, section_lines: list[tuple[int, str]]) -> dict:
         """Extrai 10. Juros sobre capital próprio."""
         items = []
         seen_keys = set()
+        in_subsection = False
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        in_section = False
-        in_subsection = False  # Manter estado entre páginas
+        lines_list = [line for _, line in section_lines]
         
-        for page_num, page_text in sorted_pages:
-            lines = page_text.split("\n")
+        for i, (page_num, line) in enumerate(section_lines):
+            upper_line = line.upper()
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar início da seção principal
-                if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                    in_section = True
-                    continue
-                
-                if not in_section:
-                    continue
-                
-                # Detectar início da subseção 10
-                if re.search(r"10[.\s]+JUROS\s+SOBRE\s+CAPITAL\s+PR[OÓ]PRIO", upper_line, re.IGNORECASE):
-                    in_subsection = True
-                    continue
-                
-                # Detectar fim da subseção
-                if re.match(r"^(?:11|12|13)[.\s]+", line.strip()):
+            if re.search(r"10[.\s]+JUROS\s+SOBRE\s+CAPITAL\s+PR[OÓ]PRIO", upper_line, re.IGNORECASE):
+                in_subsection = True
+                continue
+            
+            if re.match(r"^(?:11|12|13)[.\s]+", line.strip()):
+                in_subsection = False
+                continue
+            
+            if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
                     in_subsection = False
                     continue
+            
+            if in_subsection and any(m in upper_line for m in self.SECTION_END_MARKERS):
+                in_subsection = False
+                break
+            
+            if in_subsection:
+                item = self._parse_income_item(line, lines_list, i, page_num)
+                if item:
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
                 
-                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
-                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
-                        in_subsection = False
-                        continue
-                
-                # Detectar fim da seção principal (só se já entramos)
-                if in_section and in_subsection:
-                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
-                        in_subsection = False
-                        in_section = False
-                        break
-                
-                if in_subsection:
-                    item = self._parse_income_item(line, lines, i, page_num)
-                    if item:
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
-                    
-                    multiline_item = self._parse_multiline_income_item(lines, i, page_num)
-                    if multiline_item:
-                        key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(multiline_item)
+                multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
+                if multiline_item:
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(multiline_item)
         
         total = round(sum(i["value"] for i in items), 2)
         
@@ -807,95 +521,62 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
-    def _extract_financial_abroad(self, context: ExtractionContext) -> Optional[dict]:
+    def _extract_financial_abroad(self, section_text: str) -> Optional[dict]:
         """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior.
         
         BUG #81758 fix: Corrigido pattern para capturar o valor correto (não a Lei).
         O texto tem formato: "12. Aplicações Financeiras... (Lei 14.754/2023) 3.580,00"
         O pattern antigo capturava 14.754 (número da Lei) em vez de 3.580,00.
         """
-        in_section = False
-        for page_num, page_text in sorted(context.pages_text.items()):
-            upper_text = page_text.upper()
-            
-            # Detectar início da seção
-            if any(marker in upper_text for marker in self.SECTION_MARKERS):
-                in_section = True
-            
-            # Para esta subseção, procurar mesmo se já passou o marcador de fim
-            # pois pode estar em outra página ainda dentro da seção
-            
-            # Procurar linha com item 12
-            lines = page_text.split('\n')
-            for line in lines:
-                # Pattern para linha completa com item 12
-                # Formato: "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00"
-                # Precisamos capturar o ÚLTIMO valor monetário da linha (após a Lei)
-                match = re.search(
-                    r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
-                    line,
-                    re.IGNORECASE
-                )
-                if match:
-                    value = parse_currency(match.group(1))
-                    if value > 0:
-                        return {
-                            "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
-                            "code": "12",
-                            "total_value": value,
-                            "valid_total": True,
-                            "items": None
-                        }
+        for line in section_text.split('\n'):
+            match = re.search(
+                r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
+                line,
+                re.IGNORECASE
+            )
+            if match:
+                value = parse_currency(match.group(1))
+                if value > 0:
+                    return {
+                        "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                        "code": "12",
+                        "total_value": value,
+                        "valid_total": True,
+                        "items": None
+                    }
         return None
     
-    def _extract_others(self, context: ExtractionContext) -> dict:
+    def _extract_others(self, section_lines: list[tuple[int, str]]) -> dict:
         """Extrai 13. Outros (ou 12. Outros em alguns PDFs)."""
         items = []
         seen_keys = set()
+        in_subsection = False
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        in_section = False
-        in_subsection = False  # Manter estado entre páginas
+        lines_list = [line for _, line in section_lines]
         
-        for page_num, page_text in sorted_pages:
-            lines = page_text.split("\n")
+        for i, (page_num, line) in enumerate(section_lines):
+            upper_line = line.upper()
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar início da seção principal
-                if any(marker in upper_line for marker in self.SECTION_MARKERS):
-                    in_section = True
+            if re.search(r"(?:12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE):
+                in_subsection = True
+                continue
+            
+            if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
+                if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
+                    in_subsection = False
                     continue
-                
-                if not in_section:
-                    continue
-                
-                # Detectar início da subseção 13.Outros ou 12.Outros
-                if re.search(r"(?:12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE):
-                    in_subsection = True
-                    continue
-                
-                # Detectar fim da subseção
-                if "TOTAL" in upper_line and not re.search(r"TITULAR|DEPENDENTE", upper_line):
-                    if re.match(r"^TOTAL\s+[\d.,]+\s*$", line.strip(), re.IGNORECASE):
-                        in_subsection = False
-                        continue
-                
-                # Detectar fim da seção principal (só se já entramos)
-                if in_section and in_subsection:
-                    if "PAGAMENTOS EFETUADOS" in upper_line or "DOAÇÕES EFETUADAS" in upper_line:
-                        in_subsection = False
-                        in_section = False
-                        break
-                
-                if in_subsection:
-                    item = self._parse_others_item(line, lines, i, page_num)
-                    if item:
-                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
+            
+            if in_subsection and any(m in upper_line for m in self.SECTION_END_MARKERS):
+                in_subsection = False
+                break
+            
+            if in_subsection:
+                item = self._parse_others_item(line, lines_list, i, page_num)
+                if item:
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
         
         total = round(sum(i["value"] for i in items), 2)
         
