@@ -165,17 +165,22 @@ class ExemptIncomeExtractor(ISectionExtractor):
         if not self.can_extract(context):
             return None
         
+        section_lines = self._get_section_lines(context)
+        if not section_lines:
+            return None
+        
         subsections = {}
         
         for key, config in self.SUBSECTIONS.items():
-            subsection = self._extract_subsection_by_format(context, key, config)
+            subsection = self._extract_subsection_by_format(
+                section_lines, config, context
+            )
             if subsection and (subsection.get("items") or subsection.get("total_value", 0) > 0):
                 subsections[key] = subsection
         
         total_value = sum(s.get("total_value", 0) for s in subsections.values()) if subsections else 0.0
         
-        # Tentar extrair total do PDF
-        pdf_total = self._extract_total_from_pdf(context)
+        pdf_total = self._extract_total_from_section(section_lines)
         
         return {
             "section_name": "Rendimentos Isentos e Não Tributáveis",
@@ -185,95 +190,85 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "items_count": sum(len(s.get("items", []) or []) for s in subsections.values())
         }
     
+    def _get_section_lines(
+        self, context: ExtractionContext
+    ) -> list[tuple[int, str]]:
+        """Retorna APENAS as linhas dentro dos limites da seção exempt_income.
+        
+        Returns:
+            Lista de (page_num, line_text) estritamente dentro de
+            'RENDIMENTOS ISENTOS' até o próximo end marker.
+        """
+        result: list[tuple[int, str]] = []
+        in_section = False
+        
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        for page_num, page_text in sorted_pages:
+            for line in page_text.split("\n"):
+                upper = line.upper()
+                
+                if not in_section:
+                    if any(m in upper for m in self.SECTION_MARKERS):
+                        in_section = True
+                    continue
+                
+                if any(m in upper for m in self.SECTION_END_MARKERS):
+                    return result
+                
+                result.append((page_num, line))
+        
+        return result
+    
     def _extract_subsection_by_format(
         self,
-        context: ExtractionContext,
-        key: str,
-        config: dict
+        section_lines: list[tuple[int, str]],
+        config: dict,
+        context: ExtractionContext
     ) -> Optional[dict]:
-        """Extrai subsection baseado no formato especificado."""
         fmt = config.get("format", "standard")
         
         if fmt == "total_only":
-            return self._extract_total_only_subsection(context, config)
+            return self._extract_total_only_subsection(section_lines, config)
         elif fmt == "retirement":
-            return self._extract_retirement_subsection(context, config)
+            return self._extract_retirement_subsection(section_lines, config)
         elif fmt == "illness":
-            return self._extract_illness_subsection(context, config)
+            return self._extract_illness_subsection(section_lines, config)
         elif fmt == "simple":
-            return self._extract_simple_subsection(context, config)
+            return self._extract_simple_subsection(section_lines, config)
         elif fmt == "others":
-            return self._extract_others_subsection(context, config)
+            return self._extract_others_subsection(section_lines, config, context)
         elif fmt == "termination":
-            return self._extract_termination_subsection(context, config)
+            return self._extract_termination_subsection(section_lines, config)
         else:
-            return self._extract_standard_subsection(context, config)
+            return self._extract_standard_subsection(section_lines, config)
     
     def _extract_total_only_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
-        """Extrai subsection que tem apenas total (sem items).
-        
-        Formato no PDF: "XX. Descrição completa... VALOR"
-        O valor aparece no final da linha do código.
-        """
+        """Extrai subsection que tem apenas total (sem items)."""
         code = config["code"]
         name = config["name"]
         total_value = 0.0
         
-        # Buscar diretamente pela linha do código em todas as páginas
-        # (seção pode continuar entre páginas sem repetir cabeçalho)
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        found = False
-        
-        for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            
-            # Parar se encontrar início de outra seção principal
-            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_page:
-                # Verificar se já encontramos o código nesta página antes do fim
-                lines = page_text.split("\n")
-                for i, line in enumerate(lines):
-                    if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in line.upper():
-                        # Só processar linhas antes desta
-                        lines = lines[:i]
-                        break
-                
-                for i, line in enumerate(lines):
-                    if line.strip().startswith(f"{code}."):
-                        value_match = re.search(r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$', line)
-                        if value_match:
-                            total_value = parse_currency(value_match.group(1))
-                            found = True
-                break
-            
-            lines = page_text.split("\n")
-            
-            for i, line in enumerate(lines):
-                # Procurar linha que começa com o código
-                if line.strip().startswith(f"{code}."):
-                    found = True
-                    # Extrair valor do final da linha
-                    value_match = re.search(r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$', line)
-                    if value_match:
-                        total_value = parse_currency(value_match.group(1))
-                    else:
-                        # Valor pode estar em linha separada
-                        for j in range(i + 1, min(i + 3, len(lines))):
-                            next_line = lines[j].strip()
-                            if re.match(r'^\d{2}\.', next_line):
-                                break
-                            if "Beneficiário" in next_line:
-                                break
-                            val_match = re.match(r'^([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})$', next_line)
-                            if val_match:
-                                total_value = parse_currency(val_match.group(1))
-                                break
-                    break
-            
-            if found:
+        for idx, (page_num, line) in enumerate(section_lines):
+            if line.strip().startswith(f"{code}."):
+                value_match = re.search(r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$', line)
+                if value_match:
+                    total_value = parse_currency(value_match.group(1))
+                else:
+                    for j in range(idx + 1, min(idx + 3, len(section_lines))):
+                        next_line = section_lines[j][1].strip()
+                        if re.match(r'^\d{2}\.', next_line):
+                            break
+                        if "Beneficiário" in next_line:
+                            break
+                        val_match = re.match(r'^([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})$', next_line)
+                        if val_match:
+                            total_value = parse_currency(val_match.group(1))
+                            break
                 break
         
         if total_value <= 0:
@@ -289,7 +284,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_standard_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
         """Extrai subsection com formato padrão.
@@ -301,55 +296,34 @@ class ExemptIncomeExtractor(ISectionExtractor):
         items = []
         seen_keys = set()
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
-        section_ended = False
         
-        for page_idx, (page_num, page_text) in enumerate(sorted_pages):
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            if line.strip().startswith(f"{code}."):
+                in_subsection = True
+                continue
             
-            upper_page = page_text.upper()
-            lines = page_text.split("\n")
-            next_page_lines = []
-            if page_idx + 1 < len(sorted_pages):
-                next_page_lines = sorted_pages[page_idx + 1][1].split("\n")
+            if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
+                in_subsection = False
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar fim da seção principal
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    section_ended = True
-                    break
-                
-                # Detectar início da subsection
-                if line.strip().startswith(f"{code}."):
-                    in_subsection = True
-                    continue
-                
-                # Detectar fim da subsection (outro código)
-                if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
-                    in_subsection = False
-                    continue
-                
-                # Detectar fim por TOTAL da seção
-                if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
-                    in_subsection = False
-                    continue
-                
-                if in_subsection:
-                    item = self._parse_standard_item(line, lines, i, page_num, next_page_lines)
-                    if item:
-                        key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
+            if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
+                in_subsection = False
+                continue
+            
+            if in_subsection:
+                item = self._parse_standard_item_from_lines(
+                    line, section_lines, idx, page_num
+                )
+                if item:
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
         
         total = round(sum(i.get("value", 0) for i in items), 2)
         
-        # Tentar extrair total do cabeçalho da subsection
-        header_total = self._extract_subsection_header_total(context, code)
+        header_total = self._extract_subsection_header_total(section_lines, code)
         if header_total and header_total > total:
             total = header_total
         
@@ -366,32 +340,28 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_subsection_header_total(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         code: str
     ) -> Optional[float]:
         """Extrai o total do cabeçalho da subsection."""
-        for page_text in context.pages_text.values():
-            lines = page_text.split("\n")
-            for line in lines:
-                if line.strip().startswith(f"{code}."):
-                    match = re.search(r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$', line)
-                    if match:
-                        return parse_currency(match.group(1))
+        for _, line in section_lines:
+            if line.strip().startswith(f"{code}."):
+                match = re.search(r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$', line)
+                if match:
+                    return parse_currency(match.group(1))
         return None
     
-    def _parse_standard_item(
+    def _parse_standard_item_from_lines(
         self,
         line: str,
-        lines: list[str],
+        section_lines: list[tuple[int, str]],
         idx: int,
-        page_num: int,
-        next_page_lines: list[str] = None
+        page_num: int
     ) -> Optional[dict]:
-        """Parseia item no formato padrão."""
+        """Parseia item no formato padrão usando section_lines."""
         CPF_PATTERN = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
         CNPJ_PATTERN = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
         
-        # Pattern: Titular/Dependente CPF CPF/CNPJ Nome Valor
         pattern = re.match(
             rf"^(Titular|Dependente)\s+"
             rf"({CPF_PATTERN})\s+"
@@ -410,17 +380,10 @@ class ExemptIncomeExtractor(ISectionExtractor):
         payer_name = pattern.group(4).strip()
         value = parse_currency(pattern.group(5))
         
-        # Verificar continuação do nome na próxima linha
-        if idx + 1 < len(lines):
-            next_line = lines[idx + 1].strip()
+        if idx + 1 < len(section_lines):
+            next_line = section_lines[idx + 1][1].strip()
             if self._is_name_continuation(next_line):
                 payer_name = f"{payer_name} {next_line}"
-        
-        # Verificar continuação cross-page
-        if next_page_lines and self._is_near_page_end(lines, idx):
-            orphan = self._get_orphan_name_from_next_page(next_page_lines)
-            if orphan:
-                payer_name = f"{payer_name} {orphan}"
         
         item_id = generate_item_id(f"{payer_doc}{cpf}{value}")
         
@@ -436,104 +399,75 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_retirement_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
-        """Extrai subsection 10 - aposentadoria 65+.
-        
-        Formato especial com Valor e 13º Salário em linha separada.
-        """
+        """Extrai subsection 10 - aposentadoria 65+."""
         code = config["code"]
         name = config["name"]
         items = []
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
         current_item = None
-        section_ended = False
         
-        for page_num, page_text in sorted_pages:
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            lower_line = line.lower()
             
-            lines = page_text.split("\n")
+            if f"{code}." in line and ("parcela isenta" in lower_line or "aposentadoria" in lower_line):
+                in_subsection = True
+                continue
             
-            for i, line in enumerate(lines):
-                lower_line = line.lower()
-                upper_line = line.upper()
-                
-                # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
+            if in_subsection:
+                if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
                     if current_item:
                         items.append(current_item)
                         current_item = None
-                    section_ended = True
-                    break
-                
-                # Detectar início da subsection
-                if f"{code}." in line and ("parcela isenta" in lower_line or "aposentadoria" in lower_line):
-                    in_subsection = True
+                    in_subsection = False
                     continue
                 
-                if in_subsection:
-                    # Detectar fim
-                    if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
-                        if current_item:
-                            items.append(current_item)
-                            current_item = None
-                        in_subsection = False
-                        continue
+                if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
+                    if current_item:
+                        items.append(current_item)
+                        current_item = None
+                    in_subsection = False
+                    continue
+                
+                item_match = re.match(
+                    r"^(Titular|Dependente)\s+"
+                    r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
+                    r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
+                    r"(.+)$",
+                    line.strip()
+                )
+                
+                if item_match:
+                    if current_item:
+                        items.append(current_item)
                     
-                    if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
-                        if current_item:
-                            items.append(current_item)
-                            current_item = None
-                        in_subsection = False
-                        continue
+                    current_item = {
+                        "beneficiary": item_match.group(1),
+                        "cpf": item_match.group(2),
+                        "payer_cnpj": item_match.group(3),
+                        "payer_name": item_match.group(4).strip(),
+                        "value": 0.0,
+                        "thirteenth_salary": 0.0,
+                        "page": page_num
+                    }
+                elif current_item:
+                    if "Valor:" not in line and not re.match(r"^(Titular|Dependente)", line):
+                        name_cont = line.strip()
+                        if name_cont and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", name_cont) and "Valor:" not in name_cont:
+                            current_item["payer_name"] = f"{current_item['payer_name']} {name_cont}"
                     
-                    # Parsear item
-                    item_match = re.match(
-                        r"^(Titular|Dependente)\s+"
-                        r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
-                        r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+"
-                        r"(.+)$",
-                        line.strip()
-                    )
-                    
-                    if item_match:
-                        if current_item:
-                            items.append(current_item)
+                    if "Valor:" in line:
+                        valor_match = re.search(r"Valor:\s*([\d.,]+)", line)
+                        if valor_match:
+                            current_item["value"] = parse_currency(valor_match.group(1))
                         
-                        current_item = {
-                            "beneficiary": item_match.group(1),
-                            "cpf": item_match.group(2),
-                            "payer_cnpj": item_match.group(3),
-                            "payer_name": item_match.group(4).strip(),
-                            "value": 0.0,
-                            "thirteenth_salary": 0.0,
-                            "page": page_num
-                        }
-                    elif current_item:
-                        # Continuação do nome
-                        if not "Valor:" in line and not re.match(r"^(Titular|Dependente)", line):
-                            name_cont = line.strip()
-                            if name_cont and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", name_cont) and "Valor:" not in name_cont:
-                                current_item["payer_name"] = f"{current_item['payer_name']} {name_cont}"
-                        
-                        # Linha com Valor e 13º Salário
-                        if "Valor:" in line:
-                            valor_match = re.search(r"Valor:\s*([\d.,]+)", line)
-                            if valor_match:
-                                current_item["value"] = parse_currency(valor_match.group(1))
-                            
-                            salario_match = re.search(r"13[º°]?\s*Sal[aá]rio:\s*([\d.,]+)", line)
-                            if salario_match:
-                                current_item["thirteenth_salary"] = parse_currency(salario_match.group(1))
-            
-            # Ao final da página, manter item pendente para próxima página
-            # (não adicionar aqui, pois pode haver continuação)
+                        salario_match = re.search(r"13[º°]?\s*Sal[aá]rio:\s*([\d.,]+)", line)
+                        if salario_match:
+                            current_item["thirteenth_salary"] = parse_currency(salario_match.group(1))
         
-        # Adicionar último item se existir
         if current_item:
             items.append(current_item)
         
@@ -555,97 +489,72 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_illness_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
-        """Extrai subsection 11 - moléstia grave.
-        
-        Formato especial:
-        Beneficiário CPF Rendimento IRRF 13º Salário IRRF 13º Contrib.Prev.
-        Titular CPF 20.000,00 500,00 600,00 60,00 400,00
-        CPF/CNPJ da Fonte Pagadora: XX Nome da Fonte Pagadora: YY
-        """
+        """Extrai subsection 11 - moléstia grave."""
         code = config["code"]
         name = config["name"]
         items = []
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
-        section_ended = False
         
-        for page_num, page_text in sorted_pages:
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            lower_line = line.lower()
             
-            lines = page_text.split("\n")
+            if f"{code}." in line and ("pensão" in lower_line or "moléstia" in lower_line or "acidente em serviço" in lower_line):
+                in_subsection = True
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                lower_line = line.lower()
-                
-                # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    section_ended = True
-                    break
-                
-                # Detectar início
-                if f"{code}." in line and ("pensão" in lower_line or "moléstia" in lower_line or "acidente em serviço" in lower_line):
-                    in_subsection = True
+            if in_subsection:
+                if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
+                    in_subsection = False
                     continue
                 
-                if in_subsection:
-                    # Detectar fim
-                    if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
-                        in_subsection = False
-                        continue
+                item_match = re.match(
+                    r"^(Titular|Dependente)\s+"
+                    r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
+                    r"([\d.,]+)\s+"
+                    r"([\d.,]+)\s+"
+                    r"([\d.,]+)\s+"
+                    r"([\d.,]+)\s+"
+                    r"([\d.,]+)\s*$",
+                    line.strip()
+                )
+                
+                if item_match:
+                    item = {
+                        "beneficiary": item_match.group(1),
+                        "cpf": item_match.group(2),
+                        "income": parse_currency(item_match.group(3)),
+                        "irrf": parse_currency(item_match.group(4)),
+                        "thirteenth_salary": parse_currency(item_match.group(5)),
+                        "irrf_on_thirteenth_salary": parse_currency(item_match.group(6)),
+                        "official_social_security_contribution": parse_currency(item_match.group(7)),
+                        "payer_cpf_cnpj": "",
+                        "payer_name": "",
+                        "page": page_num
+                    }
                     
-                    # Pattern: Titular/Dependente CPF Valor Valor Valor Valor Valor
-                    item_match = re.match(
-                        r"^(Titular|Dependente)\s+"
-                        r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
-                        r"([\d.,]+)\s+"
-                        r"([\d.,]+)\s+"
-                        r"([\d.,]+)\s+"
-                        r"([\d.,]+)\s+"
-                        r"([\d.,]+)\s*$",
-                        line.strip()
-                    )
+                    if idx + 1 < len(section_lines):
+                        next_line = section_lines[idx + 1][1]
+                        payer_match = re.search(
+                            r"CPF/CNPJ\s*(?:da\s*)?Fonte\s*Pagadora:\s*"
+                            r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s*"
+                            r"Nome\s*(?:da\s*)?Fonte\s*Pagadora:\s*(.+)$",
+                            next_line,
+                            re.IGNORECASE
+                        )
+                        if payer_match:
+                            item["payer_cpf_cnpj"] = payer_match.group(1)
+                            item["payer_name"] = payer_match.group(2).strip()
                     
-                    if item_match:
-                        item = {
-                            "beneficiary": item_match.group(1),
-                            "cpf": item_match.group(2),
-                            "income": parse_currency(item_match.group(3)),
-                            "irrf": parse_currency(item_match.group(4)),
-                            "thirteenth_salary": parse_currency(item_match.group(5)),
-                            "irrf_on_thirteenth_salary": parse_currency(item_match.group(6)),
-                            "official_social_security_contribution": parse_currency(item_match.group(7)),
-                            "payer_cpf_cnpj": "",
-                            "payer_name": "",
-                            "page": page_num
-                        }
-                        
-                        # Procurar CPF/CNPJ e Nome na próxima linha
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1]
-                            payer_match = re.search(
-                                r"CPF/CNPJ\s*(?:da\s*)?Fonte\s*Pagadora:\s*"
-                                r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s*"
-                                r"Nome\s*(?:da\s*)?Fonte\s*Pagadora:\s*(.+)$",
-                                next_line,
-                                re.IGNORECASE
-                            )
-                            if payer_match:
-                                item["payer_cpf_cnpj"] = payer_match.group(1)
-                                item["payer_name"] = payer_match.group(2).strip()
-                        
-                        item["id"] = generate_item_id(f"{item['payer_cpf_cnpj']}{item['cpf']}{item['income']}")
-                        items.append(item)
+                    item["id"] = generate_item_id(f"{item['payer_cpf_cnpj']}{item['cpf']}{item['income']}")
+                    items.append(item)
         
         if not items:
             return None
         
-        # Total = soma de income + thirteenth_salary
         total = round(sum(i["income"] + i.get("thirteenth_salary", 0) for i in items), 2)
         
         return {
@@ -658,64 +567,43 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_simple_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
-        """Extrai subsection 20, 21 - formato simples sem CNPJ.
-        
-        Formato: Beneficiário CPF Valor
-        """
+        """Extrai subsection 20, 21 - formato simples sem CNPJ."""
         code = config["code"]
         name = config["name"]
         items = []
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
-        section_ended = False
         
-        for page_num, page_text in sorted_pages:
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            if line.strip().startswith(f"{code}."):
+                in_subsection = True
+                continue
             
-            lines = page_text.split("\n")
-            
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar fim da seção
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    section_ended = True
-                    break
-                
-                # Detectar início
-                if line.strip().startswith(f"{code}."):
-                    in_subsection = True
+            if in_subsection:
+                if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
+                    in_subsection = False
                     continue
                 
-                if in_subsection:
-                    # Detectar fim
-                    if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
-                        in_subsection = False
-                        continue
-                    
-                    # Pattern: Titular/Dependente CPF Valor
-                    item_match = re.match(
-                        r"^(Titular|Dependente)\s+"
-                        r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
-                        r"([\d.,]+)\s*$",
-                        line.strip()
-                    )
-                    
-                    if item_match:
-                        value = parse_currency(item_match.group(3))
-                        item = {
-                            "beneficiary": item_match.group(1),
-                            "cpf": item_match.group(2),
-                            "value": value,
-                            "id": generate_item_id(f"{item_match.group(2)}{value}"),
-                            "page": page_num
-                        }
-                        items.append(item)
+                item_match = re.match(
+                    r"^(Titular|Dependente)\s+"
+                    r"(\d{3}\.\d{3}\.\d{3}-\d{2})\s+"
+                    r"([\d.,]+)\s*$",
+                    line.strip()
+                )
+                
+                if item_match:
+                    value = parse_currency(item_match.group(3))
+                    item = {
+                        "beneficiary": item_match.group(1),
+                        "cpf": item_match.group(2),
+                        "value": value,
+                        "id": generate_item_id(f"{item_match.group(2)}{value}"),
+                        "page": page_num
+                    }
+                    items.append(item)
         
         if not items:
             return None
@@ -732,53 +620,39 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_others_subsection(
         self,
-        context: ExtractionContext,
-        config: dict
+        section_lines: list[tuple[int, str]],
+        config: dict,
+        context: ExtractionContext
     ) -> dict:
-        """Extrai subseção 99. Outros.
-        
-        Formato: Beneficiário CPF CPF/CNPJ Nome Descrição Valor
-        """
+        """Extrai subseção 99. Outros."""
         code = config["code"]
         name = config["name"]
         items = []
         seen_keys = set()
         
         others_page = None
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
-        section_ended = False
         
-        for page_num, page_text in sorted_pages:
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            upper_line = line.upper()
             
-            lines = page_text.split("\n")
+            if re.search(r"99[.\s]+OUTROS", upper_line, re.IGNORECASE):
+                in_subsection = True
+                others_page = page_num
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    section_ended = True
-                    break
-                
-                if re.search(r"99[.\s]+OUTROS", upper_line, re.IGNORECASE):
-                    in_subsection = True
-                    others_page = page_num
+            if in_subsection:
+                if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
+                    in_subsection = False
                     continue
-                
-                if in_subsection:
-                    if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
-                        in_subsection = False
-                        continue
-                
-                if in_subsection:
-                    item = self._parse_others_item_basic(line, page_num)
-                    if item:
-                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
+            
+            if in_subsection:
+                item = self._parse_others_item_basic(line, page_num)
+                if item:
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
         
         if items and context.pdf_path and others_page:
             items = self._refine_others_with_word_positions(context.pdf_path, others_page, items)
@@ -925,68 +799,43 @@ class ExemptIncomeExtractor(ISectionExtractor):
     
     def _extract_termination_subsection(
         self,
-        context: ExtractionContext,
+        section_lines: list[tuple[int, str]],
         config: dict
     ) -> Optional[dict]:
-        """Extrai subsection 04 - indenizações/rescisão/FGTS.
-        
-        Formato especial: não tem 'beneficiary', usa 'payer_cpf_cnpj'.
-        Formato: Beneficiário CPF CPF/CNPJ Nome Valor
-        Mas output não inclui beneficiary conforme gabarito.
-        """
+        """Extrai subsection 04 - indenizações/rescisão/FGTS."""
         code = config["code"]
         name = config["name"]
         items = []
         seen_keys = set()
         
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         in_subsection = False
-        section_ended = False
         
-        for page_idx, (page_num, page_text) in enumerate(sorted_pages):
-            if section_ended:
-                break
+        for idx, (page_num, line) in enumerate(section_lines):
+            if line.strip().startswith(f"{code}."):
+                in_subsection = True
+                continue
             
-            lines = page_text.split("\n")
-            next_page_lines = []
-            if page_idx + 1 < len(sorted_pages):
-                next_page_lines = sorted_pages[page_idx + 1][1].split("\n")
+            if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
+                in_subsection = False
+                continue
             
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar fim da seção principal
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    section_ended = True
-                    break
-                
-                # Detectar início da subsection
-                if line.strip().startswith(f"{code}."):
-                    in_subsection = True
-                    continue
-                
-                # Detectar fim da subsection (outro código)
-                if re.match(r'^\d{2}\.', line.strip()) and not line.strip().startswith(f"{code}."):
-                    in_subsection = False
-                    continue
-                
-                # Detectar fim por TOTAL da seção
-                if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
-                    in_subsection = False
-                    continue
-                
-                if in_subsection:
-                    item = self._parse_termination_item(line, lines, i, page_num, next_page_lines)
-                    if item:
-                        key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
-                        if key not in seen_keys:
-                            seen_keys.add(key)
-                            items.append(item)
+            if re.match(r'^TOTAL\s+[\d.,]+\s*$', line.strip(), re.IGNORECASE):
+                in_subsection = False
+                continue
+            
+            if in_subsection:
+                item = self._parse_termination_item_from_lines(
+                    line, section_lines, idx, page_num
+                )
+                if item:
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(item)
         
         total = round(sum(i.get("value", 0) for i in items), 2)
         
-        # Tentar extrair total do cabeçalho da subsection
-        header_total = self._extract_subsection_header_total(context, code)
+        header_total = self._extract_subsection_header_total(section_lines, code)
         if header_total and header_total > total:
             total = header_total
         
@@ -1001,23 +850,17 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
-    def _parse_termination_item(
+    def _parse_termination_item_from_lines(
         self,
         line: str,
-        lines: list[str],
+        section_lines: list[tuple[int, str]],
         idx: int,
-        page_num: int,
-        next_page_lines: list[str] = None
+        page_num: int
     ) -> Optional[dict]:
-        """Parseia item de indenização/rescisão (código 04).
-        
-        Formato: Beneficiário CPF CPF/CNPJ Nome Valor
-        Output: sem beneficiary, usa payer_cpf_cnpj
-        """
+        """Parseia item de indenização/rescisão (código 04)."""
         CPF_PATTERN = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
         CNPJ_PATTERN = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
         
-        # Pattern: Titular/Dependente CPF CPF/CNPJ Nome Valor
         pattern = re.match(
             rf"^(?:Titular|Dependente)\s+"
             rf"({CPF_PATTERN})\s+"
@@ -1035,21 +878,13 @@ class ExemptIncomeExtractor(ISectionExtractor):
         payer_name = pattern.group(3).strip()
         value = parse_currency(pattern.group(4))
         
-        # Verificar continuação do nome na próxima linha
-        if idx + 1 < len(lines):
-            next_line = lines[idx + 1].strip()
+        if idx + 1 < len(section_lines):
+            next_line = section_lines[idx + 1][1].strip()
             if self._is_name_continuation(next_line):
                 payer_name = f"{payer_name} {next_line}"
         
-        # Verificar continuação cross-page
-        if next_page_lines and self._is_near_page_end(lines, idx):
-            orphan = self._get_orphan_name_from_next_page(next_page_lines)
-            if orphan:
-                payer_name = f"{payer_name} {orphan}"
-        
         item_id = generate_item_id(f"{payer_doc}{cpf}{value}")
         
-        # Não inclui 'beneficiary' conforme gabarito
         return {
             "cpf": cpf,
             "payer_cpf_cnpj": payer_doc,
@@ -1059,38 +894,20 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "page": page_num
         }
     
-    def _extract_total_from_pdf(self, context: ExtractionContext) -> Optional[float]:
-        """Extrai o total geral da seção."""
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+    def _extract_total_from_section(
+        self, section_lines: list[tuple[int, str]]
+    ) -> Optional[float]:
+        """Extrai o total geral da seção a partir das linhas filtradas.
         
-        # Procurar em todas as páginas, pois o total pode estar em página sem cabeçalho
-        for page_num, page_text in sorted_pages:
-            upper_page = page_text.upper()
-            lines = page_text.split("\n")
-            
-            for i, line in enumerate(lines):
-                upper_line = line.upper()
-                
-                # Detectar fim da seção - o TOTAL vem logo antes
-                if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in upper_line:
-                    # O total deve estar nas linhas anteriores
-                    for j in range(max(0, i - 5), i):
-                        prev_line = lines[j].strip()
-                        total_match = re.match(r'^TOTAL\s+([\d.,]+)\s*$', prev_line, re.IGNORECASE)
-                        if total_match:
-                            return parse_currency(total_match.group(1))
-                    return None
-                
-                # Procurar "TOTAL" seguido de valor (linha de total da seção)
-                # Mas só se não estiver em outra seção
-                if upper_line.strip().startswith("TOTAL") and not re.search(r'TITULAR|DEPENDENTE', upper_line):
-                    total_match = re.match(r'^TOTAL\s+([\d.,]+)\s*$', line.strip(), re.IGNORECASE)
-                    if total_match:
-                        # Verificar se após o total vem RENDIMENTOS SUJEITOS (próximas linhas)
-                        for j in range(i + 1, min(i + 5, len(lines))):
-                            if "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO" in lines[j].upper():
-                                return parse_currency(total_match.group(1))
-        
+        O TOTAL costuma ser a última linha relevante da seção.
+        """
+        for _, line in reversed(section_lines):
+            stripped = line.strip()
+            total_match = re.match(r'^TOTAL\s+([\d.,]+)\s*$', stripped, re.IGNORECASE)
+            if total_match:
+                return parse_currency(total_match.group(1))
+            if stripped and not stripped.startswith("Página"):
+                break
         return None
     
     def _is_name_continuation(self, line: str) -> bool:
@@ -1106,37 +923,3 @@ class ExemptIncomeExtractor(ISectionExtractor):
         
         return False
     
-    def _is_near_page_end(self, lines: list[str], idx: int) -> bool:
-        """Verifica se linha está próxima do final da página."""
-        for i in range(idx + 1, len(lines)):
-            line = lines[i].strip()
-            if not line or "Página" in line:
-                continue
-            if re.match(r"^(Titular|Dependente)\s+\d{3}\.", line):
-                return False
-            if "TOTAL" in line.upper():
-                return False
-        return True
-    
-    def _get_orphan_name_from_next_page(self, next_page_lines: list[str]) -> Optional[str]:
-        """Obtém nome órfão da próxima página."""
-        skip_keywords = [
-            "NOME:", "CPF:", "DECLARAÇÃO", "RENDIMENTOS", "Página",
-            "PAGAMENTOS", "DOAÇÕES", "BENS E DIREITOS", "TOTAL", "IMPOSTO"
-        ]
-        
-        for line in next_page_lines[:10]:
-            line = line.strip()
-            if not line or len(line) <= 2:
-                continue
-            
-            if any(skip in line for skip in skip_keywords):
-                continue
-            
-            if re.match(r"^(Titular|Dependente)\s+\d{3}\.", line):
-                return None
-            
-            if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s]+$", line):
-                return line
-        
-        return None
