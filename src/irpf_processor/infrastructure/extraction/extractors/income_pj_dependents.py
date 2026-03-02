@@ -170,22 +170,18 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         idx: int,
         page_num: int
     ) -> Optional[dict]:
-        # Formato: NOME RENDIMENTO CONTRIB_PREV IRRF 13_SALARIO IRRF_13
-        num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
-        pattern = re.match(
-            rf"^([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,\-/]+?)\s+"
-            rf"{num_pattern}\s+"
-            rf"{num_pattern}\s+"
-            rf"{num_pattern}\s+"
-            rf"{num_pattern}\s+"
-            rf"{num_pattern}\s*$",
-            line.strip()
-        )
+        from .income_pj import _LINE_5VAL_RE, _LINE_4VAL_RE, _find_cnpj
         
-        if not pattern:
+        stripped = line.strip()
+        
+        m5 = _LINE_5VAL_RE.match(stripped)
+        m4 = _LINE_4VAL_RE.match(stripped) if not m5 else None
+        match = m5 or m4
+        
+        if not match:
             return None
         
-        payer_name_start = pattern.group(1).strip()
+        payer_name_start = match.group(1).strip()
         
         if self._should_skip_line(payer_name_start):
             return None
@@ -195,22 +191,16 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         dependent_name = ""
         dependent_cpf = ""
         
-        # Procurar CNPJ e dados do dependente nas linhas seguintes
         for j in range(idx + 1, min(idx + 8, len(lines))):
             next_line = lines[j].strip()
             
-            cnpj_match = re.search(r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", next_line)
-            if cnpj_match:
-                cnpj = cnpj_match.group(1)
+            if not cnpj:
+                cnpj = _find_cnpj(next_line)
             
-            # Buscar CPF do dependente - formatos:
-            # "CPF DO DEPENDENTE: 123.456.789-00"
-            # "CPF: 123.456.789-00" (quando é claramente de dependente)
             cpf_dep_match = re.search(r"(?:CPF\s+DO\s+)?DEPENDENTE[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", next_line, re.IGNORECASE)
             if cpf_dep_match:
                 dependent_cpf = cpf_dep_match.group(1)
-            else:
-                # Fallback: procurar padrão genérico de CPF (não CNPJ)
+            elif not dependent_cpf:
                 cpf_match = re.search(r"CPF[:\s]+(\d{3}\.\d{3}\.\d{3}-\d{2})", next_line)
                 if cpf_match:
                     dependent_cpf = cpf_match.group(1)
@@ -231,18 +221,32 @@ class IncomePJDependentsExtractor(ISectionExtractor):
         full_name = " ".join(name_parts)
         item_id = generate_item_id(f"{cnpj}{full_name}{dependent_cpf}")
         
-        result = {
-            "payer_name": full_name,
-            "income_from_legal_person": parse_currency(pattern.group(2)),
-            "official_social_security_contribution": parse_currency(pattern.group(3)),
-            "tax_withheld_at_source": parse_currency(pattern.group(4)),
-            "thirteenth_salary": parse_currency(pattern.group(5)),
-            "irrf_on_thirteenth_salary": parse_currency(pattern.group(6)),
-            "cpf_cnpj": cnpj,
-            "id": item_id,
-            "page": page_num,
-            "beneficiary_type": "Dependente"
-        }
+        if m5:
+            result = {
+                "payer_name": full_name,
+                "income_from_legal_person": parse_currency(match.group(2)),
+                "official_social_security_contribution": parse_currency(match.group(3)),
+                "tax_withheld_at_source": parse_currency(match.group(4)),
+                "thirteenth_salary": parse_currency(match.group(5)),
+                "irrf_on_thirteenth_salary": parse_currency(match.group(6)),
+                "cpf_cnpj": cnpj,
+                "id": item_id,
+                "page": page_num,
+                "beneficiary_type": "Dependente"
+            }
+        else:
+            result = {
+                "payer_name": full_name,
+                "income_from_legal_person": parse_currency(match.group(2)),
+                "official_social_security_contribution": 0.0,
+                "tax_withheld_at_source": parse_currency(match.group(3)),
+                "thirteenth_salary": parse_currency(match.group(4)),
+                "irrf_on_thirteenth_salary": parse_currency(match.group(5)),
+                "cpf_cnpj": cnpj,
+                "id": item_id,
+                "page": page_num,
+                "beneficiary_type": "Dependente"
+            }
         
         if dependent_name:
             result["dependent_name"] = dependent_name
@@ -258,19 +262,14 @@ class IncomePJDependentsExtractor(ISectionExtractor):
     def _is_name_continuation(self, line: str) -> bool:
         if len(line) <= 2:
             return False
-        
         if "TOTAL" in line.upper() or "CNPJ" in line.upper():
             return False
-        
         if "Dependente" in line or "CPF" in line:
             return False
-        
         if re.match(r"^\d{2}\.\d{3}\.\d{3}", line):
             return False
-        
-        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\s.,]+$", line):
+        if re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,&]+$", line):
             return True
-        
         return False
     
     def _calculate_totals(self, items: list[dict], pdf_totals: list[float] = None) -> dict:
