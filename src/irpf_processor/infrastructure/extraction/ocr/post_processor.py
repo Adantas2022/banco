@@ -89,6 +89,7 @@ class PostProcessor(IPostProcessor):
         text = self.fix_ocr_errors(text)
         text = self.format_cpf(text)
         text = self.format_cnpj(text)
+        text = self.normalize_us_currency(text)
         text = self.fix_currency(text)
         text = self.remove_artifacts(text)
         text = self.fix_line_breaks(text)
@@ -106,6 +107,7 @@ class PostProcessor(IPostProcessor):
         text = self.fix_ocr_errors(text)
         text = self.format_cpf(text)
         text = self.format_cnpj(text)
+        text = self.normalize_us_currency(text)
         text = self.fix_currency(text)
         text = self.remove_artifacts(text)
         text = self.fix_line_breaks(text)
@@ -207,6 +209,46 @@ class PostProcessor(IPostProcessor):
         text = re.sub(r"\n{3,}", "\n\n", text)
 
         return text.strip()
+
+    def normalize_us_currency(self, text: str) -> str:
+        """Normaliza valores monetários em formato US/misto para formato BR.
+
+        O Document AI ocasionalmente troca separadores de milhar/decimal,
+        produzindo formatos como:
+          - ``150,000.00``  (US puro:  vírgula=milhar, ponto=decimal)
+          - ``150,000,00``  (misto: vírgula=milhar E vírgula=decimal)
+
+        Ambos são convertidos para o formato BR: ``150.000,00``.
+        """
+        original_text = text
+
+        def _us_to_br(m: re.Match) -> str:
+            integer = m.group(1) + m.group(2).replace(",", ".")
+            return f"{integer},{m.group(3)}"
+
+        text = re.sub(
+            r"(\d{1,3})((?:,\d{3})+)\.(\d{2})(?!\d)",
+            _us_to_br,
+            text,
+        )
+
+        def _mixed_to_br(m: re.Match) -> str:
+            integer = m.group(1) + m.group(2).replace(",", ".")
+            return f"{integer},{m.group(3)}"
+
+        text = re.sub(
+            r"(\d{1,3})((?:,\d{3})+),(\d{2})(?!\d)",
+            _mixed_to_br,
+            text,
+        )
+
+        if text != original_text:
+            corrections = sum(
+                1 for a, b in zip(original_text, text) if a != b
+            ) // 2 or 1
+            self._record_correction("currency_format_normalize", corrections)
+
+        return text
 
     def fix_currency(self, text: str) -> str:
         pattern = r"R\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2}))"
