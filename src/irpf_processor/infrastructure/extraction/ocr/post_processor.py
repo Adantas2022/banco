@@ -274,7 +274,7 @@ class PostProcessor(IPostProcessor):
     def fix_line_breaks(self, text: str) -> str:
         original_text = text
         
-        text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+        text = re.sub(r"(\w)-\n([a-zA-ZÀ-ÿ])", r"\1\2", text)
 
         name_pattern = r"(NOME[:\s]+\w+)\n(\w+)"
         text = re.sub(name_pattern, r"\1 \2", text)
