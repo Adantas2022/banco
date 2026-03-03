@@ -42,22 +42,19 @@ class AssetsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
-        pdf_totals = []  # Totais do PDF
+        pdf_totals = []
         
-        # Resetar estado para nova extração
         self._section_started = False
         self._section_start_page = -1
         
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
         
         in_section = False
-        for page_num, page_text in sorted_pages:
+        for page_idx, (page_num, page_text) in enumerate(sorted_pages):
             upper_text = page_text.upper()
             
-            # Verificar todos os marcadores de seção (incluindo variações OCR)
             if any(marker in upper_text for marker in self.SECTION_MARKERS):
                 in_section = True
-                # Rastrear página onde a seção iniciou (BUG #81620 fix)
                 if not self._section_started:
                     self._section_started = True
                     self._section_start_page = page_num
@@ -65,13 +62,18 @@ class AssetsExtractor(ISectionExtractor):
             if not in_section:
                 continue
             
-            # BUG #81620 fix: Verificar fim de seção apenas após a seção ter iniciado
-            # e não na mesma página que iniciou (evita falsos positivos)
+            next_page_text = (
+                sorted_pages[page_idx + 1][1]
+                if page_idx + 1 < len(sorted_pages)
+                else None
+            )
+            
             if self._has_section_end_heading(page_text, page_num):
-                page_items = self._extract_from_page(page_text, page_num)
+                page_items = self._extract_from_page(
+                    page_text, page_num, next_page_text=next_page_text
+                )
                 items.extend(page_items)
                 
-                # Extrair total do PDF antes de sair da seção
                 if not pdf_totals:
                     page_totals = extract_section_total(
                         page_text,
@@ -87,10 +89,11 @@ class AssetsExtractor(ISectionExtractor):
                 if orphan_lines and items[-1].get("additional_info"):
                     self._update_item_with_orphan_lines(items[-1], orphan_lines)
             
-            page_items = self._extract_from_page(page_text, page_num)
+            page_items = self._extract_from_page(
+                page_text, page_num, next_page_text=next_page_text
+            )
             items.extend(page_items)
             
-            # Extrair total do PDF (geralmente na última página da seção)
             if not pdf_totals:
                 page_totals = extract_section_total(
                     page_text,
@@ -191,9 +194,15 @@ class AssetsExtractor(ISectionExtractor):
     
     CURRENCY_RE = r"(\d[\d.]*,\d{2})"
 
-    def _extract_from_page(self, page_text: str, page_num: int) -> list[dict]:
+    def _extract_from_page(
+        self,
+        page_text: str,
+        page_num: int,
+        next_page_text: Optional[str] = None,
+    ) -> list[dict]:
         items = []
         lines = page_text.split("\n")
+        next_page_lines = next_page_text.split("\n") if next_page_text else []
         
         two_val = re.compile(
             rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
@@ -215,7 +224,18 @@ class AssetsExtractor(ISectionExtractor):
                     continue
             
             if not asset_match:
-                item = self._try_fallback_asset(lines, i, page_num)
+                item = self._try_fallback_asset(
+                    lines, i, page_num, next_page_lines=next_page_lines
+                )
+                if item:
+                    items.append(item)
+                    i = item.pop("_next_index", i + 1)
+                    continue
+            
+            if not asset_match:
+                item = self._try_bare_header_asset(
+                    lines, i, page_num, next_page_lines=next_page_lines
+                )
                 if item:
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
@@ -229,7 +249,8 @@ class AssetsExtractor(ISectionExtractor):
         self,
         lines: list[str],
         idx: int,
-        page_num: int
+        page_num: int,
+        next_page_lines: Optional[list[str]] = None,
     ) -> Optional[dict]:
         line = lines[idx].strip()
         
@@ -257,11 +278,21 @@ class AssetsExtractor(ISectionExtractor):
             if len(desc) < 5:
                 return None
             v2 = self._find_orphan_value(lines, idx + 1)
+            if not v2 and next_page_lines:
+                v2 = self._find_orphan_value(next_page_lines, 0, max_lines=10)
             if not v2:
-                return None
+                v2 = v1
         else:
             desc = rest.strip()
             v1, v2 = self._find_two_orphan_values(lines, idx + 1)
+            if (not v1 or not v2) and next_page_lines:
+                v1_next, v2_next = self._find_two_orphan_values(
+                    next_page_lines, 0, max_lines=10
+                )
+                if not v1:
+                    v1 = v1_next
+                if not v2:
+                    v2 = v2_next
             if not v1 or not v2:
                 return None
         
@@ -273,6 +304,67 @@ class AssetsExtractor(ISectionExtractor):
         
         fake = _FakeMatch({1: group_code, 2: asset_code, 3: desc, 4: v1, 5: v2})
         return self._parse_asset_block(lines, idx, fake, page_num)
+
+    def _try_bare_header_asset(
+        self,
+        lines: list[str],
+        idx: int,
+        page_num: int,
+        next_page_lines: Optional[list[str]] = None,
+    ) -> Optional[dict]:
+        """Handle OCR artifacts where group code appears alone on a line.
+
+        Pattern: ``07 POR\\n01 TREND OURO FIM 156.438,76 199.019,06``
+        The group code (07) is on its own line (possibly with short OCR noise),
+        and the asset code + description + values appear on the next line.
+        """
+        line = lines[idx].strip()
+        bare = re.match(r"^(\d{2})(?:\s+\S{1,5})?\s*$", line)
+        if not bare:
+            return None
+        group_code = bare.group(1)
+
+        for j in range(idx + 1, min(idx + 3, len(lines))):
+            nxt = lines[j].strip()
+            if not nxt:
+                continue
+            code_rest = re.match(r"^(\d{2})\s+(.+)", nxt)
+            if not code_rest:
+                continue
+            asset_code = code_rest.group(1)
+            rest = code_rest.group(2)
+            vals = re.findall(self.CURRENCY_RE, rest)
+            if len(vals) >= 2:
+                v1, v2 = vals[-2], vals[-1]
+                desc = rest[:rest.rfind(vals[-2])].strip()
+            elif len(vals) == 1:
+                v1 = vals[0]
+                desc = rest[:rest.rfind(v1)].strip()
+                v2 = self._find_orphan_value(lines, j + 1)
+                if not v2 and next_page_lines:
+                    v2 = self._find_orphan_value(next_page_lines, 0, max_lines=10)
+                if not v2:
+                    v2 = v1
+            else:
+                desc = rest.strip()
+                v1, v2 = self._find_two_orphan_values(lines, j + 1)
+                if not v1 or not v2:
+                    continue
+            if len(desc) < 3:
+                continue
+
+            class _FakeMatch:
+                def __init__(self, groups):
+                    self._groups = groups
+                def group(self, n):
+                    return self._groups[n]
+
+            fake = _FakeMatch({1: group_code, 2: asset_code, 3: desc, 4: v1, 5: v2})
+            item = self._parse_asset_block(lines, idx, fake, page_num)
+            if item:
+                item["_next_index"] = j + 1
+            return item
+        return None
 
     def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
         for j in range(start, min(start + max_lines, len(lines))):
@@ -287,11 +379,16 @@ class AssetsExtractor(ISectionExtractor):
     def _find_two_orphan_values(
         self, lines: list[str], start: int, max_lines: int = 25
     ) -> tuple[Optional[str], Optional[str]]:
-        found = []
+        found: list[str] = []
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
             if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", s):
                 break
+            two_on_line = re.match(
+                rf"^{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$", s
+            )
+            if two_on_line:
+                return two_on_line.group(1), two_on_line.group(2)
             m = re.match(rf"^{self.CURRENCY_RE}\s*$", s)
             if m:
                 found.append(m.group(1))
@@ -329,6 +426,13 @@ class AssetsExtractor(ISectionExtractor):
             next_line = lines[j].strip()
             
             if re.match(r"^(?:\d+\s+)?\d{2}\s+\d{2}\s+", next_line):
+                break
+            
+            if (
+                re.match(r"^\d{2}(?:\s+\S{1,5})?\s*$", next_line)
+                and j + 1 < len(lines)
+                and re.match(r"^\d{2}\s+", lines[j + 1].strip())
+            ):
                 break
             
             # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
