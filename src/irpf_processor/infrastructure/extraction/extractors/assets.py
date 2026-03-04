@@ -192,7 +192,8 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
-    CURRENCY_RE = r"(\d[\d.]*,\d{2})"
+    # Aceita formato BR (150.000,00) E formato US (150,000.00)
+    CURRENCY_RE = r"(\d[\d.]*,\d{2}|\d[\d,]*\.\d{2})"
 
     def _extract_from_page(
         self,
@@ -465,6 +466,10 @@ class AssetsExtractor(ISectionExtractor):
         
         full_description = " ".join(description_parts)
         full_description = re.sub(r"\s+", " ", full_description).strip()
+        # Bug #86842: Remover valores monetários US-format residuais do final da descrição
+        # Ex: "AERONAVE 200,000.00" → "AERONAVE", "LOJA EM SAO PAULO 180,000.00" → "LOJA EM SAO PAULO"
+        # Também remove padrões como "COME - COTAS 16,000.00" → "COME - COTAS"
+        full_description = re.sub(r"\s+\d[\d,]*\.\d{2}\s*$", "", full_description).strip()
         
         additional_info = self._build_additional_info(
             group_code, raw_lines, full_description
@@ -561,7 +566,7 @@ class AssetsExtractor(ISectionExtractor):
                     if val and val != ":" and len(val) >= 1:
                         info["number"] = val
             
-            if "Comp" in line and ":" in line:
+            if "Comp" in line and (":" in line or "Complemento" in line):
                 m = re.search(r"Comp[^:]*[:\s]+([A-ZÀ-Ú][A-Za-zÀ-ÿ\s.,0-9]+?)(?:\s+Bairro|$)", line)
                 if m:
                     val = m.group(1).strip()
@@ -614,19 +619,25 @@ class AssetsExtractor(ISectionExtractor):
             # 1. "Área Total: 529,5 m²" (na mesma linha)
             # 2. "Área Total:" em uma linha, valor na próxima linha
             # 3. "Data de Aquisição: / /	82,0 ha" (área junto com data)
+            # 4. "Área Total: 0,0" (sem unidade - Bug #86842)
             if "Área" in line or "Area" in line:
-                # Primeiro tenta na mesma linha
+                # Primeiro tenta na mesma linha com unidade
                 m = re.search(r"[ÁA]rea[^:]*[:\s]*([\d.,]+\s*(?:m[²2]|ha))", line, re.IGNORECASE)
                 if m:
                     info["area"] = m.group(1).strip()
                 elif not info["area"]:
-                    # Área na próxima linha (formato: "Área Total:" sozinho)
-                    # A área pode estar na linha de "Data de Aquisição"
-                    for j in range(i + 1, min(i + 3, len(lines))):
-                        area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", lines[j], re.IGNORECASE)
-                        if area_m:
-                            info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
-                            break
+                    # Fallback: capturar valor sem unidade (ex: "0,0")
+                    m_no_unit = re.search(r"[ÁA]rea[^:]*[:\s]*([\d]+[.,][\d]+)", line, re.IGNORECASE)
+                    if m_no_unit:
+                        info["area"] = m_no_unit.group(1).strip()
+                    else:
+                        # Área na próxima linha (formato: "Área Total:" sozinho)
+                        # A área pode estar na linha de "Data de Aquisição"
+                        for j in range(i + 1, min(i + 3, len(lines))):
+                            area_m = re.search(r"([\d.,]+)\s*(ha|m[²2])", lines[j], re.IGNORECASE)
+                            if area_m:
+                                info["area"] = f"{area_m.group(1)} {area_m.group(2)}"
+                                break
             
             # Capturar área de linha "Data de Aquisição: / /	82,0 ha"
             if "Data de Aquisição" in line:
@@ -762,7 +773,7 @@ class AssetsExtractor(ISectionExtractor):
             elif "REGISTRO DE AERONAVE" in upper_line:
                 m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", line, re.IGNORECASE)
                 if m:
-                    info["aircraft_registration"] = m.group(1).strip()
+                    info["airship_registration"] = m.group(1).strip()
         
         # Fallback: buscar no raw_text se não encontrou nos lines
         if "renavam" not in info:
@@ -770,10 +781,10 @@ class AssetsExtractor(ISectionExtractor):
             if m:
                 info["renavam"] = m.group(1)
         
-        if "aircraft_registration" not in info:
+        if "airship_registration" not in info:
             m = re.search(r"Registro de Aeronave[:\s]*([A-Z0-9]+)", raw_text, re.IGNORECASE)
             if m:
-                info["aircraft_registration"] = m.group(1).strip()
+                info["airship_registration"] = m.group(1).strip()
         
         return info
     
@@ -1032,7 +1043,7 @@ class AssetsExtractor(ISectionExtractor):
             "Banco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
             "CNPJ", "Lucro ou", "Valor Recebido", "Imposto",
-            "CEI", "CNO", "CEI/CNO", "Aplicação Financeira", "UF",
+            "CEI", "CNO", "CEI/CNO", "CEP", "Aplicação Financeira", "UF",
             "Bairro", "Data de Aquisição", "CNPJ do Fundo", "CNPJ Custodiante",
             "CIB", "Nirf"
         )
@@ -1044,6 +1055,11 @@ class AssetsExtractor(ISectionExtractor):
             return False
         
         if re.match(r"^\d+$", line):
+            return False
+        
+        # Bug #86842: Linhas que são apenas valores monetários US-format não são descrição
+        # Ex: "200,000.00", "180,000.00", "16,000.00"
+        if re.match(r"^\d[\d,]*\.\d{2}\s*$", line):
             return False
         
         # Tratamento especial para linhas que começam com "CPF":
