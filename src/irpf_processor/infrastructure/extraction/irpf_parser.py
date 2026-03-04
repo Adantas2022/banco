@@ -11,6 +11,7 @@ Este módulo implementa:
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
@@ -368,7 +369,7 @@ class IRPFParser:
         with self._pdfplumber.open(pdf_file) as pdf:
             total_pages = len(pdf.pages)
             for page_num, page in enumerate(pdf.pages, 1):
-                page_text = page.extract_text() or ""
+                page_text = unicodedata.normalize("NFC", page.extract_text() or "")
                 pages_text[page_num] = page_text
                 full_text += page_text + "\n"
         
