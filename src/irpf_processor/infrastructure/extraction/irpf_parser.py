@@ -327,7 +327,9 @@ class IRPFParser:
         
         for extractor in extractors:
             self._run_extractor(extractor, context, result)
-        
+
+        self._propagate_rural_exempt_to_exempt_income(result)
+
         if self._enable_validation and self._validation_executor:
             self._validation_summary = self._validation_executor.get_validation_summary(
                 result.to_dict()
@@ -469,11 +471,55 @@ class IRPFParser:
     def _calculate_equity_evolution(self, result: IRPFDeclarationResult) -> int:
         if not result.assets_declaration:
             return 0
-        
+
         current_year = result.assets_declaration.get("current_year_total_value", 0.0)
         last_year = result.assets_declaration.get("last_year_total_value", 0.0)
-        
+
         return int(current_year - last_year)
+
+    def _propagate_rural_exempt_to_exempt_income(
+        self, result: IRPFDeclarationResult
+    ) -> None:
+        if not result.exempt_income:
+            return
+        if not result.calculation_of_rural_results_in_brazil:
+            return
+
+        subsections = result.exempt_income.get("subsections", {})
+        existing = subsections.get("exempt_portion_from_rural_activity")
+        if existing and existing.get("total_value", 0) > 0:
+            return
+
+        rural_subs = result.calculation_of_rural_results_in_brazil.get("subsections", {})
+        exempt_result = rural_subs.get("calculation_of_exempt_result")
+        if not exempt_result:
+            return
+
+        items = exempt_result.get("items", [])
+        if not items:
+            return
+
+        rural_value = 0.0
+        for item in items:
+            val = item.get("value", 0)
+            if isinstance(val, (int, float)) and val > 0:
+                rural_value = float(val)
+
+        if rural_value <= 0:
+            return
+
+        subsections["exempt_portion_from_rural_activity"] = {
+            "name": "15. Parcela não tributável correspondente à atividade rural",
+            "code": "15",
+            "total_value": round(rural_value, 2),
+            "valid_total": True,
+            "items": None,
+        }
+
+        new_total = sum(
+            s.get("total_value", 0) for s in subsections.values()
+        )
+        result.exempt_income["total_value"] = round(new_total, 2)
 
     _ORPHAN_CURRENCY_RE = re.compile(r"^\d[\d.]*,\d{2}$")
 

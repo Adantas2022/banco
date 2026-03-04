@@ -102,6 +102,13 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "has_items": True,
             "format": "standard"
         },
+        "exempt_portion_from_rural_activity": {
+            "code": "15",
+            "name": "15. Parcela não tributável correspondente à atividade rural",
+            "keywords": ["parcela não tributável", "atividade rural", "rural"],
+            "has_items": False,
+            "format": "total_only"
+        },
         "incorporation_reserves_into_capital_or_share_bonuses": {
             "code": "18",
             "name": "18. Incorporação de reservas ao capital / Bonificações em ações",
