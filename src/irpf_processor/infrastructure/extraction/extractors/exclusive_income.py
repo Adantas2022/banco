@@ -522,18 +522,61 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         }
     
     def _extract_financial_abroad(self, section_text: str) -> Optional[dict]:
-        """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior.
-        
-        BUG #81758 fix: Corrigido pattern para capturar o valor correto (não a Lei).
-        O texto tem formato: "12. Aplicações Financeiras... (Lei 14.754/2023) 3.580,00"
-        O pattern antigo capturava 14.754 (número da Lei) em vez de 3.580,00.
-        """
-        for line in section_text.split('\n'):
-            match = re.search(
-                r"12[.\s]+Aplica[çc][õo]es\s+Financeiras.*?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
-                line,
-                re.IGNORECASE
-            )
+        """Extrai 12. Aplicações Financeiras e Lucros e Dividendos no Exterior."""
+        title_pattern = re.compile(
+            r"12[.\s]+Aplica[çcg][õo]es\s+Financeiras",
+            re.IGNORECASE,
+        )
+        inline_value_pattern = re.compile(
+            r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*$"
+        )
+        standalone_value_pattern = re.compile(
+            r"^\s*(\d{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$"
+        )
+        next_subsection_pattern = re.compile(r"^(?:13)[.\s]+[A-Z]", re.IGNORECASE)
+
+        lines = section_text.split('\n')
+        found_title = False
+        lookahead = 0
+
+        for line in lines:
+            stripped = line.strip()
+
+            if not found_title:
+                if title_pattern.search(line):
+                    match = inline_value_pattern.search(line)
+                    if match:
+                        value = parse_currency(match.group(1))
+                        if value > 0:
+                            return {
+                                "name": "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+                                "code": "12",
+                                "total_value": value,
+                                "valid_total": True,
+                                "items": None,
+                            }
+                    found_title = True
+                    lookahead = 0
+                continue
+
+            if not stripped:
+                lookahead += 1
+                if lookahead > 5:
+                    return None
+                continue
+
+            lookahead += 1
+
+            if next_subsection_pattern.match(stripped):
+                return None
+            if re.match(r"^\s*TOTAL", stripped, re.IGNORECASE):
+                return None
+            if any(m in stripped.upper() for m in self.SECTION_END_MARKERS):
+                return None
+            if lookahead > 5:
+                return None
+
+            match = standalone_value_pattern.match(line)
             if match:
                 value = parse_currency(match.group(1))
                 if value > 0:
@@ -542,8 +585,9 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         "code": "12",
                         "total_value": value,
                         "valid_total": True,
-                        "items": None
+                        "items": None,
                     }
+
         return None
     
     def _extract_others(self, section_lines: list[tuple[int, str]]) -> dict:
