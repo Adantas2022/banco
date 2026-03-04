@@ -495,3 +495,139 @@ class TestAssetsExtractorAdditionalInfo:
             item = result["items"][0]
             if "additional_info" in item:
                 assert item["additional_info"].get("is_payment_account") is True
+
+
+class TestBug86842USFormatCurrency:
+    """Bug #86842: DocumentAI retorna valores com '.' e ',' invertidos (formato US)."""
+
+    def test_parses_us_format_currency_values(self, extractor):
+        """Valores US-format como 150,000.00 devem ser parseados como 150000.0."""
+        page_text = "DECLARACAO DE BENS E DIREITOS\n01 01 APARTAMENTO RESIDENCIAL 150,000.00 160,000.00"
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        item = result["items"][0]
+        assert item["before_year_asset_value"] == 150000.0
+        assert item["current_year_asset_value"] == 160000.0
+
+    def test_description_does_not_contain_us_currency_values(self, extractor):
+        """asset_description NÃO deve conter valores monetários US-format residuais."""
+        page_text = "DECLARACAO DE BENS E DIREITOS\n02 02 AERONAVE 200,000.00 200,000.00\nRegistro de Aeronave: 12343241"
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        item = result["items"][0]
+        assert item["asset_description"] == "AERONAVE"
+        assert "200,000.00" not in item["asset_description"]
+
+    def test_description_loja_does_not_contain_values(self, extractor):
+        """'LOJA EM SAO PAULO 180,000.00' deve ficar 'LOJA EM SAO PAULO'."""
+        page_text = "DECLARACAO DE BENS E DIREITOS\n01 18 LOJA EM SAO PAULO 180,000.00 180,000.00"
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        item = result["items"][0]
+        assert item["asset_description"] == "LOJA EM SAO PAULO"
+
+    def test_mixed_br_and_us_format(self, extractor):
+        """Mistura de formatos BR e US na mesma página deve funcionar."""
+        page_text = """DECLARACAO DE BENS E DIREITOS
+01 01 IMOVEL PRIMEIRO 150.000,00 160.000,00
+01 02 IMOVEL SEGUNDO 200,000.00 220,000.00"""
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 2
+        assert result["items"][0]["before_year_asset_value"] == 150000.0
+        assert result["items"][1]["before_year_asset_value"] == 200000.0
+
+    def test_totals_correct_with_us_format(self, extractor):
+        """Totais devem estar corretos quando valores vêm em formato US."""
+        page_text = """DECLARACAO DE BENS E DIREITOS
+01 01 IMOVEL A 150,000.00 160,000.00
+01 02 IMOVEL B 200,000.00 220,000.00"""
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert result["last_year_total_value"] == 350000.0
+        assert result["current_year_total_value"] == 380000.0
+
+    def test_area_extracts_zero_value_without_unit(self, extractor):
+        """Área com valor '0,0' sem unidade deve ser extraída como '0,0'."""
+        page_text = """DECLARACAO DE BENS E DIREITOS
+01 01 IMOVEL 100.000,00 120.000,00
+Área Total: 0,0"""
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        item = result["items"][0]
+        assert item["additional_info"]["area"] == "0,0"
+
+    def test_airship_registration_field_name(self, extractor):
+        """Campo deve ser 'airship_registration', não 'aircraft_registration'."""
+        page_text = """DECLARACAO DE BENS E DIREITOS
+02 02 AERONAVE 400.000,00 410.000,00
+Registro de Aeronave: PTABC"""
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        item = result["items"][0]
+        assert "airship_registration" in item["additional_info"]
+        assert "aircraft_registration" not in item["additional_info"]
+        assert item["additional_info"]["airship_registration"] == "PTABC"
+
+    def test_parse_currency_us_format(self):
+        """parse_currency deve lidar com formato US."""
+        assert parse_currency("150,000.00") == 150000.0
+        assert parse_currency("1,234,567.89") == 1234567.89
+        assert parse_currency("200,000.00") == 200000.0
+
+    def test_parse_currency_br_format_still_works(self):
+        """parse_currency deve continuar funcionando com formato BR."""
+        assert parse_currency("150.000,00") == 150000.0
+        assert parse_currency("1.234.567,89") == 1234567.89
+        assert parse_currency("200.000,00") == 200000.0
+
