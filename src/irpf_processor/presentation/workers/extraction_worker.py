@@ -12,6 +12,7 @@ from pymongo import MongoClient
 from irpf_processor.config import get_settings
 from irpf_processor.infrastructure.extraction import IRPFParser, ReceiptParser, is_receipt_document
 from irpf_processor.infrastructure.extraction.text_extractor import PdfTextExtractor
+from irpf_processor.infrastructure.persistence.extraction_texts_repository import save_extraction_texts
 from irpf_processor.infrastructure.storage import get_storage_service, extract_storage_key
 from irpf_processor.domain.enums import DocumentStatus, DocumentCategory, PdfType
 from irpf_processor.shared.logging import get_logger
@@ -163,6 +164,26 @@ def process_document(document_id: str, tenant_id: str) -> None:
             
             extraction_duration = time.perf_counter() - extraction_start
             pdf_type = PdfType.DIGITAL.value
+
+            # Task #87259: Armazenar textos usados na extração REGEX
+            try:
+                ctx = getattr(parser, "last_extraction_context", None)
+                if ctx:
+                    save_extraction_texts(
+                        db=db,
+                        document_id=document_id,
+                        tenant_id=tenant_id,
+                        document_type="DIGITAL",
+                        full_text=ctx.full_text,
+                        pages_text=ctx.pages_text,
+                        total_pages=ctx.total_pages,
+                    )
+            except Exception as texts_err:
+                logger.warning(
+                    "Failed to save extraction texts (non-blocking)",
+                    document_id=document_id,
+                    error=str(texts_err),
+                )
 
             record_extraction_duration(
                 tenant_id=tenant_id,

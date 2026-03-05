@@ -18,6 +18,7 @@ from irpf_processor.infrastructure.extraction.ocr import (
     TesseractEngine,
 )
 from irpf_processor.infrastructure.storage import get_storage_service, extract_storage_key
+from irpf_processor.infrastructure.persistence.extraction_texts_repository import save_extraction_texts
 from irpf_processor.shared.logging import get_logger
 from irpf_processor.shared.metrics import (
     WORKER_JOBS_TOTAL,
@@ -214,6 +215,24 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
             final_confidence = min(irpf_result.confidence, ocr_result.confidence)
 
             result_dict = irpf_result.to_dict()
+
+            # Task #87259: Armazenar textos usados na extração REGEX
+            try:
+                save_extraction_texts(
+                    db=db,
+                    document_id=document_id,
+                    tenant_id=tenant_id,
+                    document_type="IMAGE",
+                    full_text=normalized_ocr_text,
+                    pages_text=pages_text,
+                    total_pages=ocr_result.total_pages,
+                )
+            except Exception as texts_err:
+                logger.warning(
+                    "Failed to save extraction texts (non-blocking)",
+                    document_id=document_id,
+                    error=str(texts_err),
+                )
 
             for warning in irpf_result.warnings:
                 warning_type = warning.split(":")[0] if ":" in warning else "general"
