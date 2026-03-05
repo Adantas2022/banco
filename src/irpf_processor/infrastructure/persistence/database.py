@@ -84,5 +84,12 @@ async def _create_indexes(db: AsyncIOMotorDatabase) -> None:
         [("tenant_id", ASCENDING), ("confidence", DESCENDING)],
         name="idx_tenant_confidence",
     )
+
+    extraction_texts = db["extraction_texts"]
+    await extraction_texts.create_index(
+        [("tenant_id", ASCENDING), ("document_id", ASCENDING)],
+        unique=True,
+        name="idx_tenant_document",
+    )
     
     logger.info("Database indexes created")

@@ -232,6 +232,7 @@ class IRPFParser:
         self._template_registry = template_registry or YamlTemplateRegistry()
         self._pdfplumber = None
         self._last_profile: Optional[DocumentProfile] = None
+        self._last_context: Optional[ExtractionContext] = None
         self._current_template: Optional[IRPFTemplate] = None
         self._detected_version: Optional[str] = None
         self._enable_validation = enable_validation
@@ -255,6 +256,15 @@ class IRPFParser:
     @property
     def validation_summary(self) -> Optional[dict]:
         return self._validation_summary
+    
+    @property
+    def last_extraction_context(self) -> Optional[ExtractionContext]:
+        """Retorna o ExtractionContext do último documento processado.
+        
+        Permite acesso aos textos (full_text, pages_text) usados na
+        aplicação de REGEX durante a extração.
+        """
+        return self._last_context
     
     def _create_extractors_for_profile(
         self, 
@@ -298,6 +308,7 @@ class IRPFParser:
             IRPFDeclarationResult com os dados extraídos
         """
         context = self._create_context(pdf_source)
+        self._last_context = context
         result = IRPFDeclarationResult(total_pages=context.total_pages)
         
         self._detected_version = version or self._template_registry.detect_version(context.full_text)
@@ -624,6 +635,7 @@ class IRPFParser:
         warning_message: str,
     ) -> IRPFDeclarationResult:
         result = IRPFDeclarationResult(total_pages=context.total_pages)
+        self._last_context = context
 
         self._detected_version = version or self._template_registry.detect_version(context.full_text)
         self._current_template = self._template_registry.get_template_or_latest(self._detected_version)
