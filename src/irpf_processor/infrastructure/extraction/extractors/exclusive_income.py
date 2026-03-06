@@ -528,10 +528,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             re.IGNORECASE,
         )
         inline_value_pattern = re.compile(
-            r"(\d{1,3}(?:\.\d{3})*,\d{2})\s*$"
+            r"(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})\s*$"
         )
         standalone_value_pattern = re.compile(
-            r"^\s*(\d{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$"
+            r"^\s*(\d{1,3}(?:[.,\s]?\d{3})*[.,]\d{2})\s*$"
         )
         next_subsection_pattern = re.compile(r"^(?:13)[.\s]+[A-Z]", re.IGNORECASE)
 
