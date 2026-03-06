@@ -87,11 +87,11 @@ class RuralDebtsExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper()
             
-            if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
+            if self._is_section_header_line(line) and "EXTERIOR" not in upper_line:
                 in_section = True
                 continue
             
-            if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
+            if in_section and self._is_section_header_line(line) and "EXTERIOR" in upper_line:
                 break
             
             if not in_section:
@@ -118,12 +118,12 @@ class RuralDebtsExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            if self.SECTION_MARKER in upper_line and "EXTERIOR" not in upper_line:
+            if self._is_section_header_line(line) and "EXTERIOR" not in upper_line:
                 in_section = True
                 i += 1
                 continue
             
-            if in_section and self.SECTION_MARKER in upper_line and "EXTERIOR" in upper_line:
+            if in_section and self._is_section_header_line(line) and "EXTERIOR" in upper_line:
                 break
             
             if in_section and self._is_section_total_line(line):
@@ -178,6 +178,23 @@ class RuralDebtsExtractor(ISectionExtractor):
         if re.match(r"^[\d.,\s]+$", rest):
             return True
         return False
+    
+    def _is_section_header_line(self, line: str) -> bool:
+        """Distingue header de seção de itens com descrição similar.
+        
+        Retorna True para headers reais como:
+            'DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)'
+        Retorna False para itens cujo texto contém o marker:
+            '1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100,000.00 120,000.00 20,000.00'
+        """
+        stripped = line.strip()
+        upper = stripped.upper()
+        if self.SECTION_MARKER not in upper:
+            return False
+        # Se a linha começa com número de item, é um item, não header
+        if re.match(r"^\d{1,3}\s+", stripped):
+            return False
+        return True
     
     def _clean_ocr_prefix(self, line: str) -> str:
         """Remove prefixos OCR espúrios antes do número do item (ex: 'CO 6' -> '6')."""
@@ -263,7 +280,7 @@ class RuralDebtsExtractor(ISectionExtractor):
             if self._is_section_total_line(next_line):
                 break
             
-            if "DÍVIDAS VINCULADAS" in next_line.upper():
+            if self._is_section_header_line(next_line):
                 break
             
             if re.match(r"^Página\s+\d+\s+de", next_line, re.IGNORECASE):
