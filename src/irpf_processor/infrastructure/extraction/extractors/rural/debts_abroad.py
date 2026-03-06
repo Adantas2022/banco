@@ -86,17 +86,17 @@ class RuralDebtsAbroadExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper()
             
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 continue
-            
+
             if not in_section:
                 continue
-            
+
             for end in self.SECTION_END_MARKERS:
                 if upper_line.strip().startswith(end):
                     return []
-            
+
             if upper_line.strip().startswith("TOTAL"):
                 matches = re.findall(num_pattern, line)
                 if matches:
@@ -118,12 +118,11 @@ class RuralDebtsAbroadExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 i += 1
                 continue
-            
+
             if not in_section:
                 i += 1
                 continue
