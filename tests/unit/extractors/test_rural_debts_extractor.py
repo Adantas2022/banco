@@ -1,6 +1,7 @@
 """Testes unitários para RuralDebtsExtractor.
 
 Bug #87044 - Corrigir colisão entre section marker e descrição de item.
+Bug #82852 - year_before_last_value incorreto (fallback trailing 3val).
 """
 
 import pytest
@@ -113,6 +114,64 @@ Página 17 de 23"""
         assert tv["last_year_value"]["valid"] is True
         assert tv["paid_value_in_last_year"]["amount"] == 220000.0
         assert tv["paid_value_in_last_year"]["valid"] is True
+
+
+class TestBug82852TrailingValues:
+    """Bug #82852: Itens com descrição contendo dígitos/vírgulas (ex: 16,66%)
+    falham no _ITEM_3VAL_RE e caem no _ITEM_2VAL_RE com year_before=0."""
+
+    PAGE_TEXT = (
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 CEDULA RURAL 19000368 37.905,24 0,00 39.654,62\n"
+        "2 CONTRATOS BCO SANTANDER 160.380,29 671.977,30 59.223,92\n"
+        "3 16,66% CONTRATO C 106213047 COOP DE 2.298,16 0,00 2.298,16\n"
+        "4 CPR SANTANDER 23002357 03/23 CNCTO 204.272,50 1.245.672,40 32.337,69\n"
+        "TOTAL 405.056,19 1.917.649,70 133.574,85\n"
+    )
+
+    def test_finds_all_4_items(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        assert len(items) == 4
+
+    def test_item3_year_before_not_zero(self, extractor):
+        """Bug #82852: item 3 year_before deve ser 2298.16, não 0.0."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert item3["year_before_last_value"] == 2298.16
+
+    def test_item3_all_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert item3["year_before_last_value"] == 2298.16
+        assert item3["last_year_value"] == 0.0
+        assert item3["paid_value_in_last_year"] == 2298.16
+
+    def test_item4_year_before_not_zero(self, extractor):
+        """Bug #82852: item 4 year_before deve ser 204272.50, não 0.0."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item4 = [it for it in items if it["item"] == 4][0]
+        assert item4["year_before_last_value"] == 204272.50
+
+    def test_item4_all_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item4 = [it for it in items if it["item"] == 4][0]
+        assert item4["year_before_last_value"] == 204272.50
+        assert item4["last_year_value"] == 1245672.40
+        assert item4["paid_value_in_last_year"] == 32337.69
+
+    def test_sum_year_before_matches(self, extractor):
+        """Soma de year_before deve bater com o total."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        total = sum(it["year_before_last_value"] for it in items)
+        expected = 37905.24 + 160380.29 + 2298.16 + 204272.50
+        assert abs(total - expected) < 0.01
+
+    def test_item3_description(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert "CONTRATO C 106213047" in item3["description"]
 
 
 class TestExteriorSectionNotMixed:

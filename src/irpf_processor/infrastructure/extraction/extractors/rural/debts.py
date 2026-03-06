@@ -18,6 +18,9 @@ _ITEM_2VAL_RE = re.compile(
 )
 _ITEM_START_RE = re.compile(r"^(\d{1,3})\s+")
 
+# Padrão para extrair valores monetários do final da linha (fallback robusto)
+_CURRENCY_VAL_RE = re.compile(r"\d[\d.,]*[.,]\d{2}")
+
 
 class RuralDebtsExtractor(ISectionExtractor):
     """Extrai dívidas vinculadas à atividade rural."""
@@ -147,6 +150,19 @@ class RuralDebtsExtractor(ISectionExtractor):
                     i = item.pop("_next_index", i + 1)
                     continue
             
+            # Fallback: tentar extrair 3 valores do final da linha
+            # mesmo quando _ITEM_3VAL_RE falha (ex: descrição com
+            # dígitos/vírgulas como '16,66%' que confundem .+?)
+            item_start = _ITEM_START_RE.match(cleaned)
+            if item_start and not m3:
+                item = self._try_parse_trailing_3val(
+                    cleaned, item_start, lines, i, page_num
+                )
+                if item:
+                    items.append(item)
+                    i = item.pop("_next_index", i + 1)
+                    continue
+            
             m2 = _ITEM_2VAL_RE.match(cleaned)
             if m2:
                 item = self._parse_debt_2val(m2, lines, i, page_num)
@@ -258,6 +274,62 @@ class RuralDebtsExtractor(ISectionExtractor):
             "year_before_last_value": 0.0,
             "last_year_value": val1,
             "paid_value_in_last_year": val2,
+            "id": item_id,
+            "page": page_num,
+            "_next_index": j
+        }
+    
+    def _try_parse_trailing_3val(
+        self,
+        cleaned: str,
+        item_start: re.Match,
+        lines: list[str],
+        idx: int,
+        page_num: int,
+    ) -> Optional[dict]:
+        """Fallback robusto: extrai 3 valores monetários do final da linha.
+        
+        Usado quando _ITEM_3VAL_RE falha (ex: descrição contém
+        dígitos/vírgulas como '16,66%' que confundem o lazy .+?).
+        Usa re.findall para encontrar todos os padrões monetários
+        e pega os 3 últimos.
+        """
+        all_vals = _CURRENCY_VAL_RE.findall(cleaned)
+        if len(all_vals) < 3:
+            return None
+        
+        # Os 3 últimos valores são: before, current, paid
+        v1_str, v2_str, v3_str = all_vals[-3], all_vals[-2], all_vals[-1]
+        
+        # Encontrar onde o primeiro dos 3 valores começa na linha
+        # para separar a descrição
+        v1_pos = cleaned.rfind(v1_str, 0, cleaned.rfind(v2_str))
+        if v1_pos < 0:
+            v1_pos = cleaned.find(v1_str)
+        
+        item_num = int(item_start.group(1))
+        desc_start = cleaned[item_start.end():v1_pos].strip()
+        
+        if not desc_start:
+            return None
+        
+        before_val = parse_currency(v1_str)
+        current_val = parse_currency(v2_str)
+        paid_val = parse_currency(v3_str)
+        
+        desc_parts = [desc_start]
+        j = self._collect_description_lines(lines, idx + 1, desc_parts)
+        full_desc = self._build_description(desc_parts)
+        item_id = generate_item_id(
+            f"{item_num}|{full_desc[:30]}|{before_val}|{current_val}|{paid_val}"
+        )
+        
+        return {
+            "item": item_num,
+            "description": full_desc,
+            "year_before_last_value": before_val,
+            "last_year_value": current_val,
+            "paid_value_in_last_year": paid_val,
             "id": item_id,
             "page": page_num,
             "_next_index": j
