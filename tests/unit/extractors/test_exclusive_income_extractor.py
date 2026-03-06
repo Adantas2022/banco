@@ -1,3 +1,5 @@
+import unicodedata
+
 import pytest
 
 from irpf_processor.infrastructure.extraction.extractors.base import ExtractionContext
@@ -159,3 +161,78 @@ class TestExtractFinancialAbroad:
         result = extractor._extract_financial_abroad(section_text)
         assert result is not None
         assert result["total_value"] == 3580.0
+
+    def test_inline_value_us_format(self, extractor):
+        section_text = _make_section_text(
+            "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3,580.00"
+        )
+        result = extractor._extract_financial_abroad(section_text)
+        assert result is not None
+        assert result["total_value"] == 3580.0
+
+    def test_multiline_value_us_format(self, extractor):
+        section_text = _make_section_text(
+            "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+            "3,580.00",
+        )
+        result = extractor._extract_financial_abroad(section_text)
+        assert result is not None
+        assert result["total_value"] == 3580.0
+
+    def test_full_extract_us_format(self, extractor):
+        page_text = (
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 30,000.00\n"
+            "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3,580.00\n"
+            "TOTAL 33,580.00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+        assert result is not None
+        assert "financial_investments_and_profits_and_dividends_abroad" in result["subsections"]
+        assert result["subsections"]["financial_investments_and_profits_and_dividends_abroad"]["total_value"] == 3580.0
+
+    def test_nfd_inline_value(self, extractor):
+        nfc_text = "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00"
+        nfd_text = unicodedata.normalize("NFD", nfc_text)
+        assert nfd_text != nfc_text
+        normalized = unicodedata.normalize("NFC", nfd_text)
+        result = extractor._extract_financial_abroad(normalized)
+        assert result is not None
+        assert result["total_value"] == 3580.0
+
+    def test_nfd_multiline_value(self, extractor):
+        nfc_text = _make_section_text(
+            "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023)",
+            "3.580,00",
+        )
+        nfd_text = unicodedata.normalize("NFD", nfc_text)
+        normalized = unicodedata.normalize("NFC", nfd_text)
+        result = extractor._extract_financial_abroad(normalized)
+        assert result is not None
+        assert result["total_value"] == 3580.0
+
+    def test_nfd_full_extract_with_nfc_normalization(self, extractor):
+        nfc_page = (
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 5.000,00\n"
+            "12. Aplicações Financeiras e Lucros e Dividendos no Exterior (Lei 14.754/2023) 3.580,00\n"
+            "TOTAL 8.580,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        nfd_page = unicodedata.normalize("NFD", nfc_page)
+        normalized_page = unicodedata.normalize("NFC", nfd_page)
+        context = ExtractionContext(
+            full_text=normalized_page,
+            pages_text={1: normalized_page},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+        assert result is not None
+        assert "financial_investments_and_profits_and_dividends_abroad" in result["subsections"]
+        assert result["subsections"]["financial_investments_and_profits_and_dividends_abroad"]["total_value"] == 3580.0
