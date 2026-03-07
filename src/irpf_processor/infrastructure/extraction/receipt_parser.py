@@ -80,6 +80,16 @@ class ReceiptParser:
         self._extractor = ReceiptExtractor()
         self._pdfplumber = None
         self._last_profile: Optional[DocumentProfile] = None
+        self._last_context: Optional[ExtractionContext] = None
+
+    @property
+    def last_extraction_context(self) -> Optional[ExtractionContext]:
+        """Retorna o ExtractionContext do último documento processado.
+        
+        Permite acesso aos textos (full_text, pages_text) usados na
+        aplicação de REGEX durante a extração.
+        """
+        return self._last_context
 
     def _ensure_pdfplumber(self):
         if self._pdfplumber is None:
@@ -89,6 +99,7 @@ class ReceiptParser:
     def parse(self, pdf_source: Union[str, Path, bytes]) -> IRPFReceiptResult:
         """Parseia recibo de entrega IRPF."""
         context = self._create_context(pdf_source)
+        self._last_context = context
         result = IRPFReceiptResult(total_pages=context.total_pages)
 
         data = self._extractor.extract(context)
@@ -111,6 +122,7 @@ class ReceiptParser:
             pages_text={1: text},
             total_pages=total_pages
         )
+        self._last_context = context
         result = IRPFReceiptResult(total_pages=total_pages)
 
         data = self._extractor.extract(context)

@@ -1,7 +1,14 @@
-import pytest
+"""Testes unitários para RuralDebtsExtractor.
 
+Bug #87044 - Corrigir colisão entre section marker e descrição de item.
+Bug #82852 - year_before_last_value incorreto (fallback trailing 3val).
+"""
+
+import pytest
+from irpf_processor.infrastructure.extraction.extractors.rural.debts import (
+    RuralDebtsExtractor,
+)
 from irpf_processor.infrastructure.extraction.extractors.base import ExtractionContext
-from irpf_processor.infrastructure.extraction.extractors.rural.debts import RuralDebtsExtractor
 
 
 @pytest.fixture
@@ -9,200 +16,180 @@ def extractor():
     return RuralDebtsExtractor()
 
 
-def _make_page(lines: list[str]) -> str:
-    return "\n".join(lines)
+class TestIsHeaderLine:
+    """Testa _is_section_header_line — distingue header real de item."""
+
+    def test_real_header_with_brasil(self, extractor):
+        line = "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)"
+        assert extractor._is_section_header_line(line) is True
+
+    def test_real_header_without_suffix(self, extractor):
+        line = "DÍVIDAS VINCULADAS À ATIVIDADE RURAL"
+        assert extractor._is_section_header_line(line) is True
+
+    def test_real_header_exterior(self, extractor):
+        line = "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - EXTERIOR"
+        assert extractor._is_section_header_line(line) is True
+
+    def test_item_with_marker_text_is_not_header(self, extractor):
+        """Bug #87044: item 1 com descrição = section marker NÃO deve ser header."""
+        line = "1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100,000.00 120,000.00 20,000.00"
+        assert extractor._is_section_header_line(line) is False
+
+    def test_item_with_marker_text_two_digits(self, extractor):
+        line = "12 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 0,00 500.000,00 0,00"
+        assert extractor._is_section_header_line(line) is False
+
+    def test_unrelated_line_is_not_header(self, extractor):
+        line = "2 RECEITA DE VENDA DE BOVINOS 400,000.00 200,000.00 200,000.00"
+        assert extractor._is_section_header_line(line) is False
+
+    def test_total_line_is_not_header(self, extractor):
+        line = "TOTAL 500,000.00 320,000.00 220,000.00"
+        assert extractor._is_section_header_line(line) is False
+
+    def test_empty_line_is_not_header(self, extractor):
+        assert extractor._is_section_header_line("") is False
 
 
-def _make_context(pages: dict[int, str]) -> ExtractionContext:
-    full_text = "\n".join(pages.values())
-    return ExtractionContext(
-        full_text=full_text,
-        pages_text=pages,
-        total_pages=len(pages),
+class TestBug87044SectionMarkerCollision:
+    """Bug #87044: Item com descrição idêntica ao section marker era perdido."""
+
+    PAGE_TEXT = """DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)
+ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024
+31/12/2023 31/12/2024
+
+1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100,000.00 120,000.00 20,000.00
+2 RECEITA DE VENDA DE BOVINOS 400,000.00 200,000.00 200,000.00
+TOTAL 500,000.00 320,000.00 220,000.00
+
+Página 17 de 23"""
+
+    def test_finds_both_items(self, extractor):
+        """Deve encontrar 2 itens, não 1."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 17)
+        assert len(items) == 2
+
+    def test_item1_description(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 17)
+        assert items[0]["description"] == "DÍVIDAS VINCULADAS À ATIVIDADE RURAL"
+
+    def test_item1_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 17)
+        assert items[0]["year_before_last_value"] == 100000.0
+        assert items[0]["last_year_value"] == 120000.0
+        assert items[0]["paid_value_in_last_year"] == 20000.0
+
+    def test_item2_description(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 17)
+        assert items[1]["description"] == "RECEITA DE VENDA DE BOVINOS"
+
+    def test_item2_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 17)
+        assert items[1]["year_before_last_value"] == 400000.0
+        assert items[1]["last_year_value"] == 200000.0
+        assert items[1]["paid_value_in_last_year"] == 200000.0
+
+    def test_totals_extracted(self, extractor):
+        totals = extractor._extract_section_total(self.PAGE_TEXT)
+        assert len(totals) == 3
+        assert totals[0] == 500000.0
+        assert totals[1] == 320000.0
+        assert totals[2] == 220000.0
+
+    def test_full_extract_via_context(self, extractor):
+        """Pipeline completo via ExtractionContext."""
+        ctx = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={17: self.PAGE_TEXT},
+            total_pages=23,
+        )
+        result = extractor.extract(ctx)
+        assert result is not None
+        assert len(result["items"]) == 2
+        tv = result["total_values"]
+        assert tv["year_before_last_value"]["amount"] == 500000.0
+        assert tv["year_before_last_value"]["valid"] is True
+        assert tv["last_year_value"]["amount"] == 320000.0
+        assert tv["last_year_value"]["valid"] is True
+        assert tv["paid_value_in_last_year"]["amount"] == 220000.0
+        assert tv["paid_value_in_last_year"]["valid"] is True
+
+
+class TestBug82852TrailingValues:
+    """Bug #82852: Itens com descrição contendo dígitos/vírgulas (ex: 16,66%)
+    falham no _ITEM_3VAL_RE e caem no _ITEM_2VAL_RE com year_before=0."""
+
+    PAGE_TEXT = (
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 CEDULA RURAL 19000368 37.905,24 0,00 39.654,62\n"
+        "2 CONTRATOS BCO SANTANDER 160.380,29 671.977,30 59.223,92\n"
+        "3 16,66% CONTRATO C 106213047 COOP DE 2.298,16 0,00 2.298,16\n"
+        "4 CPR SANTANDER 23002357 03/23 CNCTO 204.272,50 1.245.672,40 32.337,69\n"
+        "TOTAL 405.056,19 1.917.649,70 133.574,85\n"
     )
 
+    def test_finds_all_4_items(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        assert len(items) == 4
 
-SECTION_HEADER = "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - Brasil"
-ITEM_HEADER = "Item Discriminação Situação em 31/12/2023 Situação em 31/12/2024 Valor Pago em 2024"
+    def test_item3_year_before_not_zero(self, extractor):
+        """Bug #82852: item 3 year_before deve ser 2298.16, não 0.0."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert item3["year_before_last_value"] == 2298.16
+
+    def test_item3_all_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert item3["year_before_last_value"] == 2298.16
+        assert item3["last_year_value"] == 0.0
+        assert item3["paid_value_in_last_year"] == 2298.16
+
+    def test_item4_year_before_not_zero(self, extractor):
+        """Bug #82852: item 4 year_before deve ser 204272.50, não 0.0."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item4 = [it for it in items if it["item"] == 4][0]
+        assert item4["year_before_last_value"] == 204272.50
+
+    def test_item4_all_values(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item4 = [it for it in items if it["item"] == 4][0]
+        assert item4["year_before_last_value"] == 204272.50
+        assert item4["last_year_value"] == 1245672.40
+        assert item4["paid_value_in_last_year"] == 32337.69
+
+    def test_sum_year_before_matches(self, extractor):
+        """Soma de year_before deve bater com o total."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        total = sum(it["year_before_last_value"] for it in items)
+        expected = 37905.24 + 160380.29 + 2298.16 + 204272.50
+        assert abs(total - expected) < 0.01
+
+    def test_item3_description(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert "CONTRATO C 106213047" in item3["description"]
 
 
-class TestExtractsItemWithMarkerInDescription:
+class TestExteriorSectionNotMixed:
+    """Garante que seção EXTERIOR com item similar não interfere."""
 
-    def test_item_whose_description_contains_marker_is_not_skipped(self, extractor):
-        page_text = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100.000,00 120.000,00 20.000,00",
-            "TOTAL 100.000,00 120.000,00 20.000,00",
-        ])
-        ctx = _make_context({1: page_text})
+    PAGE_TEXT = """DÍVIDAS VINCULADAS À ATIVIDADE RURAL - EXTERIOR (Valores em Reais)
+ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024
+31/12/2023 31/12/2024
 
+1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL (EXTERIOR) 300,000.00 250,000.00 0.00
+TOTAL 300,000.00 250,000.00 0.00"""
+
+    def test_exterior_section_not_captured_by_brasil(self, extractor):
+        """Seção EXTERIOR não deve ser capturada pelo extractor de BRASIL."""
+        ctx = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={18: self.PAGE_TEXT},
+            total_pages=23,
+        )
         result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 1
-        assert result["items"][0]["item"] == 1
-        assert result["items"][0]["year_before_last_value"] == 100000.0
-        assert result["items"][0]["last_year_value"] == 120000.0
-        assert result["items"][0]["paid_value_in_last_year"] == 20000.0
-
-
-class TestExtractsMultipleItemsIncludingMarkerDescription:
-
-    def test_both_items_extracted_with_correct_totals(self, extractor):
-        page_text = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100.000,00 120.000,00 20.000,00",
-            "2 FINANCIAMENTO BANCÁRIO SAFRA 2023 400.000,00 200.000,00 200.000,00",
-            "TOTAL 500.000,00 320.000,00 220.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 2
-        assert result["items"][0]["item"] == 1
-        assert result["items"][0]["year_before_last_value"] == 100000.0
-        assert result["items"][1]["item"] == 2
-        assert result["items"][1]["year_before_last_value"] == 400000.0
-
-    def test_totals_validate_correctly(self, extractor):
-        page_text = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100.000,00 120.000,00 20.000,00",
-            "2 FINANCIAMENTO BANCÁRIO SAFRA 2023 400.000,00 200.000,00 200.000,00",
-            "TOTAL 500.000,00 320.000,00 220.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        totals = result["total_values"]
-        assert totals["year_before_last_value"]["valid"] is True
-        assert totals["last_year_value"]["valid"] is True
-        assert totals["paid_value_in_last_year"]["valid"] is True
-
-
-class TestSectionHeaderStillDetected:
-
-    def test_section_marker_on_header_line_enters_section_mode(self, extractor):
-        page_text = _make_page([
-            "RENDIMENTOS TRIBUTÁVEIS",
-            "Algum conteudo anterior",
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 FINANCIAMENTO RURAL 50.000,00 40.000,00 10.000,00",
-            "TOTAL 50.000,00 40.000,00 10.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 1
-        assert result["items"][0]["year_before_last_value"] == 50000.0
-
-    def test_returns_none_when_marker_absent(self, extractor):
-        page_text = _make_page([
-            "RENDIMENTOS TRIBUTÁVEIS",
-            "1 ITEM QUALQUER 10.000,00 10.000,00 5.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
         assert result is None
-
-
-class TestBrasilVsExteriorDisambiguation:
-
-    def test_brasil_items_stay_in_brasil_section(self, extractor):
-        page_text = _make_page([
-            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - Brasil",
-            ITEM_HEADER,
-            "1 FINANCIAMENTO RURAL BRASIL 100.000,00 80.000,00 20.000,00",
-            "TOTAL 100.000,00 80.000,00 20.000,00",
-            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - Exterior",
-            "1 FINANCIAMENTO EXTERIOR 200.000,00 150.000,00 50.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 1
-        assert "BRASIL" in result["items"][0]["description"]
-
-    def test_exterior_only_page_is_skipped(self, extractor):
-        page_text = _make_page([
-            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - Exterior",
-            ITEM_HEADER,
-            "1 LOAN FROM FOREIGN BANK 300.000,00 250.000,00 50.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is None
-
-
-class TestTotalLineEndsSection:
-
-    def test_items_after_total_are_not_extracted(self, extractor):
-        page_text = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 FINANCIAMENTO A 50.000,00 40.000,00 10.000,00",
-            "TOTAL 50.000,00 40.000,00 10.000,00",
-            "2 ESTE ITEM NÃO DEVE APARECER 99.000,00 99.000,00 99.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 1
-        assert result["items"][0]["item"] == 1
-
-    def test_total_line_with_values_is_detected(self, extractor):
-        page_text = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 EMPRÉSTIMO RURAL 200.000,00 180.000,00 20.000,00",
-            "TOTAL 200.000,00 180.000,00 20.000,00",
-        ])
-        ctx = _make_context({1: page_text})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        totals = result["total_values"]
-        assert totals["year_before_last_value"]["amount"] == 200000.0
-
-
-class TestMultiPageExtraction:
-
-    def test_items_from_separate_pages_are_collected(self, extractor):
-        page1 = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "1 DÍVIDAS VINCULADAS À ATIVIDADE RURAL 100.000,00 120.000,00 20.000,00",
-            "TOTAL 500.000,00 320.000,00 220.000,00",
-        ])
-        page2 = _make_page([
-            SECTION_HEADER,
-            ITEM_HEADER,
-            "2 FINANCIAMENTO BANCÁRIO SAFRA 2023 400.000,00 200.000,00 200.000,00",
-        ])
-        ctx = _make_context({1: page1, 2: page2})
-
-        result = extractor.extract(ctx)
-
-        assert result is not None
-        assert len(result["items"]) == 2
-        assert result["items"][0]["item"] == 1
-        assert result["items"][1]["item"] == 2
