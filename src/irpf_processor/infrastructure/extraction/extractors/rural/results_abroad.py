@@ -256,7 +256,7 @@ class RuralResultsAbroadExtractor(ISectionExtractor):
         Gabarito espera: "Resultado total (R$) (Resultado total - US$ multiplicado por 6,1917)"
         """
         # Extrair todos os valores numéricos e pegar o último
-        values = re.findall(r"([\d]{1,3}(?:\.[\d]{3})*,[\d]{2})", line)
+        values = re.findall(r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})", line)
         
         if values:
             # Construir descrição (tudo antes do último valor)
