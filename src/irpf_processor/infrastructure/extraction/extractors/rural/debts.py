@@ -182,7 +182,8 @@ class RuralDebtsExtractor(ISectionExtractor):
     def _is_section_total_line(self, line: str) -> bool:
         """True somente para linhas 'TOTAL  val  val  val' (total da seção).
         
-        Retorna False para 'TOTAL $830.317 LIQUIDADO...' que faz parte de descrição.
+        Requer ≥3 valores monetários (year_before, last_year, paid) para
+        evitar falso positivo com descrições como 'TOTAL 830.317,36'.
         """
         stripped = line.strip()
         upper = stripped.upper()
@@ -191,8 +192,10 @@ class RuralDebtsExtractor(ISectionExtractor):
         rest = re.sub(r"^TOTAL\s*", "", stripped, flags=re.IGNORECASE)
         if not rest.strip():
             return True
+        # Somente considerar como total se tiver ≥3 valores monetários
         if re.match(r"^[\d.,\s]+$", rest):
-            return True
+            vals = _CURRENCY_VAL_RE.findall(rest)
+            return len(vals) >= 3
         return False
     
     def _is_section_header_line(self, line: str) -> bool:
