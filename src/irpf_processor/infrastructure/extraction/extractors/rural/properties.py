@@ -107,7 +107,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
 
         if not items:
             return {
-                "section_name": "Dados e Identificacao do Imovel Explorado - Brasil",
+                "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
                 "items": None,
                 "total_properties": 0,
                 "total_area": 0.0,
@@ -116,7 +116,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         total_area = sum(item.get("area", 0) for item in items)
 
         return {
-            "section_name": "Dados e Identificacao do Imovel Explorado - Brasil",
+            "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
             "items": items,
             "total_properties": len(items),
             "total_area": round(total_area, 2),
