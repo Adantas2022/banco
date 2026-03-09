@@ -116,11 +116,10 @@ class LivestockMovementAbroadExtractor(ISectionExtractor):
         for i, line in enumerate(lines):
             upper_line = line.upper()
             
-            # Detectar início
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 continue
-            
+
             if in_section:
                 # Detectar fim
                 for marker in self.SECTION_END_MARKERS:
@@ -305,13 +304,13 @@ class LivestockMovementAbroadExtractor(ISectionExtractor):
         for line in lines:
             upper_line = line.upper()
             
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 continue
-            
+
             if not in_section:
                 continue
-            
+
             for end in self.SECTION_END_MARKERS:
                 if upper_line.strip().startswith(end):
                     return []

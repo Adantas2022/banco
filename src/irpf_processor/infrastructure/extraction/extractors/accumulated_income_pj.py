@@ -201,8 +201,15 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                                 in_section = True
                                 break
                         elif "DEPENDENTES" not in upper_line:
-                            in_section = True
-                            break
+                            is_dep_split = False
+                            for k in range(1, 4):
+                                if i + k < len(lines):
+                                    if lines[i + k].strip().upper().startswith("DEPENDENTES"):
+                                        is_dep_split = True
+                                        break
+                            if not is_dep_split:
+                                in_section = True
+                                break
                 if not in_section:
                     continue
 
@@ -211,6 +218,15 @@ class AccumulatedIncomePJExtractor(ISectionExtractor):
                 # Se encontrar seção de DEPENDENTES, parar
                 if "RECEBIDOS ACUMULADAMENTE PELOS DEPENDENTES" in upper_line:
                     break
+                if "ACUMULADAMENTE PELOS" in upper_line and "PELO TITULAR" not in upper_line:
+                    is_dep_split = False
+                    for k in range(1, 4):
+                        if i + k < len(lines):
+                            if lines[i + k].strip().upper().startswith("DEPENDENTES"):
+                                is_dep_split = True
+                                break
+                    if is_dep_split:
+                        break
                 if any(end in upper_line for end in self.SECTION_END_MARKERS):
                     break
                 if "SEM INFORMAÇÕES" in upper_line:
