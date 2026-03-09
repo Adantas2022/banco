@@ -165,12 +165,11 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
             
-            # Detectar início da seção
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 i += 1
                 continue
-            
+
             if not in_section:
                 i += 1
                 continue
@@ -300,14 +299,13 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
             
             upper_line = line.upper()
             
-            # Entrar na seção
-            if any(marker in upper_line for marker in self.SECTION_MARKERS):
+            if not in_section and any(marker in upper_line for marker in self.SECTION_MARKERS):
                 in_section = True
                 continue
-            
+
             if not in_section:
                 continue
-            
+
             # Encontrar TOTAL dentro da seção
             if upper_line.strip().startswith("TOTAL"):
                 matches = re.findall(num_pattern, line)
