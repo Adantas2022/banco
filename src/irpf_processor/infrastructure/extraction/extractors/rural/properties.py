@@ -102,7 +102,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
 
         if not items:
             return {
-                "section_name": "Dados e Identificacao do Imovel Explorado - Brasil",
+                "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
                 "items": None,
                 "total_properties": 0,
                 "total_area": 0.0,
@@ -111,7 +111,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         total_area = sum(item.get("area", 0) for item in items)
 
         return {
-            "section_name": "Dados e Identificacao do Imovel Explorado - Brasil",
+            "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
             "items": items,
             "total_properties": len(items),
             "total_area": round(total_area, 2),
@@ -250,7 +250,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             r"([\d.,]+)\s+"  # participação: 15,00 ou 100,00
             r"(\d)\s+"  # condição: 1, 3, 4
             r"(.+?)\s+"  # nome e localização
-            r"([\d.]+,\d+)\s+"  # área: 1.200,0 ou 8.366,7
+            r"([\d]+(?:[.,]\d+)+)\s+"  # área: 1.200,0 ou 8.366,7 ou 800.0
             r"([\d.-]+)$",  # CIB: 4.695.449-0
             line,
         )
@@ -273,7 +273,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             exploration = int(partial_pattern.group(3))
             remaining = partial_pattern.group(4).strip()
 
-            area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", remaining)
+            area_cib_match = re.search(r"([\d]+(?:[.,]\d+)+)\s+([\d.-]+)$", remaining)
 
             if area_cib_match:
                 name_location = remaining[: area_cib_match.start()].strip()
@@ -343,7 +343,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
 
                     # Tentar extrair area e cib da linha atual
                     # Pattern 1: "nome parcial 1.200,0 4.695.449-0"
-                    area_cib_end = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
+                    area_cib_end = re.search(r"([\d]+(?:[.,]\d+)+)\s+([\d.-]+)$", next_line)
                     if area_cib_end:
                         name_part = next_line[: area_cib_end.start()].strip()
                         if name_part:
@@ -353,7 +353,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         found_area_cib = True
                         break
 
-                    if re.match(r"^[\d.]+,\d+$", next_line):
+                    if re.match(r"^[\d]+(?:[.,]\d+)+$", next_line):
                         area = parse_currency(next_line)
                         # Próxima linha pode ser CIB
                         if j + 1 < len(lines):
@@ -506,7 +506,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
 
             # Linha com área e CIB juntos: "nome 1.200,0 4.695.449-0"
-            area_cib_match = re.search(r"([\d.]+,\d+)\s+([\d.-]+)$", next_line)
+            area_cib_match = re.search(r"([\d]+(?:[.,]\d+)+)\s+([\d.-]+)$", next_line)
             if area_cib_match:
                 name_part = next_line[: area_cib_match.start()].strip()
                 if name_part:
@@ -516,7 +516,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 j += 1
                 break
 
-            if re.match(r"^[\d.]+,\d+$", next_line):
+            if re.match(r"^[\d]+(?:[.,]\d+)+$", next_line):
                 area = parse_currency(next_line)
                 j += 1
                 # Próximo deve ser CIB
