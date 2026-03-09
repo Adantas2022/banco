@@ -323,7 +323,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                     line, section_lines, idx, page_num
                 )
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
@@ -656,7 +656,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_others_item_basic(line, page_num)
                 if item:
-                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
@@ -835,13 +835,13 @@ class ExemptIncomeExtractor(ISectionExtractor):
                     line, section_lines, idx, page_num
                 )
                 if item:
-                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
-        
+
         total = round(sum(i.get("value", 0) for i in items), 2)
-        
+
         header_total = self._extract_subsection_header_total(section_lines, code)
         if header_total and header_total > total:
             total = header_total
