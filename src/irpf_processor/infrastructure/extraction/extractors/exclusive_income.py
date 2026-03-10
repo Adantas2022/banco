@@ -255,38 +255,38 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
-                
+
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
-                
+
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
-                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(five_line_item)
-                
+
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
-                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
-        
+
         if total_value == 0 and items:
             total_value = round(sum(i["value"] for i in items), 2)
-        
+
         if total_value == 0 and not items:
             return None
-        
+
         return {
             "name": "11. Participação nos lucros ou resultados",
             "code": "11",
@@ -352,34 +352,34 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
-                
+
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
-                
+
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
-                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}"
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(five_line_item)
-                
+
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
-                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}"
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
-        
+
         total = round(sum(i["value"] for i in items), 2)
-        
+
         if not items and total == 0:
             extracted_total = self._extract_section_06_total(section_lines, context)
             if extracted_total > 0:
@@ -499,18 +499,18 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
-                
+
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
-        
+
         total = round(sum(i["value"] for i in items), 2)
         
         return {
@@ -617,7 +617,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_others_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}"
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
