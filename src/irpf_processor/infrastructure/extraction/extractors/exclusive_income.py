@@ -116,19 +116,22 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         self, context: ExtractionContext
     ) -> list[tuple[int, str]]:
         """Retorna APENAS as linhas dentro dos limites da seção exclusive_taxation.
-        
+
         Usa markers restritivos: exige "RENDIMENTOS SUJEITOS" antes de
         "TRIBUTAÇÃO EXCLUSIVA" para evitar falsos positivos em descrições.
+
+        Suporta headers divididos em duas linhas consecutivas (Document AI).
         """
         result: list[tuple[int, str]] = []
         in_section = False
-        
+        pending_rendimentos = False
+
         sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        
+
         for page_num, page_text in sorted_pages:
             for line in page_text.split("\n"):
                 upper = line.upper()
-                
+
                 if not in_section:
                     if (
                         "RENDIMENTOS SUJEITOS" in upper
@@ -137,13 +140,24 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                              or "TRIBUTAGAO EXCLUSIVA" in upper)
                     ):
                         in_section = True
+                        continue
+
+                    if pending_rendimentos and (
+                        "TRIBUTAÇÃO EXCLUSIVA" in upper
+                        or "TRIBUTACAO EXCLUSIVA" in upper
+                        or "TRIBUTAGAO EXCLUSIVA" in upper
+                    ):
+                        in_section = True
+                        continue
+
+                    pending_rendimentos = "RENDIMENTOS SUJEITOS" in upper
                     continue
-                
+
                 if any(m in upper for m in self.SECTION_END_MARKERS):
                     return result
-                
+
                 result.append((page_num, line))
-        
+
         return result
     
     def _extract_section_total_from_lines(

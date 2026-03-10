@@ -194,3 +194,103 @@ class TestExemptIncomeStandardSubsectionDedup:
         assert dividends is not None
         assert len(dividends["items"]) == 2
         assert dividends["total_value"] == pytest.approx(20000.0, abs=0.01)
+
+
+class TestDocumentAISplitHeader:
+
+    def test_split_header_across_lines(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS À\n"
+            "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 5.000,00\n"
+            "TOTAL 5.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is not None
+        assert result["subsections"]["thirteenth_salary"]["total_value"] == 5000.0
+
+    def test_split_header_with_unaccented_variant(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS A\n"
+            "TRIBUTACAO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 8.000,00\n"
+            "TOTAL 8.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is not None
+        assert result["subsections"]["thirteenth_salary"]["total_value"] == 8000.0
+
+    def test_split_header_with_garbled_c_variant(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS A\n"
+            "TRIBUTAGAO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 3.000,00\n"
+            "TOTAL 3.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is not None
+        assert result["subsections"]["thirteenth_salary"]["total_value"] == 3000.0
+
+    def test_split_header_no_false_positive_from_description(self, exclusive_extractor):
+        page5 = (
+            "09. Lucros e dividendos recebidos\n"
+            "Titular 169.407.738-19 51.572.102/0001-12 FINANCEIRA XYZ TRIBUTAÇÃO EXCLUSIVA 11.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is None
+
+    def test_single_line_header_still_works(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 10.000,00\n"
+            "TOTAL 10.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is not None
+        assert result["subsections"]["thirteenth_salary"]["total_value"] == 10000.0
+
+    def test_split_header_with_single_space_items(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS À\n"
+            "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "06. Rendimentos de aplicações financeiras\n"
+            "Titular 169.407.738-19 40.498.539/0001-37 ITAU OPTIMUS RF LP FIC 38.204,65\n"
+            "TOTAL 38.204,65\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is not None
+        financial = result["subsections"].get("income_from_financial_investments")
+        assert financial is not None
+        assert len(financial["items"]) == 1
+        assert financial["total_value"] == pytest.approx(38204.65, abs=0.01)
+
+    def test_split_header_pending_resets_between_lines(self, exclusive_extractor):
+        page5 = (
+            "RENDIMENTOS SUJEITOS À\n"
+            "SOME UNRELATED LINE\n"
+            "TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "01. 13º salário 5.000,00\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = _make_context({5: page5})
+        result = exclusive_extractor.extract(context)
+
+        assert result is None
