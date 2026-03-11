@@ -87,7 +87,7 @@ class RuralDebtsExtractor(ISectionExtractor):
         in_section = False
         num_pattern = r'([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})'
         
-        for line in lines:
+        for i, line in enumerate(lines):
             upper_line = line.upper()
             
             if self._is_section_header_line(line) and "EXTERIOR" not in upper_line:
@@ -104,6 +104,18 @@ class RuralDebtsExtractor(ISectionExtractor):
                 matches = re.findall(num_pattern, line)
                 if matches:
                     return [parse_currency(m) for m in matches]
+            
+            # Fallback: "TOTAL" sozinho + próxima linha com ≥3 valores
+            stripped = line.strip()
+            if stripped.upper() == "TOTAL":
+                for j in range(i + 1, min(i + 3, len(lines))):
+                    next_stripped = lines[j].strip()
+                    if not next_stripped:
+                        continue
+                    vals = _CURRENCY_VAL_RE.findall(next_stripped)
+                    if len(vals) >= 3:
+                        matches = re.findall(num_pattern, next_stripped)
+                        return [parse_currency(m) for m in matches]
         
         return []
     
@@ -191,7 +203,7 @@ class RuralDebtsExtractor(ISectionExtractor):
             return False
         rest = re.sub(r"^TOTAL\s*", "", stripped, flags=re.IGNORECASE)
         if not rest.strip():
-            return True
+            return False  # Bug #82852: TOTAL sozinho NÃO é total de seção
         # Somente considerar como total se tiver ≥3 valores monetários
         if re.match(r"^[\d.,\s]+$", rest):
             vals = _CURRENCY_VAL_RE.findall(rest)

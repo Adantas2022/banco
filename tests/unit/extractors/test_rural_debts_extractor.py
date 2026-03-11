@@ -195,7 +195,9 @@ class TestIsSectionTotalLine:
         ) is False
 
     def test_total_alone(self, extractor):
-        assert extractor._is_section_total_line("TOTAL") is True
+        """Bug #82852: TOTAL sozinho NÃO é total de seção (pode ser OCR de descrição)."""
+        assert extractor._is_section_total_line("TOTAL") is False
+        assert extractor._is_section_total_line("TOTAL  ") is False
 
     def test_empty_line(self, extractor):
         assert extractor._is_section_total_line("") is False
@@ -313,3 +315,348 @@ class TestBug82852RealWorldOCR:
         total = sum(it["year_before_last_value"] for it in items)
         expected = 37905.24 + 160380.29 + 2298.16 + 204272.50 + 101808.84 + 731605.92 + 804451.73 + 536444.06
         assert abs(total - expected) < 0.01
+
+
+class TestBug82852BareTotalInDescription:
+    """Bug #82852 v2: OCR splits 'TOTAL' to its own line inside description.
+
+    Quando o OCR quebra a descrição de um item que contém a palavra TOTAL
+    (ex: 'LIBERACOES 02, 03 E 04/2021 TOTAL LIBERADO R$ 2.700.000,00'),
+    a palavra 'TOTAL' pode aparecer sozinha em uma linha. Anteriormente,
+    _is_section_total_line("TOTAL") retornava True, causando break no
+    loop de parsing e perda de todos os itens subsequentes.
+    """
+
+    PAGE_TEXT = (
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 CEDULA RURAL 19000368 CONTRAIDA JUNTO 37.905,24 0,00 39.654,62\n"
+        "AO BANCO SANTANDER\n"
+        "2 CONTRATOS BCO SANTANDER NRS 21001317 160.380,29 671.977,30 59.223,92\n"
+        "LIBERACOES 02, 03 E 04/2021\n"
+        "TOTAL\n"
+        "LIBERADO R$ 2.700.000,00 CUSTEIO RURAL\n"
+        "2021 TENDO ASSUMIDO SALDO DO MESMO\n"
+        "P/FINAL PARCERIA\n"
+        "3 16,66% CONTRATO C 106213047 COOP DE 2.298,16 0,00 2.298,16\n"
+        "CREDITO SICREDI CONTRAIDO 04/2021 VALOR\n"
+        "TOTAL $ 830.317,36 LIQUIDADO EM 2024\n"
+        "4 CPR SANTANDER 23002357 03/23 C/VCTO 204.272,50 1.245.672,40 32.337,69\n"
+        "FINAL 2025 TENDO ASSUMIDO SALDO P/CTA\n"
+        "FINAL PARCERIA\n"
+        "5 1/6 CREDITO RURAL SICREDI BNDS C10010219 101.808,84 509.200,56 26.723,13\n"
+        "6 BB CUSTEIO AGROP 7538 731.605,92 457.822,22 273.788,70\n"
+        "7 CPR BCO BRASIL 520575 804.451,73 0,00 946.172,80\n"
+        "TOTAL 2.042.722,18 2.884.872,18 1.369.433,32\n"
+    )
+
+    def test_bare_total_does_not_stop_parsing(self, extractor):
+        """TOTAL sozinho na descrição NÃO deve interromper o parsing."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        assert len(items) == 7
+
+    def test_item3_not_lost(self, extractor):
+        """Item 3 (após TOTAL sozinho) deve ser extraído."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item3 = [it for it in items if it["item"] == 3][0]
+        assert item3["year_before_last_value"] == 2298.16
+        assert item3["last_year_value"] == 0.0
+        assert item3["paid_value_in_last_year"] == 2298.16
+
+    def test_item4_not_lost(self, extractor):
+        """Item 4 (após 'TOTAL $ 830.317,36' na descrição) deve ser extraído."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item4 = [it for it in items if it["item"] == 4][0]
+        assert item4["year_before_last_value"] == 204272.50
+        assert item4["last_year_value"] == 1245672.40
+        assert item4["paid_value_in_last_year"] == 32337.69
+
+    def test_item7_extracted(self, extractor):
+        """Último item deve ser extraído corretamente."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item7 = [it for it in items if it["item"] == 7][0]
+        assert item7["year_before_last_value"] == 804451.73
+        assert item7["last_year_value"] == 0.0
+        assert item7["paid_value_in_last_year"] == 946172.80
+
+    def test_section_total_extracted(self, extractor):
+        """Total da seção (3 valores) deve ser extraído corretamente."""
+        totals = extractor._extract_section_total(self.PAGE_TEXT)
+        assert len(totals) == 3
+        assert abs(totals[0] - 2042722.18) < 0.01
+        assert abs(totals[1] - 2884872.18) < 0.01
+        assert abs(totals[2] - 1369433.32) < 0.01
+
+    def test_description_includes_total_text(self, extractor):
+        """Descrição do item 2 deve incluir TOTAL como parte do texto."""
+        items = extractor._extract_from_page(self.PAGE_TEXT, 16)
+        item2 = [it for it in items if it["item"] == 2][0]
+        assert "CONTRATOS BCO SANTANDER" in item2["description"]
+
+
+class TestBug82852MultilineSectionTotal:
+    """Testa extração de total quando TOTAL aparece sozinho e valores na próxima linha."""
+
+    PAGE_TEXT = (
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "1 ITEM A 100,00 200,00 300,00\n"
+        "TOTAL\n"
+        "500,00 600,00 700,00\n"
+    )
+
+    def test_multiline_total_extracted(self, extractor):
+        """Total em linha separada do TOTAL deve ser extraído via fallback."""
+        totals = extractor._extract_section_total(self.PAGE_TEXT)
+        assert len(totals) == 3
+        assert totals[0] == 500.0
+        assert totals[1] == 600.0
+        assert totals[2] == 700.0
+
+    def test_bare_total_with_2_values_not_extracted(self, extractor):
+        """TOTAL + próxima linha com apenas 2 valores NÃO deve ser total."""
+        text = (
+            "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL\n"
+            "1 ITEM A 100,00 200,00 300,00\n"
+            "TOTAL\n"
+            "500,00 600,00\n"
+        )
+        totals = extractor._extract_section_total(text)
+        assert totals == []
+
+
+class TestBug82852RealOCRIntegration:
+    """Teste de integração com texto OCR REAL extraído via Tesseract do PDF do bug #82852.
+
+    Este teste usa o texto EXATO que o Tesseract produz ao processar o PDF
+    '0215_IRPF_LOVIS - IRPF 2025 DECLARACAO.pdf' (pages 16-17).
+    Verifica todos os 17 itens e totais contra o gabarito.
+    """
+
+    PAGE_16_TEXT = (
+        "NOME: CLOVIS FELIX DE PAULA\n"
+        "\n"
+        "CPF: 604.382.581-34 IMPOSTO SOBRE A RENDA - PESSOA FÍSICA\n"
+        "DECLARAÇÃO DE AJUSTE ANUAL EXERCÍCIO 2025 ANO-CALENDÁRIO 2024\n"
+        "16 VEICULO CAMIONETE TOYOTA HILUZ CD 4X4 RENAVAM 0,00 80.000,00\n"
+        "00341795623 ANO 2011/11\n"
+        "16 MOTOCICLETA YAMAHA/CROSSER Z ABS RENAVAM 01347164496 0,00 10.000,00\n"
+        "2023/23\n"
+        "16 VEICULO CAMINHONETE VW SAVEIRO CE RENAVAM 0,00 50.000,00\n"
+        "00995046581 ANO 2013/14\n"
+        "16 CAMINHAO M.BENS /ACTROS 2651 S6X4 RENAVAM 01 151933292 0,00 200.000,00\n"
+        "ANO 2018/18\n"
+        "11 GALPAO EQUIPAPADO COM SILO E MAQUINAS PARA USO NA 0,00 7.308.433,93\n"
+        "AGROPECUARIA\n"
+        "TOTAL 0,00 7.728.433,93\n"
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 81/12/2024\n"
+        "1 CEDULA RURAL 19000368 CONTRAIDA JUNTO 37.905,24 0,00 39.654,62\n"
+        "\n"
+        "AO BANCO SANTANDER\n"
+        "\n"
+        "2 CONTRATOS BCO SANTANDER NRS 21001317 160.380,29 671.977,30 59.223,92\n"
+        "LIBERACOES 02, 03 E 04/2021 TOTAL\n"
+        "LIBERADO R$ 2.700.000,00 CUSTEIO RURAL\n"
+        "2021 TENDO ASSUMIDO SALDO DO MESMO\n"
+        "P/FINAL PARCERIA\n"
+        "\n"
+        "3 16,66% CONTRATO C 106213047 COOP DE 2.298,16 0,00 2.298,16\n"
+        "CREDITO SICREDI CONTRAIDO 04/2021 VALOR\n"
+        "TOTAL $ 830.317,36 LIQUIDADO EM 2024\n"
+        "\n"
+        "4 CPR SANTANDER 23002357 03/23 CNCTO 204.272,50 1.245.672,40 32.337,69\n"
+        "FINAL 2025 TENDO ASSUMIDO SALDO P/CTA\n"
+        "FINAL PARCERIA\n"
+        "\n"
+        "5 1/6 CREDITO RURAL SICREDI BNDS C10010219 101.808,84 509.200,56 26.723,13\n"
+        "6 BB CUSTEIO AGROP 7538 731.605,92 457.822,22 273.788,70\n"
+        "7 CPR BCO BRASIL 520575 804.451,73 0,00 946.172,80\n"
+        "8 CPR BCO DO BRASIL 614744 536.444,06 0,00 628.080,85\n"
+        "9 CONTRAIU CPR 24006218 BCO SANTANDER EM 0,00 454.624,10 0,00\n"
+        "EM 06/24\n"
+        "10 CONTRAIU CPR 24011767 BCO SANTANDER 0,00 358.550,20 0,00\n"
+        "11/24\n"
+        "11 CONTRAIU CUSTEIO PECUARIO SICREDI C 0,00 978.780,56 0,00\n"
+        "4000078476 03/24\n"
+        "12 CONTRAIU CPR BB 715634 0,00 668.263,11 0,00\n"
+        "13 FINANCIAMENTO CEF P/CTA CONSTRUÇÃO 0,00 1.415.651,98 0,00\n"
+        "BARRACAO, SILO E MAQUINÁRIOS CONTRATO\n"
+        "1841873\n"
+        "14 FINANCIAMENTO CEF P/CTA CONSTRUÇÃO 0,00 391.368,63 0,00\n"
+        "BARRACAO, SILO E MAQUINÁRIOS CONTRATO\n"
+        "1907544\n"
+        "15 FINANCIAMENTO CEF P/CTA CONSTRUÇÃO 0,00 828.947,39 0,00\n"
+        "BARRACAO, SILO E MAQUINÁRIOS CONTRATO\n"
+        "1907545\n"
+        "\n"
+        "Página 16 de 21\n"
+    )
+
+    PAGE_17_TEXT = (
+        "NOME: CLOVIS FELIX DE PAULA\n"
+        "CPF: 604.382.581-34 IMPOSTO SOBRE A RENDA - PESSOA FÍSICA\n"
+        "\n"
+        "DECLARAÇÃO DE AJUSTE ANUAL EXERCÍCIO 2025 ANO-CALENDÁRIO 2024\n"
+        "\n"
+        "(Valores em Reais)\n"
+        "\n"
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL\n"
+        "\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "\n"
+        "1 FINANCIAMENTO CEF P/CTA CONSTRUÇÃO 0,00 827.493,51 100.775,41\n"
+        "BARRACAO, SILO E MAQUINÁRIOS CONTRATO\n"
+        "2080556\n"
+        "\n"
+        "2 FINANCIAMENTO CEF P/CTA CONSTRUÇÃO 0,00 13.582.700,40 0,00\n"
+        "BARRACAO, SILO E MAQUINÁRIOS CONTRATO\n"
+        "2188715\n"
+        "\n"
+        "TOTAL 2.579.166,74 22.391.052,36 2.109.050,28\n"
+        "\n"
+        "Página 17 de 21\n"
+    )
+
+    # Gabarito: valores esperados para cada item (17 total)
+    EXPECTED_ITEMS = [
+        # Page 16 items (1-15)
+        (1, 37905.24, 0.0, 39654.62),
+        (2, 160380.29, 671977.3, 59223.92),
+        (3, 2298.16, 0.0, 2298.16),
+        (4, 204272.5, 1245672.4, 32337.69),
+        (5, 101808.84, 509200.56, 26723.13),
+        (6, 731605.92, 457822.22, 273788.7),
+        (7, 804451.73, 0.0, 946172.8),
+        (8, 536444.06, 0.0, 628080.85),
+        (9, 0.0, 454624.1, 0.0),
+        (10, 0.0, 358550.2, 0.0),
+        (11, 0.0, 978780.56, 0.0),
+        (12, 0.0, 668263.11, 0.0),
+        (13, 0.0, 1415651.98, 0.0),
+        (14, 0.0, 391368.63, 0.0),
+        (15, 0.0, 828947.39, 0.0),
+        # Page 17 items (1-2, continuation)
+        (1, 0.0, 827493.51, 100775.41),
+        (2, 0.0, 13582700.4, 0.0),
+    ]
+
+    def test_page16_extracts_15_items(self, extractor):
+        """Página 16: deve extrair 15 itens (todos, incluindo 4-15)."""
+        items = extractor._extract_from_page(self.PAGE_16_TEXT, 16)
+        assert len(items) == 15, f"Esperado 15 itens, encontrou {len(items)}"
+
+    def test_page17_extracts_2_items(self, extractor):
+        """Página 17: deve extrair 2 itens."""
+        items = extractor._extract_from_page(self.PAGE_17_TEXT, 17)
+        assert len(items) == 2, f"Esperado 2 itens, encontrou {len(items)}"
+
+    def test_full_extraction_17_items(self, extractor):
+        """Pipeline completo: deve extrair 17 itens de ambas as páginas."""
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        ctx = ExtractionContext(
+            full_text=full_text,
+            pages_text={16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        assert result is not None
+        assert len(result["items"]) == 17, (
+            f"Esperado 17 itens, encontrou {len(result['items'])}"
+        )
+
+    def test_all_item_values_match_gabarito(self, extractor):
+        """Verifica CADA valor de CADA item contra o gabarito."""
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        ctx = ExtractionContext(
+            full_text=full_text,
+            pages_text={16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        items = result["items"]
+
+        for i, (exp_num, exp_before, exp_last, exp_paid) in enumerate(self.EXPECTED_ITEMS):
+            item = items[i]
+            assert item["item"] == exp_num, (
+                f"Position {i}: esperado item {exp_num}, encontrou {item['item']}"
+            )
+            assert abs(item["year_before_last_value"] - exp_before) < 0.01, (
+                f"Item {exp_num} pos {i}: year_before {item['year_before_last_value']} != {exp_before}"
+            )
+            assert abs(item["last_year_value"] - exp_last) < 0.01, (
+                f"Item {exp_num} pos {i}: last_year {item['last_year_value']} != {exp_last}"
+            )
+            assert abs(item["paid_value_in_last_year"] - exp_paid) < 0.01, (
+                f"Item {exp_num} pos {i}: paid {item['paid_value_in_last_year']} != {exp_paid}"
+            )
+
+    def test_section_totals_match(self, extractor):
+        """Totais da seção devem bater com o gabarito."""
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        ctx = ExtractionContext(
+            full_text=full_text,
+            pages_text={16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        tv = result["total_values"]
+        assert abs(tv["year_before_last_value"]["pdf_total"] - 2579166.74) < 0.01
+        assert abs(tv["last_year_value"]["pdf_total"] - 22391052.36) < 0.01
+        assert abs(tv["paid_value_in_last_year"]["pdf_total"] - 2109050.28) < 0.01
+
+    def test_year_before_validated(self, extractor):
+        """year_before_last_value deve estar validado (soma == pdf_total)."""
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        ctx = ExtractionContext(
+            full_text=full_text,
+            pages_text={16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        tv = result["total_values"]["year_before_last_value"]
+        assert tv["valid"] is True, (
+            f"year_before should be valid: amount={tv['amount']}, pdf_total={tv['pdf_total']}"
+        )
+
+    def test_last_year_validated(self, extractor):
+        """last_year_value deve estar validado (soma == pdf_total)."""
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        ctx = ExtractionContext(
+            full_text=full_text,
+            pages_text={16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        tv = result["total_values"]["last_year_value"]
+        assert tv["valid"] is True, (
+            f"last_year should be valid: amount={tv['amount']}, pdf_total={tv['pdf_total']}"
+        )
+
+    def test_item2_description_has_total_in_text(self, extractor):
+        """Item 2 deve ter TOTAL na descrição (parte do texto original)."""
+        items = extractor._extract_from_page(self.PAGE_16_TEXT, 16)
+        item2 = items[1]  # segundo item
+        assert "TOTAL" in item2["description"]
+        assert "LIBERACOES" in item2["description"]
+
+    def test_item3_description_has_total_value(self, extractor):
+        """Item 3 deve ter 'TOTAL $ 830.317,36' na descrição."""
+        items = extractor._extract_from_page(self.PAGE_16_TEXT, 16)
+        item3 = items[2]  # terceiro item
+        assert "CONTRATO C 106213047" in item3["description"]
+
+    def test_no_false_total_on_page16(self, extractor):
+        """Página 16 NÃO deve ter total de seção (só tem na 17)."""
+        totals = extractor._extract_section_total(self.PAGE_16_TEXT)
+        assert totals == [], f"Page 16 should have no section total, got: {totals}"
+
+    def test_real_total_on_page17(self, extractor):
+        """Página 17 deve ter o total real com 3 valores."""
+        totals = extractor._extract_section_total(self.PAGE_17_TEXT)
+        assert len(totals) == 3
+        assert abs(totals[0] - 2579166.74) < 0.01
+        assert abs(totals[1] - 22391052.36) < 0.01
+        assert abs(totals[2] - 2109050.28) < 0.01
