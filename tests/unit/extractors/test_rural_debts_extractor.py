@@ -187,7 +187,8 @@ class TestIsSectionTotalLine:
         assert extractor._is_section_total_line("TOTAL 830.317,36") is False
 
     def test_description_total_2_values(self, extractor):
-        assert extractor._is_section_total_line("TOTAL 0,00 7.728.433,93") is False
+        """TOTAL com 2 valores monetários É total de seção (Document AI pode perder 1 valor)."""
+        assert extractor._is_section_total_line("TOTAL 0,00 7.728.433,93") is True
 
     def test_total_with_text_after(self, extractor):
         assert extractor._is_section_total_line(
@@ -413,8 +414,8 @@ class TestBug82852MultilineSectionTotal:
         assert totals[1] == 600.0
         assert totals[2] == 700.0
 
-    def test_bare_total_with_2_values_not_extracted(self, extractor):
-        """TOTAL + próxima linha com apenas 2 valores NÃO deve ser total."""
+    def test_bare_total_with_2_values_extracted(self, extractor):
+        """TOTAL + próxima linha com 2 valores DEVE ser extraído (Document AI pode perder 1 valor)."""
         text = (
             "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL\n"
             "1 ITEM A 100,00 200,00 300,00\n"
@@ -422,7 +423,9 @@ class TestBug82852MultilineSectionTotal:
             "500,00 600,00\n"
         )
         totals = extractor._extract_section_total(text)
-        assert totals == []
+        assert len(totals) == 2
+        assert totals[0] == 500.0
+        assert totals[1] == 600.0
 
 
 class TestBug82852RealOCRIntegration:
@@ -660,3 +663,236 @@ class TestBug82852RealOCRIntegration:
         assert abs(totals[0] - 2579166.74) < 0.01
         assert abs(totals[1] - 22391052.36) < 0.01
         assert abs(totals[2] - 2109050.28) < 0.01
+
+
+class TestMatchTotalsToColumns:
+    """Testes para _match_totals_to_columns — matching inteligente de totais parciais."""
+
+    @pytest.fixture
+    def extractor(self):
+        return RuralDebtsExtractor()
+
+    def test_3_values_positional(self, extractor):
+        result = extractor._match_totals_to_columns(
+            [100.0, 200.0, 300.0], 100.0, 200.0, 300.0
+        )
+        assert result == (100.0, 200.0, 300.0)
+
+    def test_0_values_all_none(self, extractor):
+        result = extractor._match_totals_to_columns(
+            [], 100.0, 200.0, 300.0
+        )
+        assert result == (None, None, None)
+
+    def test_2_values_before_and_paid(self, extractor):
+        """Document AI perde last_year → match before e paid."""
+        result = extractor._match_totals_to_columns(
+            [2579166.74, 2109050.28],  # before e paid
+            2372596.08,   # sum_before (mais próximo de 2579166.74)
+            22391052.36,  # sum_last (muito longe dos 2 valores)
+            2109050.28,   # sum_paid (match exato com 2109050.28)
+        )
+        assert result[0] == 2579166.74   # before
+        assert result[1] is None         # last_year perdido pelo OCR
+        assert result[2] == 2109050.28   # paid
+
+    def test_2_values_last_and_paid(self, extractor):
+        """Se before é 0 e os 2 valores são last e paid."""
+        result = extractor._match_totals_to_columns(
+            [500.0, 300.0],
+            0.0,    # sum_before
+            500.0,  # sum_last
+            300.0,  # sum_paid
+        )
+        assert result == (None, 500.0, 300.0)
+
+    def test_2_values_before_and_last(self, extractor):
+        """Se paid é 0 e os 2 valores são before e last."""
+        result = extractor._match_totals_to_columns(
+            [100.0, 200.0],
+            100.0,  # sum_before
+            200.0,  # sum_last
+            0.0,    # sum_paid
+        )
+        assert result == (100.0, 200.0, None)
+
+    def test_1_value_matches_closest(self, extractor):
+        result = extractor._match_totals_to_columns(
+            [500.0],
+            500.0,       # exact match
+            10000.0,
+            2000.0,
+        )
+        assert result == (500.0, None, None)
+
+
+class TestDocumentAIRealOCRIntegration:
+    """Teste de integração com texto OCR REAL do Document AI.
+
+    Usa o texto EXATO produzido pelo Document AI ao processar o PDF
+    '0215_IRPF_LOVIS - IRPF 2025 DECLARACAO.pdf' (pages 16-17).
+
+    O Document AI produz texto com diferenças significativas do Tesseract:
+    - Marcas d'água (SIGN, SIGILO, POR, PROTEGIDA, FISCAL) em linhas separadas
+    - Espaços extras em '16,66 %', 'C / VCTO', 'P / CTA'
+    - Item 3: perde year_before (2.298,16) → extrai só 2 valores
+    - Item 4: perde year_before (204.272,50) → extrai só 2 valores
+    - TOTAL com apenas 2 dos 3 valores (perde last_year 22.391.052,36)
+    """
+
+    PAGE_16_TEXT = (
+        "NOME : CLOVIS FELIX DE PAULA\n"
+        "CPF : 604.382.581-34 1MPOSTO SOBRE A RENDA - PESSOA FÍSICA\n"
+        "DECLARAÇÃO DE AJUSTE ANUAL EXERCÍCIO 2025 ANO - CALENDÁRIO 2024\n"
+        "16 VEICULO CAMIONETE TOYOTA HILUZ CD 4X4 RENAVAM 0,00 80.000,00\n"
+        "00341795623 ANO 2011/11\n"
+        "16 MOTOCICLETA YAMAHA / CROSSER Z ABS RENAVAM 01347164496 0,00 10.000,00\n"
+        "2023/23\n"
+        "16 VEICULO CAMINHONETE VW SAVEIRO CE RENAVAM 0,00 50.000,00\n"
+        "00995046581 ANO 2013/14\n"
+        "16 CAMINHAO M.BENS / ACTROS 2651S6X4 RENAVAM 01151933292 0,00 200.000,00\n"
+        "ANO 2018/18\n"
+        "11 GALPAO EQUIPAPADO COM SILO E MAQUINAS PARA USO NA 0,00 7.308.433,93\n"
+        "AGROPECUARIA FISCAL\n"
+        "TOTAL 0,00 7.728.433,93\n"
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL ( Valores em Reais )\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 CEDULA RURAL 19000368 CONTRAIDA JUNTO 37.905,24 0,00 39.654,62\n"
+        "AO BANCO SANTANDER\n"
+        "SIGN\n"
+        "2 CONTRATOS BCO SANTANDER NRS 21001317 160.380,29 671.977,30 59.223,92\n"
+        "LIBERACOES 02 , 03 E 04/2021 TOTAL\n"
+        "LIBERADO R $ 2.700.000,00 CUSTEIO RURAL\n"
+        "2021 TENDO ASSUMIDO SALDO DO MESMO\n"
+        "P / FINAL PARCERIA\n"
+        "3 16,66 % CONTRATO C 106213047 COOP DE POR 0,00 2.298,16\n"
+        "CREDITO SICREDI CONTRAIDO 04/2021 VALOR\n"
+        "TOTAL $ 830.317,36 LIQUIDADO EM 2024\n"
+        "4 CPR SANTANDER 23002357 03/23 C / VCTO 1.245.672,40 32.337,69\n"
+        "FINAL 2025 TENDO ASSUMIDO SALDO P / CTA\n"
+        "FINAL PARCERIA\n"
+        "5 1/6 CREDITO RURAL SICREDI BNDS C10010219 101.808,84 509.200,56 26.723,13\n"
+        "CO 6 BB CUSTEIO AGROP 7538 731.605,92 457.822,22 273.783,70\n"
+        "7 CPR BCO BRASIL 520575 804.451,73 0,00 946.172,80\n"
+        "PROTEGIDA\n"
+        "8 CPR BCO DO BRASIL 614744 536.444,06 0,00 628.080,85\n"
+        "9 CONTRAIU CPR 24006218 BCO SANTANDE 0,00 454.624,10 0,00\n"
+        "EM 06/24\n"
+        "10 CONTRAIU CPR 24011767 BCO SANTANDER 0,00 358.550,20 0,00\n"
+        "11/24\n"
+        "11 CONTRAIU CUSTEIO PECUARIO SICREDI C 0,00 978.780,56 0,00\n"
+        "4000078476 03/24\n"
+        "12 CONTRAIU CPR BB 715634 0,00 668.263,11 0,00\n"
+        "13 FINANCIAMENTO CEF P / CTA CONSTRUÇÃO 0,00 1.415.651,98 0,00\n"
+        "BARRACAO , SILO E MAQUINÁRIOS CONTRATO\n"
+        "1841873\n"
+        "14 FINANCIAMENTO CEF P / CTA CONSTRUÇÃO 0,00 391.368,63 0,00\n"
+        "BARRACAO , SILO E MAQUINÁRIOS CONTRATO\n"
+        "1907544\n"
+        "15 FINANCIAMENTO CEF P / CTA CONSTRUÇÃO 0,00 828.947,39 0,00\n"
+        "BARRACAO , SILO E MAQUINÁRIOS CONTRATO\n"
+        "1907545\n"
+        "Página 16 de 21\n"
+    )
+
+    PAGE_17_TEXT = (
+        "NOME : CLOVIS FELIX DE PAULA\n"
+        "CPF : 604.382.581-34 1MPOSTO SOBRE A RENDA - PESSOA FÍSICA\n"
+        "DECLARAÇÃO DE AJUSTE ANUAL EXERCÍCIO 2025 ANO - CALENDÁRIO 2024\n"
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL ( Valores em Reais )\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 FINANCIAMENTO CEF P / CTA CONSTRUÇÃO 0,00 827.493,51 100.775,41\n"
+        "BARRACAO , SILO E MAQUINÁRIOS CONTRATO\n"
+        "2080556\n"
+        "2 FINANCIAMENTO CEF P / CTA CONSTRUÇÃO 0,00 13.582.700,40 0,00\n"
+        "BARRACAO , SILO E MAQUINÁRIOS CONTRATO\n"
+        "2188715 FISCAL\n"
+        "TOTAL 2.579.166,74 2.109.050,28\n"
+        "SIGILO\n"
+        "POR\n"
+        "PROTEGIDA\n"
+        "Página 17 de 21\n"
+    )
+
+    @pytest.fixture
+    def extractor(self):
+        return RuralDebtsExtractor()
+
+    @pytest.fixture
+    def context(self):
+        pages_text = {16: self.PAGE_16_TEXT, 17: self.PAGE_17_TEXT}
+        full_text = self.PAGE_16_TEXT + "\n" + self.PAGE_17_TEXT
+        return ExtractionContext(
+            full_text=full_text, pages_text=pages_text, total_pages=21
+        )
+
+    def test_extracts_all_17_items(self, extractor, context):
+        result = extractor.extract(context)
+        assert result is not None
+        assert len(result["items"]) == 17
+
+    def test_item3_2val_parse(self, extractor, context):
+        """Item 3: Document AI perde year_before, extrai 2 valores."""
+        result = extractor.extract(context)
+        item3 = result["items"][2]
+        assert item3["item"] == 3
+        # year_before perdido pelo OCR → 0.0 (fallback 2val)
+        assert item3["year_before_last_value"] == 0.0
+        assert abs(item3["paid_value_in_last_year"] - 2298.16) < 0.01
+
+    def test_item4_2val_parse(self, extractor, context):
+        """Item 4: Document AI perde year_before (204.272,50)."""
+        result = extractor.extract(context)
+        item4 = result["items"][3]
+        assert item4["item"] == 4
+        assert item4["year_before_last_value"] == 0.0
+        assert abs(item4["last_year_value"] - 1245672.40) < 0.01
+        assert abs(item4["paid_value_in_last_year"] - 32337.69) < 0.01
+
+    def test_total_2val_detected(self, extractor):
+        """TOTAL com 2 valores deve ser detectado."""
+        totals = extractor._extract_section_total(self.PAGE_17_TEXT)
+        assert len(totals) == 2
+        assert abs(totals[0] - 2579166.74) < 0.01
+        assert abs(totals[1] - 2109050.28) < 0.01
+
+    def test_paid_total_validated(self, extractor, context):
+        """paid deve ser validado corretamente (match exato com pdf_total)."""
+        result = extractor.extract(context)
+        paid = result["total_values"]["paid_value_in_last_year"]
+        assert abs(paid["amount"] - 2109050.28) < 0.01
+        assert abs(paid["pdf_total"] - 2109050.28) < 0.01
+        assert paid["valid"] is True
+
+    def test_year_before_total_assigned(self, extractor, context):
+        """year_before pdf_total deve ser 2.579.166,74."""
+        result = extractor.extract(context)
+        yb = result["total_values"]["year_before_last_value"]
+        assert abs(yb["pdf_total"] - 2579166.74) < 0.01
+        # valid=False porque items 3 e 4 perderam year_before
+        assert yb["valid"] is False
+
+    def test_last_year_total_none(self, extractor, context):
+        """last_year pdf_total deve ser None (OCR perdeu este valor)."""
+        result = extractor.extract(context)
+        ly = result["total_values"]["last_year_value"]
+        assert ly["pdf_total"] is None
+        assert ly["valid"] is None
+
+    def test_watermarks_in_description_cleaned(self, extractor, context):
+        """Watermarks (SIGN, PROTEGIDA, FISCAL) não devem aparecer na descrição."""
+        result = extractor.extract(context)
+        for item in result["items"]:
+            desc = item["description"].upper()
+            assert "SIGN" not in desc.split(), f"Item {item['item']}: SIGN in desc"
+            assert "PROTEGIDA" not in desc.split(), f"Item {item['item']}: PROTEGIDA in desc"
+
+    def test_co_prefix_cleaned(self, extractor, context):
+        """Prefixo 'CO' antes do item 6 deve ser limpo."""
+        result = extractor.extract(context)
+        item6 = result["items"][5]
+        assert item6["item"] == 6
+        assert abs(item6["year_before_last_value"] - 731605.92) < 0.01
+
