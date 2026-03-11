@@ -631,3 +631,54 @@ Registro de Aeronave: PTABC"""
         assert parse_currency("1.234.567,89") == 1234567.89
         assert parse_currency("200.000,00") == 200000.0
 
+
+class TestBug88130IsolatedHeaderBoundary:
+
+    PAGE_TEXT = "\n".join([
+        "DECLARACAO DE BENS E DIREITOS",
+        "07 01 FUNDO ACOES 10.000,00 12.000,00",
+        "06 01",
+        "01 CONTA CORRENTE 5.000,00 6.000,00",
+    ])
+
+    def test_isolated_header_does_not_merge_into_previous_item(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 2
+
+    def test_first_item_description_not_polluted(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        item1 = result["items"][0]
+        assert item1["asset_group_code"] == "07"
+        assert item1["asset_description"] == "FUNDO ACOES"
+        assert "CONTA CORRENTE" not in item1["asset_description"]
+
+    def test_second_item_extracted_correctly(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        items_06 = [i for i in result["items"] if i["asset_group_code"] == "06"]
+        assert len(items_06) == 1
+        assert items_06[0]["asset_code"] == "01"
+

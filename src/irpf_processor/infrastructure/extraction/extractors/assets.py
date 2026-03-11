@@ -263,7 +263,7 @@ class AssetsExtractor(ISectionExtractor):
         asset_code = header.group(2)
         rest = header.group(3)
         
-        if len(rest.strip()) < 5:
+        if len(rest.strip()) < 3:
             return None
         
         vals = re.findall(self.CURRENCY_RE, rest)
@@ -271,7 +271,7 @@ class AssetsExtractor(ISectionExtractor):
         if len(vals) >= 2:
             v1, v2 = vals[-2], vals[-1]
             desc = rest[:rest.rfind(vals[-2])].strip()
-            if len(desc) < 5:
+            if len(desc) < 3:
                 return None
         elif len(vals) == 1:
             v1 = vals[0]
@@ -435,11 +435,14 @@ class AssetsExtractor(ISectionExtractor):
                 and re.match(r"^\d{2}\s+", lines[j + 1].strip())
             ):
                 break
+
+            if re.match(r"^\d{2}\s+\d{2}\s*$", next_line):
+                break
             
             # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
             # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
             # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
-            country_match = re.match(r"^(\d{3})\s*[-–]\s*(.+)$", next_line)
+            country_match = re.match(r"^(\d{3})\s*[-–]?\s+(.+)$", next_line)
             if country_match:
                 potential_name = country_match.group(2).strip()
                 # País: nome curto, sem números, sem múltiplos hífens
@@ -470,6 +473,23 @@ class AssetsExtractor(ISectionExtractor):
         # Ex: "AERONAVE 200,000.00" → "AERONAVE", "LOJA EM SAO PAULO 180,000.00" → "LOJA EM SAO PAULO"
         # Também remove padrões como "COME - COTAS 16,000.00" → "COME - COTAS"
         full_description = re.sub(r"\s+\d[\d,]*\.\d{2}\s*$", "", full_description).strip()
+
+        upper_desc = full_description.upper()
+        legal_marker_variants = [
+            "OPÇÃO PELA ATUALIZAÇÃO DO VALOR DO BEM OU DIREITO NO EXTERIOR",
+            "OPCAO PELA ATUALIZACAO DO VALOR DO BEM OU DIREITO NO EXTERIOR",
+        ]
+        for marker in legal_marker_variants:
+            idx = upper_desc.find(marker)
+            if idx != -1:
+                full_description = full_description[:idx].rstrip()
+                break
+
+        full_description = re.sub(
+            r"\s+\d+\.\d+,\s+de\s+\d{4}\s*:.*$",
+            "",
+            full_description
+        ).strip()
         
         additional_info = self._build_additional_info(
             group_code, raw_lines, full_description
@@ -838,7 +858,7 @@ class AssetsExtractor(ISectionExtractor):
         if trading_code_desc and "trading_code" not in info:
             info["trading_code"] = trading_code_desc.group(1)
         
-        bank = re.search(r"Banco[:\s]*(\d+)", raw_text)
+        bank = re.search(r"[B8]anco[:\s]*(\d+)", raw_text)
         if bank:
             info["bank"] = bank.group(1)
         
@@ -850,8 +870,8 @@ class AssetsExtractor(ISectionExtractor):
         if account:
             info["account"] = account.group(1)
         
-        # Fallback: extrair bank e account da descrição quando não existem nos metadados
-        self._extract_bank_info_from_description(info, description)
+        if bank or agency or account:
+            self._extract_bank_info_from_description(info, description)
         
         return info
     
@@ -869,7 +889,7 @@ class AssetsExtractor(ISectionExtractor):
         if cnpj:
             info["cnpj"] = cnpj.group(1)
         
-        bank = re.search(r"Banco[:\s]*(\d+)", raw_text)
+        bank = re.search(r"[B8]anco[:\s]*(\d+)", raw_text)
         if bank:
             info["bank"] = bank.group(1)
         
@@ -1043,12 +1063,12 @@ class AssetsExtractor(ISectionExtractor):
             "Bem", "Inscrição", "Logradouro", "Comp", "Município",
             "Área", "Registrado", "Nome Cartório", "Nº", "RENAVAM",
             "Registro de Embarcação", "Registro de Aeronave", "Matrícula",
-            "Banco", "Agência",
+            "Banco", "8anco", "Agência",
             "Conta", "Negociados", "Código de Neg", "Autocustodiante",
             "CNPJ", "Lucro ou", "Valor Recebido", "Imposto",
             "CEI", "CNO", "CEI/CNO", "CEP", "Aplicação Financeira", "UF",
             "Bairro", "Data de Aquisição", "CNPJ do Fundo", "CNPJ Custodiante",
-            "CIB", "Nirf"
+            "CIB", "Nirf", "Opção pela", "Opcao pela", "Opgao pela"
         )
         
         if not line or len(line) <= 3:
@@ -1175,8 +1195,8 @@ class AssetsExtractor(ISectionExtractor):
                     info["acquisition_date"] = m.group(1)
             
             # Campos bancários órfãos (quando a quebra de página separa do item)
-            if "Banco" in line:
-                m = re.search(r"Banco[:\s]*(\d+)", line)
+            if re.search(r"[B8]anco", line):
+                m = re.search(r"[B8]anco[:\s]*(\d+)", line)
                 if m:
                     info["bank"] = m.group(1)
             
