@@ -86,8 +86,11 @@ class PaymentsExtractor(ISectionExtractor):
                 if found_end:
                     section_ended = True
         
+        if not items:
+            return None
+
         total_value = round(sum(i.get("value", 0) for i in items), 2)
-        
+
         return {
             "section_name": "Pagamentos Efetuados",
             "items": items,
