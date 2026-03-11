@@ -62,9 +62,13 @@ class RuralDebtsExtractor(ISectionExtractor):
         sum_last = sum_currency_values([i["last_year_value"] for i in items], as_int=False)
         sum_paid = sum_currency_values([i["paid_value_in_last_year"] for i in items], as_int=False)
         
-        pdf_before = pdf_totals[0] if len(pdf_totals) > 0 else None
-        pdf_last = pdf_totals[1] if len(pdf_totals) > 1 else None
-        pdf_paid = pdf_totals[2] if len(pdf_totals) > 2 else None
+        # Atribuir pdf_totals às colunas corretas.
+        # Quando o OCR perde 1 dos 3 valores do TOTAL, precisamos
+        # identificar qual coluna cada valor pertence via matching
+        # contra as somas dos itens.
+        pdf_before, pdf_last, pdf_paid = self._match_totals_to_columns(
+            pdf_totals, sum_before, sum_last, sum_paid
+        )
         
         totals = {
             "year_before_last_value": create_validated_total(sum_before, pdf_before),
@@ -77,6 +81,61 @@ class RuralDebtsExtractor(ISectionExtractor):
             "items": items,
             "total_values": totals
         }
+    
+    @staticmethod
+    def _match_totals_to_columns(
+        pdf_totals: list[float],
+        sum_before: float,
+        sum_last: float,
+        sum_paid: float,
+    ) -> tuple[float | None, float | None, float | None]:
+        """Atribui valores do TOTAL às colunas corretas.
+        
+        Com 3 valores, assume ordem posicional (before, last, paid).
+        Com 2 valores, usa matching por menor diferença contra as somas.
+        Com 0-1 valores, retorna None para os faltantes.
+        """
+        if len(pdf_totals) >= 3:
+            return pdf_totals[0], pdf_totals[1], pdf_totals[2]
+        
+        if len(pdf_totals) == 0:
+            return None, None, None
+        
+        if len(pdf_totals) == 1:
+            # Tentar identificar a coluna pelo valor mais próximo
+            val = pdf_totals[0]
+            sums = [sum_before, sum_last, sum_paid]
+            diffs = [abs(val - s) for s in sums]
+            best = diffs.index(min(diffs))
+            result = [None, None, None]
+            result[best] = val
+            return result[0], result[1], result[2]
+        
+        # 2 valores: testar todas as 3 combinações possíveis
+        # e escolher a que minimiza a soma das diferenças
+        v0, v1 = pdf_totals[0], pdf_totals[1]
+        sums = [sum_before, sum_last, sum_paid]
+        
+        # Combinação 1: (before, last, _)
+        # Combinação 2: (before, _, paid)
+        # Combinação 3: (_, last, paid)
+        combos = [
+            ((0, 1), (v0, v1, None)),  # before=v0, last=v1
+            ((0, 2), (v0, None, v1)),  # before=v0, paid=v1
+            ((1, 2), (None, v0, v1)),  # last=v0, paid=v1
+        ]
+        
+        best_score = float("inf")
+        best_result = (v0, v1, None)
+        
+        for (i0, i1), result in combos:
+            score = abs(v0 - sums[i0]) + abs(v1 - sums[i1])
+            if score < best_score:
+                best_score = score
+                best_result = result
+        
+        return best_result
+
     
     # ------------------------------------------------------------------
     # Extração de total
@@ -103,9 +162,12 @@ class RuralDebtsExtractor(ISectionExtractor):
             if self._is_section_total_line(line):
                 matches = re.findall(num_pattern, line)
                 if matches:
-                    return [parse_currency(m) for m in matches]
+                    parsed = [parse_currency(m) for m in matches]
+                    # Se OCR perdeu um dos 3 valores, paddar com None
+                    # para que a validação funcione parcialmente
+                    return parsed
             
-            # Fallback: "TOTAL" sozinho + próxima linha com ≥3 valores
+            # Fallback: "TOTAL" sozinho + próxima linha com ≥2 valores
             stripped = line.strip()
             if stripped.upper() == "TOTAL":
                 for j in range(i + 1, min(i + 3, len(lines))):
@@ -113,7 +175,7 @@ class RuralDebtsExtractor(ISectionExtractor):
                     if not next_stripped:
                         continue
                     vals = _CURRENCY_VAL_RE.findall(next_stripped)
-                    if len(vals) >= 3:
+                    if len(vals) >= 2:
                         matches = re.findall(num_pattern, next_stripped)
                         return [parse_currency(m) for m in matches]
         
@@ -204,10 +266,11 @@ class RuralDebtsExtractor(ISectionExtractor):
         rest = re.sub(r"^TOTAL\s*", "", stripped, flags=re.IGNORECASE)
         if not rest.strip():
             return False  # Bug #82852: TOTAL sozinho NÃO é total de seção
-        # Somente considerar como total se tiver ≥3 valores monetários
+        # Considerar como total se tiver ≥2 valores monetários.
+        # Document AI pode perder 1 dos 3 valores devido a marca d'água.
         if re.match(r"^[\d.,\s]+$", rest):
             vals = _CURRENCY_VAL_RE.findall(rest)
-            return len(vals) >= 3
+            return len(vals) >= 2
         return False
     
     def _is_section_header_line(self, line: str) -> bool:
