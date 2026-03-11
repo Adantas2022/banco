@@ -21,6 +21,7 @@ from .models import (
     PdfType,
     WordBox,
 )
+from .watermark_remover import WatermarkRemover
 
 logger = get_logger(__name__)
 
@@ -37,6 +38,7 @@ class DocumentAIEngine(IOcrEngine):
         processor_id: str = "",
         credentials_path: str = "",
         timeout: int = DEFAULT_TIMEOUT,
+        preprocess_watermark: bool = True,
     ):
         self._project_id = project_id or os.environ.get("DOCUMENTAI_PROJECT_ID", "")
         self._location = location or os.environ.get("DOCUMENTAI_LOCATION", DEFAULT_LOCATION)
@@ -45,6 +47,8 @@ class DocumentAIEngine(IOcrEngine):
             "GOOGLE_APPLICATION_CREDENTIALS", ""
         )
         self._timeout = timeout
+        self._preprocess_watermark = preprocess_watermark
+        self._watermark_remover = WatermarkRemover() if preprocess_watermark else None
 
     @property
     def name(self) -> str:
@@ -84,6 +88,18 @@ class DocumentAIEngine(IOcrEngine):
         start = time.perf_counter()
 
         pdf_bytes = pdf_path.read_bytes()
+
+        # Pré-processar para remover marcas d'água se habilitado
+        if self._watermark_remover and kwargs.get("preprocess_watermark", True):
+            try:
+                pdf_bytes = self._watermark_remover.clean_pdf_bytes(pdf_bytes)
+                logger.info("Watermark removal applied")
+            except Exception as e:
+                logger.warning(
+                    "Watermark removal failed, using original PDF",
+                    error=str(e),
+                )
+
         total_pages = self._count_pages(pdf_bytes)
 
         if total_pages <= MAX_PAGES_PER_REQUEST:
@@ -341,8 +357,20 @@ class DocumentAIEngine(IOcrEngine):
 
     @staticmethod
     def _fix_currency_spacing(text: str) -> str:
+        # Corrigir espaço indevido em decimais: "1 ,00" -> "1,00" 
         text = re.sub(r"(\d)\s+,(\d{2})", r"\1,\2", text)
+        # Corrigir espaço indevido em milhares: "1 .000" -> "1.000"
         text = re.sub(r"(\d)\s+\.(\d{3})", r"\1.\2", text)
+        # Corrigir ponto usado como decimal em formato BR:
+        # "0.00" isolado ou no final de uma sequência de valores -> "0,00"
+        # Detecta padrão: dígito(s).DD onde DD são exatamente 2 dígitos
+        # e o valor NÃO tem outros pontos antes (ou seja, não é 358.550.20)
+        # Para valores como "358.550.20": último ".20" é decimal, converter para ",20"
+        text = re.sub(
+            r"(\d{1,3}(?:\.\d{3})*)\.(\d{2})(?=\s|$)",
+            r"\1,\2",
+            text,
+        )
         return text
 
     @staticmethod
