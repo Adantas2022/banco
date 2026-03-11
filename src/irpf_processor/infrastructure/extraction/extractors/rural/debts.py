@@ -370,14 +370,24 @@ class RuralDebtsExtractor(ISectionExtractor):
         Usado quando _ITEM_3VAL_RE falha (ex: descrição contém
         dígitos/vírgulas como '16,66%' que confundem o lazy .+?).
         Usa re.findall para encontrar todos os padrões monetários
-        e pega os 3 últimos.
+        e pega os 3 últimos, EXCLUINDO percentuais (ex: '16,66%').
         """
-        all_vals = _CURRENCY_VAL_RE.findall(cleaned)
-        if len(all_vals) < 3:
+        # Filtrar valores que são percentuais (seguidos de % no texto)
+        all_matches = list(_CURRENCY_VAL_RE.finditer(cleaned))
+        monetary_vals = []
+        for m in all_matches:
+            end_pos = m.end()
+            # Verificar se o valor é seguido por % (com ou sem espaço)
+            rest = cleaned[end_pos:].lstrip()
+            if rest.startswith('%'):
+                continue  # É percentual, não valor monetário
+            monetary_vals.append(m.group())
+        
+        if len(monetary_vals) < 3:
             return None
         
-        # Os 3 últimos valores são: before, current, paid
-        v1_str, v2_str, v3_str = all_vals[-3], all_vals[-2], all_vals[-1]
+        # Os 3 últimos valores monetários são: before, current, paid
+        v1_str, v2_str, v3_str = monetary_vals[-3], monetary_vals[-2], monetary_vals[-1]
         
         # Encontrar onde o primeiro dos 3 valores começa na linha
         # para separar a descrição
@@ -412,6 +422,7 @@ class RuralDebtsExtractor(ISectionExtractor):
             "page": page_num,
             "_next_index": j
         }
+
     
     # ------------------------------------------------------------------
     # Coleta de descrição
