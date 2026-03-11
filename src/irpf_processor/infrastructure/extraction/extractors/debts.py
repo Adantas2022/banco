@@ -3,6 +3,10 @@
 import re
 from typing import Any, Optional
 
+from irpf_processor.shared.logging import get_logger
+
+logger = get_logger(__name__)
+
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id, sum_currency_values
 from ..validation_utils import create_validated_total
@@ -152,6 +156,11 @@ class DebtsExtractor(ISectionExtractor):
         in_section = already_in_section
         i = 0
         
+        # Coletar items sem valor (split-column do Tesseract)
+        headeronly_items: list[dict] = []
+        # Coletar linhas de valor órfãs
+        orphan_value_lines: list[list[str]] = []
+        
         while i < len(lines):
             line = lines[i].strip()
             upper_line = line.upper()
@@ -178,13 +187,15 @@ class DebtsExtractor(ISectionExtractor):
                 continue
             
             # SOMENTE extrair se já estiver dentro da seção
-            # NÃO forçar entrada na seção apenas por encontrar padrão de código
             if not in_section:
                 i += 1
                 continue
             
             # Normalizar linha para lidar com OCR (espaços antes da vírgula)
             normalized_line = self._normalize_ocr_numbers(line)
+            
+            # Fix código duplicado: "14 14 EMPRESTIMO..." -> "14 EMPRESTIMO..."
+            normalized_line = re.sub(r"^(\d{2})\s+\1\s+", r"\1 ", normalized_line)
             
             # Tentar detectar item de dívida - formato padrão
             debt_match = re.match(
@@ -211,10 +222,124 @@ class DebtsExtractor(ISectionExtractor):
                         items.append(item)
                         i = item.pop("_next_index", i + 1)
                         continue
+                
+                # Se não achou valores, guardar como header-only
+                # (Tesseract split-column: descrição e valores em blocos separados)
+                code_m = re.match(r"^(\d{2})\s+(.+)", normalized_line)
+                if code_m and self._is_valid_debt_code(code_m.group(1)):
+                    desc_start = code_m.group(2).strip()
+                    desc_parts = [desc_start]
+                    j = i + 1
+                    while j < len(lines):
+                        nl = lines[j].strip()
+                        upper_nl = nl.upper()
+                        if not nl:
+                            j += 1
+                            continue
+                        # Parar se encontrar novo item, TOTAL, fim de seção, ou linha de valores
+                        if re.match(r"^\d{2}\s+[A-Z]", nl):
+                            break
+                        if "TOTAL" in upper_nl:
+                            break
+                        if any(m in upper_nl for m in self.SECTION_END_MARKERS):
+                            break
+                        if re.match(r"^[\d.,]+\s+[\d.,]+\s+[\d.,]+\s*$", self._normalize_ocr_numbers(nl)):
+                            break
+                        desc_parts.append(nl)
+                        j += 1
+                    
+                    full_desc = " ".join(desc_parts)
+                    full_desc = re.sub(r"\s*P[aá]gina\s+\d+\s+de\s*\d+\s*$", "", full_desc, flags=re.IGNORECASE)
+                    full_desc = re.sub(r"\s+", " ", full_desc).strip()
+                    
+                    headeronly_items.append({
+                        "code": code_m.group(1),
+                        "desc": full_desc,
+                        "page": page_num,
+                    })
+                    i = j
+                    continue
+            
+            # Detectar linhas órfãs de valores (3 valores numéricos soltos)
+            val_line = self._normalize_ocr_numbers(line)
+            val_match = re.match(r"^([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*$", val_line)
+            if val_match and in_section:
+                orphan_value_lines.append([val_match.group(1), val_match.group(2), val_match.group(3)])
+                i += 1
+                continue
+            
+            # Detectar valores individuais órfãos (Tesseract extremo: 1 valor por linha)
+            single_val = re.match(r"^(\d{1,3}(?:\.\d{3})*,\d{2})\s*$", val_line)
+            if single_val and in_section:
+                orphan_value_lines.append(single_val.group(1))
+                i += 1
+                continue
+            
+            # Coletar descrições sem código (Tesseract cortou o código)
+            # Se estamos na seção e a linha parece descrição (começa com maiúscula)
+            # e NÃO é um marcador/cabeçalho
+            if in_section and line and not line[0].isdigit():
+                stripped_upper = line.strip().upper()
+                skip_patterns = [
+                    "CÓDIGO", "CODIGO", "DISCRIMINAÇÃO", "DISCRIMINACAO",
+                    "SITUAÇÃO", "SITUACAO", "EXERCÍCIO", "EXERCICIO",
+                    "IMPOSTO", "VALORES", "DECLARAÇÃO", "DECLARACAO",
+                    "NOME:", "CPF:", "PÁGINA", "PAGINA",
+                ]
+                if not any(p in stripped_upper for p in skip_patterns):
+                    # Pode ser descrição sem código — apenas guardar para
+                    # futuro matching se não casar com nenhum header
+                    pass
             
             i += 1
         
+        # ------------------------------------------------------------------
+        # Pós-processo: reassociar items header-only com valores órfãos
+        # (padrão Tesseract: descrições num bloco, valores em outro)
+        # ------------------------------------------------------------------
+        if headeronly_items and orphan_value_lines:
+            # Agrupar valores individuais em tripletos se necessário
+            grouped_values = self._group_orphan_values(orphan_value_lines)
+            reassembled = self._reassemble_split_columns(
+                headeronly_items, grouped_values, seen_ids
+            )
+            items.extend(reassembled)
+        
         return items
+    
+    @staticmethod
+    def _group_orphan_values(
+        raw_values: list,
+    ) -> list[list[str]]:
+        """Agrupa valores órfãos em tripletos.
+        
+        Se os valores já são listas de 3, retorna como está.
+        Se são strings individuais, agrupa de 3 em 3 na ordem.
+        """
+        # Separar já-agrupados de individuais
+        grouped = []
+        singles = []
+        for v in raw_values:
+            if isinstance(v, list):
+                grouped.append(v)
+            else:
+                singles.append(v)
+        
+        # Se só temos agrupados, retornar
+        if not singles:
+            return grouped
+        
+        # Se só temos individuais, agrupar de 3 em 3
+        if not grouped:
+            result = []
+            for i in range(0, len(singles) - 2, 3):
+                result.append([singles[i], singles[i+1], singles[i+2]])
+            return result
+        
+        # Mistura: retornar os agrupados + agrupar restantes
+        for i in range(0, len(singles) - 2, 3):
+            grouped.append([singles[i], singles[i+1], singles[i+2]])
+        return grouped
     
     def _normalize_ocr_numbers(self, line: str) -> str:
         """Normaliza números OCR removendo espaços antes da vírgula decimal."""
@@ -307,6 +432,63 @@ class DebtsExtractor(ISectionExtractor):
             "page": page_num,
             "_next_index": j
         }
+
+    def _reassemble_split_columns(
+        self,
+        headers: list[dict],
+        value_lines: list[list[str]],
+        seen_ids: set,
+    ) -> list[dict]:
+        """Reassocia items sem valor com linhas de valor órfãs.
+
+        Tesseract frequentemente separa o layout 2-colunas do PDF em
+        dois blocos verticais:
+          Bloco 1 (esquerda): códigos + descrições
+          Bloco 2 (direita): 3 colunas de valores
+
+        Esta função emparelha cada header com sua respectiva linha de
+        valores, na ordem em que aparecem.
+        """
+        items = []
+        paired = min(len(headers), len(value_lines))
+
+        if paired == 0:
+            return items
+
+        logger.info(
+            "Reassembling split-column items",
+            headers=len(headers),
+            value_lines=len(value_lines),
+            paired=paired,
+        )
+
+        for idx in range(paired):
+            h = headers[idx]
+            vals = value_lines[idx]
+            v0 = parse_currency(vals[0])
+            v1 = parse_currency(vals[1])
+            v2 = parse_currency(vals[2])
+
+            normalized_desc = re.sub(r"(\S)\(", r"\1 (", h["desc"])
+            normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
+            id_content = f"{normalized_desc}|{v0}|{v1}|{v2}"
+            item_id = generate_item_id(id_content)
+
+            if item_id in seen_ids:
+                continue
+            seen_ids.add(item_id)
+
+            items.append({
+                "debt_code": h["code"],
+                "debt_description": h["desc"],
+                "year_before_last_value": v0,
+                "last_year_value": v1,
+                "current_year_value": v2,
+                "id": item_id,
+                "page": h["page"],
+            })
+
+        return items
     
     def _is_section_end_line(self, upper_line: str) -> bool:
         """Verifica se a linha indica fim da seção."""
