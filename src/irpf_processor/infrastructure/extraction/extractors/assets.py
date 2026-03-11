@@ -907,6 +907,8 @@ class AssetsExtractor(ISectionExtractor):
         
         if "Conta Pagamento" in raw_text:
             info["is_payment_account"] = "Sim" in raw_text.split("Conta Pagamento")[1][:20]
+        else:
+            info["is_payment_account"] = False
         
         # Fallback: extrair bank e account da descrição quando não existem nos metadados
         self._extract_bank_info_from_description(info, description)
@@ -1193,8 +1195,8 @@ class AssetsExtractor(ISectionExtractor):
                     info["acquisition_date"] = m.group(1)
             
             # Campos bancários órfãos (quando a quebra de página separa do item)
-            if "Banco" in line:
-                m = re.search(r"Banco[:\s]*(\d+)", line)
+            if re.search(r"[B8]anco", line):
+                m = re.search(r"[B8]anco[:\s]*(\d+)", line)
                 if m:
                     info["bank"] = m.group(1)
             
