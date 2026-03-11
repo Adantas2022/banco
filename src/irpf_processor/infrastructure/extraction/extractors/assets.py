@@ -206,7 +206,7 @@ class AssetsExtractor(ISectionExtractor):
         next_page_lines = next_page_text.split("\n") if next_page_text else []
         
         two_val = re.compile(
-            rf"^(?:(?:\d{{3,}}|\d)\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
+            rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
         )
         
         i = 0
@@ -255,7 +255,7 @@ class AssetsExtractor(ISectionExtractor):
     ) -> Optional[dict]:
         line = lines[idx].strip()
         
-        header = re.match(r"^(?:(?:\d{3,}|\d)\s+)?(\d{2})\s+(\d{2})\s+(.+?)\s*$", line)
+        header = re.match(r"^(?:\d+\s+)?(\d{2})\s+(\d{2})\s+(.+?)\s*$", line)
         if not header:
             return None
         
