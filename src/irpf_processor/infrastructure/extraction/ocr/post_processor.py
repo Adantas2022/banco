@@ -78,13 +78,18 @@ class PostProcessor(IPostProcessor):
         self._lang = lang
         self._corrections: dict[str, int] = {}
 
-    def process(self, text: Optional[str]) -> str:
+    def process(
+        self,
+        text: Optional[str],
+        preserve_column_gaps: bool = False,
+    ) -> str:
         if not text:
             return ""
-        
+
         self._corrections = {}
 
-        text = self.normalize_whitespace(text)
+        text = self.normalize_whitespace(text, preserve_column_gaps=preserve_column_gaps)
+        text = self.normalize_ocr_slashes(text)
         text = self.fix_accents(text)
         text = self.fix_ocr_errors(text)
         text = self.format_cpf(text)
@@ -96,13 +101,18 @@ class PostProcessor(IPostProcessor):
 
         return text.strip()
     
-    def process_with_metrics(self, text: Optional[str]) -> PostProcessingResult:
+    def process_with_metrics(
+        self,
+        text: Optional[str],
+        preserve_column_gaps: bool = False,
+    ) -> PostProcessingResult:
         if not text:
             return PostProcessingResult(text="")
-        
+
         self._corrections = {}
-        
-        text = self.normalize_whitespace(text)
+
+        text = self.normalize_whitespace(text, preserve_column_gaps=preserve_column_gaps)
+        text = self.normalize_ocr_slashes(text)
         text = self.fix_accents(text)
         text = self.fix_ocr_errors(text)
         text = self.format_cpf(text)
@@ -202,13 +212,34 @@ class PostProcessor(IPostProcessor):
 
         return text
 
-    def normalize_whitespace(self, text: str) -> str:
-        text = re.sub(r"[ \t]+", " ", text)
-        text = re.sub(r" +\n", "\n", text)
-        text = re.sub(r"\n +", "\n", text)
-        text = re.sub(r"\n{3,}", "\n\n", text)
+    def normalize_whitespace(
+        self,
+        text: str,
+        preserve_column_gaps: bool = False,
+    ) -> str:
+        if preserve_column_gaps:
+            text = re.sub(r"\t", " ", text)
+            text = re.sub(r" +\n", "\n", text)
+            text = re.sub(r"\n +", "\n", text)
+            text = re.sub(r"\n{3,}", "\n\n", text)
+        else:
+            text = re.sub(r"[ \t]+", " ", text)
+            text = re.sub(r" +\n", "\n", text)
+            text = re.sub(r"\n +", "\n", text)
+            text = re.sub(r"\n{3,}", "\n\n", text)
 
         return text.strip()
+
+    def normalize_ocr_slashes(self, text: str) -> str:
+        original_text = text
+
+        text = re.sub(r"(\d)\s*/\s*(\d)", r"\1/\2", text)
+
+        if text != original_text:
+            corrections = len(re.findall(r"(\d)\s*/\s*(\d)", original_text))
+            self._record_correction("ocr_slash_normalize", corrections)
+
+        return text
 
     def normalize_us_currency(self, text: str) -> str:
         """Normaliza valores monetários em formato US/misto para formato BR.

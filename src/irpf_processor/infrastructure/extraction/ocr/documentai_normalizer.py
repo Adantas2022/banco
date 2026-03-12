@@ -12,15 +12,28 @@ _PAGE_RE = re.compile(r"^P[aá]gina\s+\d+\s+de\s+\d+$", re.IGNORECASE)
 class DocumentAINormalizer:
     """Normalizes Document AI pages to fit the parser's regex-oriented structure."""
 
-    def normalize(self, text: str) -> str:
+    def normalize(
+        self,
+        text: str,
+        preserve_column_gaps: bool = False,
+    ) -> str:
         if not text:
             return ""
+
+        if preserve_column_gaps:
+            lines = text.splitlines()
+            lines = [line for line in lines if line.strip()]
+            normalized: list[str] = []
+            for line in lines:
+                line = self._fix_period_as_decimal(line)
+                normalized.append(line)
+            return "\n".join(normalized).strip()
 
         lines = [line.strip() for line in text.splitlines()]
         lines = [line for line in lines if line]
         lines = self._merge_currency_orphans(lines)
 
-        normalized: list[str] = []
+        normalized = []
         for line in lines:
             if _PAGE_RE.match(line):
                 normalized.append(line)
@@ -59,7 +72,7 @@ class DocumentAINormalizer:
             if _CURRENCY_RE.match(line) and merged:
                 prev = merged[-1]
                 value_count = len(_CURRENCY_RE.findall(prev))
-                if value_count < 2 and not _PAGE_RE.match(prev):
+                if value_count < 6 and not _PAGE_RE.match(prev):
                     merged[-1] = f"{prev} {line}"
                     continue
             merged.append(line)

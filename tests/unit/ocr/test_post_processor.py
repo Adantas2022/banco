@@ -135,3 +135,119 @@ class TestPostProcessor:
         result = processor._fix_digits("l23l56")
 
         assert result == "123156"
+
+
+class TestNormalizeOcrSlashes:
+
+    @pytest.fixture
+    def processor(self):
+        return PostProcessor(lang="pt-BR")
+
+    def test_collapses_spaces_around_slash_in_cnpj(self, processor):
+        text = "50.926.955 / 0001-42"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "50.926.955/0001-42"
+
+    def test_collapses_leading_space_only(self, processor):
+        text = "50.926.955 /0001-42"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "50.926.955/0001-42"
+
+    def test_collapses_trailing_space_only(self, processor):
+        text = "50.926.955/ 0001-42"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "50.926.955/0001-42"
+
+    def test_preserves_already_clean_cnpj(self, processor):
+        text = "50.926.955/0001-42"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "50.926.955/0001-42"
+
+    def test_does_not_affect_s_a_text(self, processor):
+        text = "VULCABRAS S / A"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "VULCABRAS S / A"
+
+    def test_does_not_affect_currency_values(self, processor):
+        text = "R$ 1.234,56"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "R$ 1.234,56"
+
+    def test_handles_cross_line_cnpj(self, processor):
+        text = "75.813.691\n/ 0001-41"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert result == "75.813.691/0001-41"
+
+    def test_multiple_cnpjs_in_same_text(self, processor):
+        text = "50.926.955 / 0001-42  VULCABRAS S / A  02.332.886 / 0001-04  XP INVESTIMENTOS"
+        result = processor.normalize_ocr_slashes(text)
+
+        assert "50.926.955/0001-42" in result
+        assert "02.332.886/0001-04" in result
+        assert "S / A" in result
+
+    def test_records_correction_metrics(self, processor):
+        processor.normalize_ocr_slashes("50.926.955 / 0001-42")
+
+        corrections = processor.get_last_corrections()
+        assert corrections.get("ocr_slash_normalize", 0) > 0
+
+    def test_no_correction_when_text_unchanged(self, processor):
+        processor.normalize_ocr_slashes("50.926.955/0001-42")
+
+        corrections = processor.get_last_corrections()
+        assert corrections.get("ocr_slash_normalize", 0) == 0
+
+
+class TestNormalizeWhitespacePreserveColumnGaps:
+
+    @pytest.fixture
+    def processor(self):
+        return PostProcessor(lang="pt-BR")
+
+    def test_preserves_multi_space_column_gaps(self, processor):
+        text = "Titular  303.363.419-20  50.926.955/0001-42  VULCABRAS  1.867,37"
+        result = processor.normalize_whitespace(text, preserve_column_gaps=True)
+
+        assert "  " in result
+
+    def test_collapses_spaces_when_not_preserving(self, processor):
+        text = "Titular  303.363.419-20  50.926.955/0001-42  VULCABRAS  1.867,37"
+        result = processor.normalize_whitespace(text, preserve_column_gaps=False)
+
+        assert "  " not in result
+
+    def test_converts_tabs_to_spaces_when_preserving(self, processor):
+        text = "Titular\t303.363.419-20"
+        result = processor.normalize_whitespace(text, preserve_column_gaps=True)
+
+        assert "\t" not in result
+        assert "Titular" in result
+
+    def test_strips_trailing_spaces_from_lines_when_preserving(self, processor):
+        text = "Titular  303.363.419-20   \nNext line"
+        result = processor.normalize_whitespace(text, preserve_column_gaps=True)
+
+        assert " \n" not in result
+
+    def test_collapses_triple_newlines_when_preserving(self, processor):
+        text = "Line 1\n\n\nLine 2"
+        result = processor.normalize_whitespace(text, preserve_column_gaps=True)
+
+        assert "\n\n\n" not in result
+        assert "Line 1" in result
+        assert "Line 2" in result
+
+    def test_process_with_preserve_column_gaps(self, processor):
+        text = "Titular  303.363.419-20  50.926.955 / 0001-42  VULCABRAS  1.867,37"
+        result = processor.process(text, preserve_column_gaps=True)
+
+        assert "  " in result
+        assert "50.926.955/0001-42" in result

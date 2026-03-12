@@ -52,7 +52,7 @@ class IImagePreprocessor(ABC):
 class IPostProcessor(ABC):
 
     @abstractmethod
-    def process(self, text: str) -> str:
+    def process(self, text: str, preserve_column_gaps: bool = False) -> str:
         pass
 
     @abstractmethod
