@@ -27,14 +27,21 @@ class OcrToPdfplumberAdapter:
         pages_text: dict[int, str] = {}
 
         for page in ocr_result.pages:
-            if page.has_spatial_data:
+            spatially_reconstructed = page.has_spatial_data
+            if spatially_reconstructed:
                 page_text = reconstruct_page_text(page, self._reconstruction_config)
             else:
                 page_text = page.text
 
-            page_text = self._post_processor.process(page_text)
+            page_text = self._post_processor.process(
+                page_text,
+                preserve_column_gaps=spatially_reconstructed,
+            )
             if self._is_documentai(ocr_result.engine_used):
-                page_text = self._documentai_normalizer.normalize(page_text)
+                page_text = self._documentai_normalizer.normalize(
+                    page_text,
+                    preserve_column_gaps=spatially_reconstructed,
+                )
 
             pages_text[page.page_number] = page_text
 
