@@ -114,18 +114,43 @@ class RuralAssetsExtractor(ISectionExtractor):
         i = 0
         while i < max_line:
             line = lines[i].strip()
+            upper_line = line.upper()
             
+            if "CÓDIGO" in upper_line or "TOTAL" in upper_line:
+                i += 1
+                continue
+            
+            # Tentar match com 2 valores (caso normal)
             pattern = re.match(
                 r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
             )
             
-            if pattern and "CÓDIGO" not in line.upper() and "TOTAL" not in line.upper():
+            if pattern:
                 item = self._parse_asset(pattern, lines, i, page_num, max_line)
                 if item:
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
                     continue
+            
+            # Fallback: match com 1 valor (OCR perdeu uma coluna, ex: watermark)
+            # Linha como "17 02 SECADOR DE CAFE 0,00" (só 1 valor)
+            pattern_1val = re.match(
+                r"^(\d+)\s+(.+?)\s+([\d.,]+)\s*$",
+                line
+            )
+            if pattern_1val:
+                desc_candidate = pattern_1val.group(2).strip()
+                # Evitar falsos positivos: descrição deve ter ≥3 chars
+                # e não ser apenas dígitos/pontuação
+                if len(desc_candidate) >= 3 and not re.match(r"^[\d.,/]+$", desc_candidate):
+                    item = self._parse_asset_1val(
+                        pattern_1val, lines, i, page_num, max_line
+                    )
+                    if item:
+                        items.append(item)
+                        i = item.pop("_next_index", i + 1)
+                        continue
             
             i += 1
         
@@ -169,9 +194,18 @@ class RuralAssetsExtractor(ISectionExtractor):
             if "TOTAL" in next_line.upper():
                 break
             
-            is_new_item = re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
-            if is_new_item and "CÓDIGO" not in next_line.upper():
+            # Detectar novo item: 2 valores OU 1 valor
+            is_new_item_2v = re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
+            is_new_item_1v = re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s*$", next_line)
+            
+            if is_new_item_2v and "CÓDIGO" not in next_line.upper():
                 break
+            
+            # Item com 1 valor: só considerar novo item se desc ≥3 chars
+            if is_new_item_1v and "CÓDIGO" not in next_line.upper():
+                desc_cand = is_new_item_1v.group(2).strip()
+                if len(desc_cand) >= 3 and not re.match(r"^[\d.,/]+$", desc_cand):
+                    break
             
             if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+$", next_line):
                 desc_parts.append(next_line)
@@ -198,6 +232,72 @@ class RuralAssetsExtractor(ISectionExtractor):
             "id": item_id,
             "page": page_num,
             "_next_index": j
+        }
+    
+    def _parse_asset_1val(
+        self,
+        match: re.Match,
+        lines: list[str],
+        idx: int,
+        page_num: int,
+        max_line: Optional[int] = None,
+    ) -> dict:
+        """Parse item com apenas 1 valor (OCR perdeu uma coluna).
+
+        Quando a watermark cobre um dos dois valores ``0,00``, o
+        Document AI produz linhas como ``17 02 SECADOR DE CAFE 0,00``.
+        Ambos os campos recebem o valor único — para ``0,00`` isso é
+        semanticamente correto.
+        """
+        code = match.group(1)
+        desc_start = match.group(2).strip()
+        single_val = parse_currency(match.group(3))
+
+        desc_parts = [desc_start]
+        j = idx + 1
+        line_limit = max_line if max_line is not None else len(lines)
+
+        while j < line_limit:
+            next_line = lines[j].strip()
+
+            if "TOTAL" in next_line.upper():
+                break
+
+            is_new_2v = re.match(
+                r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line
+            )
+            is_new_1v = re.match(
+                r"^(\d+)\s+(.+?)\s+([\d.,]+)\s*$", next_line
+            )
+
+            if is_new_2v and "CÓDIGO" not in next_line.upper():
+                break
+
+            if is_new_1v and "CÓDIGO" not in next_line.upper():
+                desc_cand = is_new_1v.group(2).strip()
+                if len(desc_cand) >= 3 and not re.match(r"^[\d.,/]+$", desc_cand):
+                    break
+
+            if next_line and not re.match(r"^[\d.,]+\s+[\d.,]+$", next_line):
+                desc_parts.append(next_line)
+
+            j += 1
+
+        full_desc = " ".join(desc_parts)
+        full_desc = re.sub(r"\s*Página\s+\d+\s+de\s*\d+\s*$", "", full_desc, flags=re.IGNORECASE)
+        full_desc = re.sub(r"\s+", " ", full_desc).strip()
+
+        normalized_desc = self._normalize_description(full_desc)
+        item_id = generate_item_id(f"{code}{normalized_desc[:30]}")
+
+        return {
+            "code": code,
+            "description": full_desc,
+            "year_before_last_value": single_val,
+            "last_year_value": single_val,
+            "id": item_id,
+            "page": page_num,
+            "_next_index": j,
         }
     
     def _get_prefix_lines(self, lines: list[str], idx: int) -> list[str]:
