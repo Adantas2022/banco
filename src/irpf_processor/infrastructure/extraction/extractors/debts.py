@@ -81,8 +81,9 @@ class DebtsExtractor(ISectionExtractor):
             
             # Extrair itens da página ANTES de verificar fim
             # (a página pode ter itens E o marcador de fim depois deles)
-            # Passar flag indicando que já estamos dentro da seção (para páginas de continuação)
-            page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section=in_section)
+            # already_in_section=True apenas se a seção começou em OUTRA página
+            # Se esta página contém o marcador, deixar _extract_from_page descobrir naturalmente
+            page_items = self._extract_from_page(page_text, page_num, seen_ids, already_in_section=(in_section and not has_debts_marker))
             items.extend(page_items)
             
             if not pdf_totals:
