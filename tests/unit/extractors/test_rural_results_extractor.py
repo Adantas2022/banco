@@ -100,4 +100,13 @@ class TestParseResultLine:
         assert "Receita bruta total" in item['description']
         assert 328000.0 == item['value']
 
+    def test_parse_result_line_when_two_uppercase_words_in_description(self, extractor):
+        
+        line = "Saldo de Prejuízos 0,00"
+        item = extractor._parse_result_line(line)
+
+        assert item is not None
+        assert "Saldo de Prejuízos" in item['description']
+        assert 0.0 == item['value']
+
 
