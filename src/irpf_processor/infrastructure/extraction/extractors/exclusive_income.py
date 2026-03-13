@@ -269,28 +269,28 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
 
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
-                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}"
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(five_line_item)
 
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
-                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}"
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
@@ -366,28 +366,28 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
 
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
-                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}"
+                    key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(five_line_item)
 
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
-                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}"
+                    key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
@@ -513,14 +513,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
+                    key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
-                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}"
+                    key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
@@ -631,7 +631,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_others_item(line, lines_list, i, page_num)
                 if item:
-                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}"
+                    key = f"{item.get('payer_cpf_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(item)
