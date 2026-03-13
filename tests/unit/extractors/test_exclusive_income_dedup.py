@@ -62,15 +62,17 @@ class TestFinancialIncomeDedup:
         assert len(financial["items"]) == 2
         assert financial["total_value"] == pytest.approx(76409.30, abs=0.01)
 
-    def test_same_page_items_with_same_cnpj_cpf_value_are_deduplicated(
+    def test_same_page_items_with_same_cnpj_cpf_value_are_preserved(
         self, exclusive_extractor
     ):
+        """Bug #88514: legitimate duplicate items (same CNPJ/CPF/value/page)
+        must be preserved — they represent distinct entries in the declaration."""
         page5 = (
             "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
             "06. Rendimentos de aplicações financeiras\n"
             "Titular 169.407.738-19 40.498.539/0001-37 ITAU OPTIMUS RF LP FIC 38.204,65\n"
             "Titular 169.407.738-19 40.498.539/0001-37 ITAU OPTIMUS RF LP FIC 38.204,65\n"
-            "TOTAL 38.204,65\n"
+            "TOTAL 76.409,30\n"
             "PAGAMENTOS EFETUADOS\n"
         )
         context = _make_context({5: page5})
@@ -79,7 +81,7 @@ class TestFinancialIncomeDedup:
         assert result is not None
         financial = result["subsections"].get("income_from_financial_investments")
         assert financial is not None
-        assert len(financial["items"]) == 1
+        assert len(financial["items"]) == 2
 
     def test_items_with_same_cnpj_different_values_always_kept(
         self, exclusive_extractor
