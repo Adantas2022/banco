@@ -195,9 +195,16 @@ class RuralResultsExtractor(ISectionExtractor):
                 }
         
         pattern = re.match(r"^(.+?)\s+(-?[\d.,-]+)\s*$", line_stripped)
-        
+        value_is_currency = True
+
         if not pattern:
-            return None
+            #  Bug #88457 - Regex adicionado para casos onde o value não é um valor monetário e sim uma string
+            #  Divide a description e o value usando uma palavra iniciando com a letra maiuscula como referencia. 
+            pattern = re.match(r"^(.*?)\s+([A-ZÀ-Ú].*)$", line_stripped)
+            value_is_currency = False
+
+            if not pattern:
+                return None
         
         description = pattern.group(1).strip()
         value_str = pattern.group(2).strip()
@@ -205,8 +212,12 @@ class RuralResultsExtractor(ISectionExtractor):
         if not description or len(description) < 5:
             return None
         
-        value = parse_currency(value_str)
-        if description == "Resultado":
+        if value_is_currency:
+            value = parse_currency(value_str)
+        else:
+            value = value_str
+        
+        if description == "Resultado" and value_is_currency:
             value = abs(value)
         
         return {
