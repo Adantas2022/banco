@@ -168,7 +168,7 @@ class IncomePJExtractor(ISectionExtractor):
             return None
         
         full_name = " ".join(name_parts)
-        item_id = generate_item_id(f"{cnpj}{full_name}{match.group(2)}{match.group(3)}")
+        item_id = generate_item_id(f"{cnpj}{full_name}{match.group(2)}{match.group(3)}{page_num}")
         
         return {
             "payer_name": full_name,
@@ -196,7 +196,7 @@ class IncomePJExtractor(ISectionExtractor):
             return None
         
         full_name = " ".join(name_parts)
-        item_id = generate_item_id(f"{cnpj}{full_name}{match.group(2)}{match.group(3)}")
+        item_id = generate_item_id(f"{cnpj}{full_name}{match.group(2)}{match.group(3)}{page_num}")
         
         return {
             "payer_name": full_name,
