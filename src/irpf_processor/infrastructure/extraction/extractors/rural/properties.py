@@ -193,12 +193,12 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 i += 1
                 continue
 
-            if "PARTICIPANTE(S)" in upper_line or "PARTICIPANTES" in upper_line:
+            if "PARTICIPANTE" in upper_line:
                 i += 1
                 continue
 
             # Skip linhas "Estrangeiro: Nao" e similares
-            if upper_line.startswith("ESTRANGEIRO:"):
+            if upper_line.startswith("ESTRANGE"):
                 i += 1
                 continue
 
@@ -583,7 +583,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if "PARTICIPANTE" in upper_line:
                 count += 1
                 continue
-            if re.match(rf"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(({CPF_PATTERN}|{CNPJ_PATTERN})\)", line):
+            if re.match(rf"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(\s*({CPF_PATTERN}|{CNPJ_PATTERN})\s*\)", line):
                 count += 1
                 continue
             count += 1
@@ -624,7 +624,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
 
-            part_match = re.match(rf"^(.+?)\s*\({CPF_OR_CNPJ}\)", next_line)
+            part_match = re.match(rf"^(.+?)\s*\(\s*{CPF_OR_CNPJ}\s*\)", next_line)
 
             if part_match:
                 doc_number = part_match.group(2)
@@ -713,7 +713,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
 
             # Tentar extrair participante
-            part_match = re.match(rf"^(.+?)\s*\({CPF_OR_CNPJ}\)", next_line)
+            part_match = re.match(rf"^(.+?)\s*\(\s*{CPF_OR_CNPJ}\s*\)", next_line)
 
             if part_match:
                 doc_number = part_match.group(2)
