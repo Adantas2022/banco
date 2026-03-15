@@ -269,6 +269,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
+                    continuation = self._collect_name_continuation(lines_list, i)
+                    if continuation:
+                        item["payer_name"] = f"{item['payer_name']} {continuation}"
+                    item["payer_name"] = self._normalize_payer_name(item["payer_name"])
                     key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -276,6 +280,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
+                    multiline_item["payer_name"] = self._normalize_payer_name(multiline_item.get("payer_name", ""))
                     key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -283,6 +288,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
+                    five_line_item["payer_name"] = self._normalize_payer_name(five_line_item.get("payer_name", ""))
                     key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -290,10 +296,16 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
+                    continuation = self._collect_name_continuation(lines_list, i)
+                    if continuation and two_line_item.get("payer_name"):
+                        two_line_item["payer_name"] = f"{two_line_item['payer_name']} {continuation}"
+                    two_line_item["payer_name"] = self._normalize_payer_name(two_line_item.get("payer_name", ""))
                     key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
+
+        self._consolidate_names_by_cnpj(items)
 
         if total_value == 0 and items:
             total_value = round(sum(i["value"] for i in items), 2)
@@ -366,6 +378,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
+                    continuation = self._collect_name_continuation(lines_list, i)
+                    if continuation:
+                        item["payer_name"] = f"{item['payer_name']} {continuation}"
+                    item["payer_name"] = self._normalize_payer_name(item["payer_name"])
                     key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -373,6 +389,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
+                    multiline_item["payer_name"] = self._normalize_payer_name(multiline_item.get("payer_name", ""))
                     key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -380,6 +397,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 five_line_item = self._parse_5line_income_item(lines_list, i, page_num)
                 if five_line_item:
+                    five_line_item["payer_name"] = self._normalize_payer_name(five_line_item.get("payer_name", ""))
                     key = f"{five_line_item.get('payer_cnpj', '')}{five_line_item.get('cpf', '')}{five_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -387,18 +405,23 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 two_line_item = self._parse_2line_income_item(lines_list, i, page_num)
                 if two_line_item:
+                    continuation = self._collect_name_continuation(lines_list, i)
+                    if continuation and two_line_item.get("payer_name"):
+                        two_line_item["payer_name"] = f"{two_line_item['payer_name']} {continuation}"
+                    two_line_item["payer_name"] = self._normalize_payer_name(two_line_item.get("payer_name", ""))
                     key = f"{two_line_item.get('payer_cnpj', '')}{two_line_item.get('cpf', '')}{two_line_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(two_line_item)
 
+        self._consolidate_names_by_cnpj(items)
         total = round(sum(i["value"] for i in items), 2)
 
         if not items and total == 0:
             extracted_total = self._extract_section_06_total(section_lines, context)
             if extracted_total > 0:
                 total = extracted_total
-        
+
         return {
             "name": "06. Rendimentos de aplicações financeiras",
             "code": "06",
@@ -513,6 +536,10 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             if in_subsection:
                 item = self._parse_income_item(line, lines_list, i, page_num)
                 if item:
+                    continuation = self._collect_name_continuation(lines_list, i)
+                    if continuation:
+                        item["payer_name"] = f"{item['payer_name']} {continuation}"
+                    item["payer_name"] = self._normalize_payer_name(item["payer_name"])
                     key = f"{item.get('payer_cnpj', '')}{item.get('cpf', '')}{item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
@@ -520,13 +547,15 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
 
                 multiline_item = self._parse_multiline_income_item(lines_list, i, page_num)
                 if multiline_item:
+                    multiline_item["payer_name"] = self._normalize_payer_name(multiline_item.get("payer_name", ""))
                     key = f"{multiline_item.get('payer_cnpj', '')}{multiline_item.get('cpf', '')}{multiline_item.get('value', 0)}{page_num}_{i}"
                     if key not in seen_keys:
                         seen_keys.add(key)
                         items.append(multiline_item)
 
+        self._consolidate_names_by_cnpj(items)
         total = round(sum(i["value"] for i in items), 2)
-        
+
         return {
             "name": "10. Juros sobre capital próprio",
             "code": "10",
@@ -646,6 +675,119 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             "items": items if items else None
         }
     
+    _CONTINUATION_STOP_RE = re.compile(
+        r"^(?:Titular|Dependente)\s+"
+        r"|^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
+        r"|^\d{3}\.\d{3}\.\d{3}-\d{2}"
+        r"|^\d{2}[.\s]+[A-Z]"
+        r"|^TOTAL\s"
+        r"|^\s*[\d]{1,3}(?:[.,\s]?\d{3})*[.,]\d{2}\s*$",
+        re.IGNORECASE,
+    )
+
+    _PAGE_HEADER_RE = re.compile(
+        r"^P[aá]gina\s+\d+"
+        r"|^NOME\s*:"
+        r"|^CPF\s*:"
+        r"|^DECLARA"
+        r"|^EXERC[IÍ]CIO"
+        r"|^Benefici[aá]rio\s+CPF"
+        r"|^\(Valores\s+em\s+Reais\)"
+        r"|^IMPOSTO\s+SOBRE\s+A\s+RENDA"
+        r"|^ANO\s*-?\s*CALEND",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _normalize_payer_name(name: str) -> str:
+        name = re.sub(r"\bS\s*/\s*A\b", "S/A", name)
+        name = re.sub(r"\(\s+", "(", name)
+        name = re.sub(r"\s+\)", ")", name)
+        name = re.sub(r"\s+,", ",", name)
+        return name
+
+    def _collect_name_continuation(
+        self, lines: list[str], matched_idx: int, max_lookahead: int = 8
+    ) -> str:
+        parts: list[str] = []
+        skipped_headers = 0
+        for offset in range(1, max_lookahead + 1):
+            nxt_idx = matched_idx + offset
+            if nxt_idx >= len(lines):
+                break
+            nxt = lines[nxt_idx].strip()
+            if not nxt:
+                if skipped_headers:
+                    continue
+                break
+            if self._PAGE_HEADER_RE.search(nxt):
+                skipped_headers += 1
+                continue
+            if self._CONTINUATION_STOP_RE.search(nxt):
+                break
+            if any(m in nxt.upper() for m in self.SECTION_END_MARKERS):
+                break
+            if not re.search(r"[A-Za-zÀ-ÿ]", nxt):
+                if skipped_headers:
+                    continue
+                break
+            parts.append(nxt)
+            if skipped_headers:
+                break
+        return " ".join(parts)
+
+    @staticmethod
+    def _consolidate_names_by_cnpj(items: list[dict]) -> list[dict]:
+        from collections import Counter, defaultdict
+        cnpj_names: dict[str, set[str]] = defaultdict(set)
+        cnpj_name_freq: Counter = Counter()
+        first_seen: dict[tuple[str, str], int] = {}
+        for pos, item in enumerate(items):
+            cnpj = item.get("payer_cnpj", "")
+            name = item.get("payer_name", "")
+            if cnpj and name:
+                cnpj_names[cnpj].add(name)
+                cnpj_name_freq[(cnpj, name)] += 1
+                if (cnpj, name) not in first_seen:
+                    first_seen[(cnpj, name)] = pos
+
+        upgrades: dict[tuple[str, str], str] = {}
+        for cnpj, names in cnpj_names.items():
+            sorted_names = sorted(names, key=len, reverse=True)
+            for i, shorter in enumerate(sorted_names):
+                for longer in sorted_names[:i]:
+                    if longer.startswith(shorter):
+                        upgrades[(cnpj, shorter)] = longer
+                        break
+
+            remaining = [n for n in sorted_names if (cnpj, n) not in upgrades]
+            for i, name_a in enumerate(remaining):
+                if (cnpj, name_a) in upgrades:
+                    continue
+                for name_b in remaining[:i]:
+                    if (cnpj, name_b) in upgrades:
+                        continue
+                    if len(name_a) != len(name_b) or len(name_a) < 10:
+                        continue
+                    char_diffs = sum(a != b for a, b in zip(name_a, name_b))
+                    if char_diffs == 1:
+                        freq_a = cnpj_name_freq[(cnpj, name_a)]
+                        freq_b = cnpj_name_freq[(cnpj, name_b)]
+                        pos_a = first_seen.get((cnpj, name_a), 0)
+                        pos_b = first_seen.get((cnpj, name_b), 0)
+                        if freq_b > freq_a or (freq_b == freq_a and pos_b < pos_a):
+                            upgrades[(cnpj, name_a)] = name_b
+                        else:
+                            upgrades[(cnpj, name_b)] = name_a
+                        break
+
+        for item in items:
+            key = (item.get("payer_cnpj", ""), item.get("payer_name", ""))
+            if key in upgrades:
+                item["payer_name"] = upgrades[key]
+
+        return items
+
     def _parse_income_item(
         self,
         line: str,
