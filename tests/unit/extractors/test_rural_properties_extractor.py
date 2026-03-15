@@ -1,6 +1,7 @@
 """Testes unitários para RuralPropertiesExtractor.
 
 Bug #84111 - Área/CIB concatenados em name_and_location quando formato US.
+Bug #89072 - Participants always null, area OCR comma→period, duplicate code.
 """
 
 import pytest
@@ -105,3 +106,142 @@ class TestBRAreaFormat:
         items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
         assert "FAZENDA LAMBARI" in items[0]["name_and_location"]
         assert "1.200" not in items[0]["name_and_location"]
+
+
+class TestParticipantOCRSpaces:
+    """Bug #89072: OCR adds spaces inside parentheses around CPF/CNPJ."""
+
+    PAGE_TEXT = (
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+        "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+        "10 15,00 3 FAZENDA LAMBARI, CAMPOS DE JULIO/MT 1.200,0 4.695.449-0\n"
+        "PARTICIPANTE ( S )\n"
+        "JOAO DA SILVA ( 175.474.448-65 )\n"
+        "Estrangeiro: Nao\n"
+        "MARIA SOUZA ( 234.567.890-12 )\n"
+        "Estrangeiro: Nao\n"
+        "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+    )
+
+    def test_finds_2_participants(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        assert len(items) == 1
+        assert items[0]["participants"] is not None
+        assert len(items[0]["participants"]["items"]) == 2
+
+    def test_participant_cpf_extracted(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        p = items[0]["participants"]["items"]
+        assert p[0]["cpf"] == "175.474.448-65"
+        assert p[1]["cpf"] == "234.567.890-12"
+
+    def test_participant_name_formatted(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        p = items[0]["participants"]["items"]
+        assert p[0]["participant_name"] == "JOAO DA SILVA (175.474.448-65)"
+
+    def test_no_spaces_participants(self, extractor):
+        """Regression: standard format without spaces still works."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 15,00 3 FAZENDA BOA VISTA 800,0 1.234.567-8\n"
+            "PARTICIPANTE(S)\n"
+            "PEDRO ALVES (111.222.333-44)\n"
+            "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+        )
+        items = extractor._extract_from_page(page, 10, set())
+        assert items[0]["participants"] is not None
+        assert items[0]["participants"]["items"][0]["cpf"] == "111.222.333-44"
+
+
+class TestAreaOCRCommaAsPeriod:
+    """Bug #89072: OCR renders comma as period in area values."""
+
+    def test_normalize_area_value(self, extractor):
+        assert extractor._normalize_area_value("1.200.0") == "1.200,0"
+        assert extractor._normalize_area_value("3.595.1") == "3.595,1"
+
+    def test_no_change_normal_br(self, extractor):
+        assert extractor._normalize_area_value("1.200,0") == "1.200,0"
+
+    def test_no_change_us_format(self, extractor):
+        assert extractor._normalize_area_value("800.0") == "800.0"
+
+    def test_no_change_simple_number(self, extractor):
+        assert extractor._normalize_area_value("100") == "100"
+
+    def test_area_parsed_correctly(self, extractor):
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 15,00 3 FAZENDA LAMBARI 1.200.0 4.695.449-0\n"
+            "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+        )
+        items = extractor._extract_from_page(page, 10, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 1200.0
+
+
+class TestDuplicateCodeOCR:
+    """Bug #89072: OCR duplicates the property code digit."""
+
+    PAGE_TEXT = (
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+        "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+        "10 10   15,00   3   FAZENDA VENTANIA 800,0 1.234.567-8\n"
+        "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+    )
+
+    def test_parses_despite_duplicate_code(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        assert len(items) == 1
+
+    def test_code_is_correct(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        assert items[0]["code"] == 10
+
+    def test_name_correct(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 10, set())
+        assert "FAZENDA VENTANIA" in items[0]["name_and_location"]
+
+
+class TestPageBoundaryParticipants:
+    """Bug #89072: Participants split across page boundary."""
+
+    PAGE1_TEXT = (
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+        "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+        "10 15,00 3 FAZENDA LAMBARI 1.200,0 4.695.449-0\n"
+        "PARTICIPANTE(S)\n"
+        "JOAO DA SILVA (175.474.448-65)\n"
+    )
+    PAGE2_TEXT = (
+        "MARIA SOUZA ( 234.567.890-12 )\n"
+        "Estrangeiro: Nao\n"
+        "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+        "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+        "11 50,00 1 FAZENDA BOA VISTA 500,0 2.345.678-9\n"
+        "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+    )
+
+    def test_page_boundary_participant_merged(self, extractor):
+        ctx = ExtractionContext(
+            full_text=self.PAGE1_TEXT + "\n" + self.PAGE2_TEXT,
+            pages_text={10: self.PAGE1_TEXT, 11: self.PAGE2_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        assert result is not None
+        prop10 = [i for i in result["items"] if i["code"] == 10][0]
+        assert prop10["participants"] is not None
+        assert len(prop10["participants"]["items"]) == 2
+
+    def test_page2_property_also_extracted(self, extractor):
+        ctx = ExtractionContext(
+            full_text=self.PAGE1_TEXT + "\n" + self.PAGE2_TEXT,
+            pages_text={10: self.PAGE1_TEXT, 11: self.PAGE2_TEXT},
+            total_pages=21,
+        )
+        result = extractor.extract(ctx)
+        assert result["total_properties"] == 2
