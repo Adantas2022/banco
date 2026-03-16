@@ -671,7 +671,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             payer_name = pattern1.group(4).strip()
             value = parse_currency(pattern1.group(5))
             
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{idx}")
             
             return {
                 "beneficiary": beneficiary,
@@ -701,7 +701,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             value = parse_currency(pattern2.group(4))
             cpf = pattern2.group(5)
             
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{idx}")
             
             return {
                 "beneficiary": beneficiary,
@@ -732,7 +732,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             payer_name = pattern3.group(4).strip()
             value = parse_currency(pattern3.group(5))
             
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{idx}")
             
             return {
                 "beneficiary": beneficiary,
@@ -763,7 +763,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             payer_name = pattern4.group(4).strip()
             value = parse_currency(pattern4.group(5))
             
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{idx}")
             
             return {
                 "beneficiary": beneficiary,
@@ -826,7 +826,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 break
         
         if cnpj and value is not None and value > 0:
-            item_id = generate_item_id(f"{cnpj}{cpf or ''}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf or ''}{value}{page_num}_{start_idx}")
             return {
                 "beneficiary": beneficiary or "Titular",
                 "cpf": cpf or "",
@@ -888,7 +888,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         cpf = match2.group(3)
         
         if value > 0:
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{start_idx}")
             return {
                 "beneficiary": beneficiary,
                 "cpf": cpf,
@@ -979,7 +979,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         # Validar item completo (CPF, CNPJ e valor são obrigatórios)
         if cpf and cnpj and value is not None and value > 0:
-            item_id = generate_item_id(f"{cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{start_idx}")
             return {
                 "beneficiary": beneficiary_line,
                 "cpf": cpf,
@@ -1093,7 +1093,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             # Juntar descrição
             description = " ".join(description_parts)
             
-            item_id = generate_item_id(f"{payer_cpf_cnpj}{cpf}{value}")
+            item_id = generate_item_id(f"{payer_cpf_cnpj}{cpf}{value}{page_num}_{idx}")
             
             return {
                 "beneficiary": beneficiary,
