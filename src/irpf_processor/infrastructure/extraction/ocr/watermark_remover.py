@@ -63,7 +63,7 @@ class WatermarkRemover:
         Para cada página:
         1. Renderiza em imagem (grayscale) no DPI configurado
         2. Remove pixels na faixa de cinza do watermark (substitui por branco)
-        3. Reconstrui a página como imagem PNG no PDF
+        3. Reconstrui a página como imagem JPG no PDF
 
         Returns:
             bytes do PDF limpo
