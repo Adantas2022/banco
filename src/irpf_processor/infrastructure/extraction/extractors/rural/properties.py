@@ -193,12 +193,12 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 i += 1
                 continue
 
-            if "PARTICIPANTE(S)" in upper_line or "PARTICIPANTES" in upper_line:
+            if "PARTICIPANTE" in upper_line:
                 i += 1
                 continue
 
             # Skip linhas "Estrangeiro: Nao" e similares
-            if upper_line.startswith("ESTRANGEIRO:"):
+            if upper_line.startswith("ESTRANGE"):
                 i += 1
                 continue
 
@@ -247,6 +247,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         """
         # Normalizar linha para OCR (espaços antes da vírgula)
         line = re.sub(r"(\d)\s+,", r"\1,", line.strip())
+        line = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", line)
 
         # Formato: codigo participacao condicao nome area cib
         # Ex: "10 15,00 3 FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
@@ -282,7 +283,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
 
             if area_cib_match:
                 name_location = remaining[: area_cib_match.start()].strip()
-                area = parse_currency(area_cib_match.group(1))
+                area = parse_currency(self._normalize_area_value(area_cib_match.group(1)))
                 cib = area_cib_match.group(2)
 
                 # Verificar se próxima linha é continuação do nome
@@ -321,7 +322,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         break
 
                     # Parar em novo item (formato código participação condição)
-                    if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
+                    norm_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+                    if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", norm_next):
                         break
                     # Parar se encontrar apenas código (início de novo item multiline)
                     if re.match(r"^\d{1,2}$", next_line):
@@ -353,14 +355,13 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         name_part = next_line[: area_cib_end.start()].strip()
                         if name_part:
                             name_parts.append(name_part)
-                        area = parse_currency(area_cib_end.group(1))
+                        area = parse_currency(self._normalize_area_value(area_cib_end.group(1)))
                         cib = area_cib_end.group(2)
                         found_area_cib = True
                         break
 
                     if _AREA_ONLY_RE.match(next_line):
-                        area = parse_currency(next_line)
-                        # Próxima linha pode ser CIB
+                        area = parse_currency(self._normalize_area_value(next_line))
                         if j + 1 < len(lines):
                             cib_line = lines[j + 1].strip()
                             if re.match(r"^[\d.-]+$", cib_line) and "-" in cib_line:
@@ -403,7 +404,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         participation = parse_currency(match.group(2))
         exploration = int(match.group(3))
         name_location = match.group(4).strip()
-        area = parse_currency(match.group(5))
+        area = parse_currency(self._normalize_area_value(match.group(5)))
         cib = match.group(6)
 
         # Verificar se próxima linha é continuação do nome
@@ -516,15 +517,14 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 name_part = next_line[: area_cib_match.start()].strip()
                 if name_part:
                     name_parts.append(name_part)
-                area = parse_currency(area_cib_match.group(1))
+                area = parse_currency(self._normalize_area_value(area_cib_match.group(1)))
                 cib = area_cib_match.group(2)
                 j += 1
                 break
 
             if _AREA_ONLY_RE.match(next_line):
-                area = parse_currency(next_line)
+                area = parse_currency(self._normalize_area_value(next_line))
                 j += 1
-                # Próximo deve ser CIB
                 if j < len(lines):
                     cib_line = lines[j].strip()
                     if re.match(r"^[\d.-]+$", cib_line) and "-" in cib_line:
@@ -560,6 +560,17 @@ class RuralPropertiesExtractor(ISectionExtractor):
             "page": page_num,
         }
 
+    @staticmethod
+    def _normalize_area_value(area_str: str) -> str:
+        """Normalize OCR artifacts where comma becomes period in area values.
+
+        Pattern: "1.200.0" (OCR misread of "1.200,0") → "1.200,0"
+        Matches: digits.3digits.1digit — replace last '.' with ','
+        """
+        if re.match(r"^\d+\.\d{3}\.\d$", area_str):
+            return area_str[::-1].replace(".", ",", 1)[::-1]
+        return area_str
+
     def _normalize_name(self, name: str) -> str:
         name = re.sub(r"\s+", " ", name)
         return name.strip()
@@ -573,7 +584,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
             line = lines[j].strip()
             upper_line = line.upper()
 
-            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", line):
+            normalized = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", line)
+            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized):
                 break
             if re.match(r"^\d{1,2}$", line):
                 break
@@ -583,7 +595,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if "PARTICIPANTE" in upper_line:
                 count += 1
                 continue
-            if re.match(rf"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(({CPF_PATTERN}|{CNPJ_PATTERN})\)", line):
+            if re.match(rf"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ].+\(\s*({CPF_PATTERN}|{CNPJ_PATTERN})\s*\)", line):
                 count += 1
                 continue
             count += 1
@@ -616,7 +628,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if "PARTICIPANTE" in upper_next:
                 continue
 
-            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
+            normalized_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized_next):
                 break
             if re.match(r"^\d{1,2}$", next_line):
                 break
@@ -624,7 +637,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
                 break
 
-            part_match = re.match(rf"^(.+?)\s*\({CPF_OR_CNPJ}\)", next_line)
+            part_match = re.match(rf"^(.+?)\s*\(\s*{CPF_OR_CNPJ}\s*\)", next_line)
 
             if part_match:
                 doc_number = part_match.group(2)
@@ -676,7 +689,8 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
 
             # Parar se encontrar novo item (código participação condição)
-            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line):
+            normalized_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+            if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized_next):
                 break
             # Parar se encontrar apenas código (início de novo item multiline)
             if re.match(r"^\d{1,2}$", next_line):
@@ -713,7 +727,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
 
             # Tentar extrair participante
-            part_match = re.match(rf"^(.+?)\s*\({CPF_OR_CNPJ}\)", next_line)
+            part_match = re.match(rf"^(.+?)\s*\(\s*{CPF_OR_CNPJ}\s*\)", next_line)
 
             if part_match:
                 doc_number = part_match.group(2)
