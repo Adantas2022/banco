@@ -53,7 +53,7 @@ class WatermarkRemover:
         self._gray_low = gray_low
         self._gray_high = gray_high
         self._render_dpi = render_dpi
-        self._jpeg_quality = jpeg_quality,
+        self._jpeg_quality = jpeg_quality
         self._residue_threshold = residue_threshold
 
 
@@ -93,6 +93,17 @@ class WatermarkRemover:
                 cleaned[wm_mask] = 255
                 # Clean nearly-white leftover residues
                 cleaned[cleaned > self._residue_threshold] = 255
+
+                # Suavização leve APENAS nos pixels que eram fronteira do watermark
+                # Identifica a borda da máscara via dilatação - erosão (anel de 2px)
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                dilated = cv2.dilate(wm_mask.astype(np.uint8), kernel, iterations=1)
+                eroded = cv2.erode(wm_mask.astype(np.uint8), kernel, iterations=1)
+                border_mask = (dilated - eroded).astype(bool)
+
+                # Aplica Gaussian blur leve só na borda para suavizar transição
+                blurred = cv2.GaussianBlur(cleaned, (3, 3), sigmaX=0.8)
+                cleaned[border_mask] = blurred[border_mask]
                 pages_cleaned += 1
             else:
                 cleaned = gray
@@ -100,9 +111,12 @@ class WatermarkRemover:
             # Convert back to RGB for embedding
             rgb = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
 
-            # SAVE AS LOSSLESS PNG
-            png_ok, png_bytes = cv2.imencode('.png', rgb)
-            png_bytes = png_bytes.tobytes()
+            # SAVE AS JPG
+            ok, jpg_bytes = cv2.imencode('.jpg', rgb, [cv2.IMWRITE_JPEG_QUALITY, self._jpeg_quality])
+            if not ok:
+                raise RuntimeError("Falha ao codificar JPEG com cv2.imencode.")
+
+            jpg_bytes = jpg_bytes.tobytes()
 
             # Criar página com mesmas dimensões
             new_page = out_doc.new_page(
@@ -111,7 +125,7 @@ class WatermarkRemover:
             )
             rect = fitz.Rect(0, 0, page.rect.width, page.rect.height)
 
-            new_page.insert_image(rect, stream=png_bytes)
+            new_page.insert_image(rect, stream=jpg_bytes)
 
         result = out_doc.tobytes(deflate=True, garbage=4)
 
