@@ -30,6 +30,7 @@ logger = get_logger(__name__)
 # considerados parte da marca d'água e substituídos por branco.
 WM_GRAY_LOW = 150
 WM_GRAY_HIGH = 230
+RESIDUE_THRESHOLD = 220
 
 # DPI para renderização das páginas (trade-off: qualidade vs tamanho).
 RENDER_DPI = 200
@@ -47,11 +48,14 @@ class WatermarkRemover:
         gray_high: int = WM_GRAY_HIGH,
         render_dpi: int = RENDER_DPI,
         jpeg_quality: int = JPEG_QUALITY,
+        residue_threshold: int = RESIDUE_THRESHOLD,
     ):
         self._gray_low = gray_low
         self._gray_high = gray_high
         self._render_dpi = render_dpi
         self._jpeg_quality = jpeg_quality
+        self._residue_threshold = residue_threshold
+
 
     def clean_pdf_bytes(self, pdf_bytes: bytes) -> bytes:
         """Remove marcas d'água de um PDF e retorna bytes do PDF limpo.
@@ -59,7 +63,7 @@ class WatermarkRemover:
         Para cada página:
         1. Renderiza em imagem (grayscale) no DPI configurado
         2. Remove pixels na faixa de cinza do watermark (substitui por branco)
-        3. Reconstrui a página como imagem JPEG no PDF
+        3. Reconstrui a página como imagem JPG no PDF
 
         Returns:
             bytes do PDF limpo
@@ -68,8 +72,10 @@ class WatermarkRemover:
         out_doc = fitz.open()
 
         pages_cleaned = 0
+
         for page_num in range(len(src_doc)):
             page = src_doc[page_num]
+
             pix = page.get_pixmap(dpi=self._render_dpi)
             img = np.frombuffer(
                 pix.samples, dtype=np.uint8
@@ -85,16 +91,32 @@ class WatermarkRemover:
                 # Remover watermark: substituir faixa cinza por branco
                 cleaned = gray.copy()
                 cleaned[wm_mask] = 255
+                # Clean nearly-white leftover residues
+                cleaned[cleaned > self._residue_threshold] = 255
+
+                # Suavização leve APENAS nos pixels que eram fronteira do watermark
+                # Identifica a borda da máscara via dilatação - erosão (anel de 2px)
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                dilated = cv2.dilate(wm_mask.astype(np.uint8), kernel, iterations=1)
+                eroded = cv2.erode(wm_mask.astype(np.uint8), kernel, iterations=1)
+                border_mask = (dilated - eroded).astype(bool)
+
+                # Aplica Gaussian blur leve só na borda para suavizar transição
+                blurred = cv2.GaussianBlur(cleaned, (3, 3), sigmaX=0.8)
+                cleaned[border_mask] = blurred[border_mask]
                 pages_cleaned += 1
             else:
                 cleaned = gray
-
-            # Converter para RGB e comprimir como JPEG
+                
+            # Convert back to RGB for embedding
             rgb = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
-            _, jpg_bytes = cv2.imencode(
-                '.jpg', rgb,
-                [cv2.IMWRITE_JPEG_QUALITY, self._jpeg_quality]
-            )
+
+            # SAVE AS JPG
+            ok, jpg_bytes = cv2.imencode('.jpg', rgb, [cv2.IMWRITE_JPEG_QUALITY, self._jpeg_quality])
+            if not ok:
+                raise RuntimeError("Falha ao codificar JPEG com cv2.imencode.")
+
+            jpg_bytes = jpg_bytes.tobytes()
 
             # Criar página com mesmas dimensões
             new_page = out_doc.new_page(
@@ -102,7 +124,8 @@ class WatermarkRemover:
                 height=page.rect.height,
             )
             rect = fitz.Rect(0, 0, page.rect.width, page.rect.height)
-            new_page.insert_image(rect, stream=jpg_bytes.tobytes())
+
+            new_page.insert_image(rect, stream=jpg_bytes)
 
         result = out_doc.tobytes(deflate=True, garbage=4)
 
