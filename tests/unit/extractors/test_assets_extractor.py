@@ -683,7 +683,7 @@ class TestBug88130IsolatedHeaderBoundary:
         assert items_06[0]["asset_code"] == "01"
 
 
-class TestBug88130AssetsTotalExtraction:
+class TestAssetsTotalExtraction:
 
     PAGE_TEXT = "\n".join([
         "DECLARACAO DE BENS E DIREITOS",
