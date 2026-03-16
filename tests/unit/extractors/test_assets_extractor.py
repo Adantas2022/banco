@@ -682,3 +682,99 @@ class TestBug88130IsolatedHeaderBoundary:
         assert len(items_06) == 1
         assert items_06[0]["asset_code"] == "01"
 
+
+class TestAssetsTotalExtraction:
+
+    PAGE_TEXT = "\n".join([
+        "DECLARACAO DE BENS E DIREITOS",
+        "01 01 APARTAMENTO RESIDENCIAL 100.000,00 110.000,00",
+        "01 02 TERRENO URBANO 50.000,00 55.000,00",
+        "02 01 AUTOMOVEL FIAT ARGO 30.000,00 28.000,00",
+        "06 01 CONTA CORRENTE BANCO DO BRASIL 20.000,00 15.000,00",
+        "TOTAL 0,00 9,00",
+        "TOTAL 200.872,94 208.879,08",
+        "DIVIDAS E ONUS REAIS (Valores em Reais)",
+    ])
+
+    def test_pdf_total_extracted_from_correct_line(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert "total_values" in result
+        tv = result["total_values"]
+        assert "before_year_asset_value" in tv
+        assert "current_year_asset_value" in tv
+
+    def test_pdf_total_before_year_matches_expected(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        pdf_total = result["total_values"]["before_year_asset_value"]["pdf_total"]
+        assert pdf_total is not None
+        assert abs(pdf_total - 200872.94) < 0.01
+
+    def test_pdf_total_current_year_matches_expected(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        pdf_total = result["total_values"]["current_year_asset_value"]["pdf_total"]
+        assert pdf_total is not None
+        assert abs(pdf_total - 208879.08) < 0.01
+
+    def test_pdf_total_ignores_subtotals_before_end_marker(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        pdf_total_before = result["total_values"]["before_year_asset_value"]["pdf_total"]
+        pdf_total_current = result["total_values"]["current_year_asset_value"]["pdf_total"]
+        
+        assert pdf_total_before is not None
+        assert pdf_total_current is not None
+        assert abs(pdf_total_before - 9.0) > 0.01
+        assert abs(pdf_total_current - 9.0) > 0.01
+        assert abs(pdf_total_before - 200872.94) < 0.01
+        assert abs(pdf_total_current - 208879.08) < 0.01
+
+    def test_amount_matches_sum_of_items(self, extractor):
+        context = ExtractionContext(
+            full_text=self.PAGE_TEXT,
+            pages_text={1: self.PAGE_TEXT},
+            total_pages=1
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        amount_before = result["total_values"]["before_year_asset_value"]["amount"]
+        amount_current = result["total_values"]["current_year_asset_value"]["amount"]
+        
+        expected_before = 100000.0 + 50000.0 + 30000.0 + 20000.0
+        expected_current = 110000.0 + 55000.0 + 28000.0 + 15000.0
+        
+        assert abs(amount_before - expected_before) < 0.01
+        assert abs(amount_current - expected_current) < 0.01
+
