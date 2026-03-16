@@ -42,7 +42,7 @@ class AssetsExtractor(ISectionExtractor):
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
-        pdf_totals = []
+        pdf_total_candidates = []
         
         self._section_started = False
         self._section_start_page = -1
@@ -74,14 +74,12 @@ class AssetsExtractor(ISectionExtractor):
                 )
                 items.extend(page_items)
                 
-                if not pdf_totals:
-                    page_totals = extract_section_total(
-                        page_text,
-                        "TOTAL",
-                        skip_keywords=["TOTAL DE BENS", "TOTAL DE DEDUÇÃO"]
-                    )
-                    if page_totals:
-                        pdf_totals = page_totals
+                page_totals = self._extract_assets_total(page_text)
+                if page_totals:
+                    if len(page_totals) >= 2:
+                        pdf_total_candidates.append((page_totals[0], page_totals[1]))
+                    elif len(page_totals) == 1:
+                        pdf_total_candidates.append((page_totals[0], None))
                 break
             
             if items:
@@ -94,14 +92,12 @@ class AssetsExtractor(ISectionExtractor):
             )
             items.extend(page_items)
             
-            if not pdf_totals:
-                page_totals = extract_section_total(
-                    page_text,
-                    "TOTAL",
-                    skip_keywords=["TOTAL DE BENS", "TOTAL DE DEDUÇÃO"]
-                )
-                if page_totals:
-                    pdf_totals = page_totals
+            page_totals = self._extract_assets_total(page_text)
+            if page_totals:
+                if len(page_totals) >= 2:
+                    pdf_total_candidates.append((page_totals[0], page_totals[1]))
+                elif len(page_totals) == 1:
+                    pdf_total_candidates.append((page_totals[0], None))
         
         if not items:
             return None
@@ -110,9 +106,17 @@ class AssetsExtractor(ISectionExtractor):
         last_year_total = sum_currency_values([i["before_year_asset_value"] for i in items], as_int=False)
         current_year_total = sum_currency_values([i["current_year_asset_value"] for i in items], as_int=False)
         
-        # Totais do PDF (se disponíveis)
-        pdf_last_year = pdf_totals[0] if len(pdf_totals) > 0 else None
-        pdf_current_year = pdf_totals[1] if len(pdf_totals) > 1 else None
+        # Totais do PDF (se disponíveis) - escolher o TOTAL de bens e direitos
+        # mais próximo da soma dos itens (before_year_asset_value).
+        pdf_last_year = None
+        pdf_current_year = None
+        if pdf_total_candidates:
+            best_before, best_current = min(
+                pdf_total_candidates,
+                key=lambda t: abs(t[0] - last_year_total),
+            )
+            pdf_last_year = best_before
+            pdf_current_year = best_current
         
         return {
             "section_name": "Declaração de Bens e Direitos",
@@ -125,6 +129,41 @@ class AssetsExtractor(ISectionExtractor):
             },
             "pages_with_problems": []
         }
+    
+    def _extract_assets_total(self, page_text: str) -> list[float]:
+        lines = page_text.split("\n")
+        skip_keywords = ["TOTAL DE BENS", "TOTAL DE DEDUÇÃO"]
+        num_pattern = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
+
+        end_marker_idx = len(lines)
+        for i, line in enumerate(lines):
+            upper = line.strip().upper()
+            for marker in self.SECTION_END_MARKERS:
+                if marker in upper:
+                    end_marker_idx = i
+                    break
+            if end_marker_idx != len(lines):
+                break
+
+        last_matches = None
+
+        for line in lines[:end_marker_idx]:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            upper = stripped.upper()
+
+            if not upper.startswith("TOTAL"):
+                continue
+
+            if any(skip.upper() in upper for skip in skip_keywords):
+                continue
+
+            matches = re.findall(num_pattern, stripped)
+            if len(matches) >= 2:
+                last_matches = [parse_currency(m) for m in matches]
+
+        return last_matches or []
     
     def _has_section_end_heading(self, page_text: str, page_num: int = 0) -> bool:
         """
