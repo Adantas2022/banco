@@ -468,3 +468,81 @@ class TestConsolidateNamesByCnpj:
         ]
         result = extractor._consolidate_names_by_cnpj(items)
         assert result is items
+
+
+class TestCapitalGainsExtraction:
+
+    def test_inline_br_format(self, extractor):
+        section_text = _make_section_text(
+            "02. Ganhos de capital na alienação de bens e/ou direitos 51.351,86"
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is not None
+        assert result["code"] == "02"
+        assert result["total_value"] == 51351.86
+        assert result["valid_total"] is True
+        assert result["items"] is None
+
+    def test_ocr_no_accents(self, extractor):
+        section_text = _make_section_text(
+            "02 GANHOS DE CAPITAL NA ALIENACAO DE BENS E/OU DIREITOS 80.000,00"
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is not None
+        assert result["code"] == "02"
+        assert result["total_value"] == 80000.0
+
+    def test_us_format_value(self, extractor):
+        section_text = _make_section_text(
+            "02. Ganhos de capital na alienação de bens e/ou direitos 80,000.00"
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is not None
+        assert result["total_value"] == 80000.0
+
+    def test_absent_returns_none(self, extractor):
+        section_text = _make_section_text(
+            "06. Rendimentos de aplicações financeiras",
+            "Titular 123.456.789-00 12.345.678/0001-90 BANCO XYZ 1.248,37",
+            "TOTAL 1.248,37",
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is None
+
+    def test_section_total_includes_code_02(self, extractor):
+        page_text = (
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA\n"
+            "02. Ganhos de capital na alienação de bens e/ou direitos 51.351,86\n"
+            "06. Rendimentos de aplicações financeiras\n"
+            "Titular 067.569.659-30 33.479.023/0001-80 BANCO XYZ S/A 1.248,37\n"
+            "TOTAL 52.600,23\n"
+            "PAGAMENTOS EFETUADOS\n"
+        )
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+        assert result is not None
+        assert "capital_gains_from_sale_of_assets_and_or_rights" in result["subsections"]
+        cg = result["subsections"]["capital_gains_from_sale_of_assets_and_or_rights"]
+        assert cg["total_value"] == 51351.86
+        assert cg["items"] is None
+        assert result["total_value"] == pytest.approx(52600.23, abs=0.01)
+
+    def test_ocr_with_spaces_around_slash(self, extractor):
+        section_text = _make_section_text(
+            "02. GANHOS DE CAPITAL NA ALIENAÇÃO DE BENS E / OU DIREITOS 80.000,00"
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is not None
+        assert result["total_value"] == 80000.0
+
+    def test_large_value(self, extractor):
+        section_text = _make_section_text(
+            "02. Ganhos de capital na alienação de bens e/ou direitos 1.234.567,89"
+        )
+        result = extractor._extract_capital_gains(section_text)
+        assert result is not None
+        assert result["total_value"] == 1234567.89
