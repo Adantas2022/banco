@@ -135,6 +135,18 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "has_items": True,
             "format": "simple",
         },
+        "recovery_of_losses_in_variable_income": {
+            "code": "22",
+            "name": "22. Recuperação de Prejuízos em Renda Variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
+            "keywords": [
+                "recuperação de prejuízos",
+                "renda variável",
+                "bolsa de valores",
+                "fundos de investimento imobiliário",
+            ],
+            "has_items": False,
+            "format": "total_only",
+        },
         "gross_income_up_to_90_from_freight_services": {
             "code": "23",
             "name": "23. Rendimento bruto, até o máximo de 90%, da prestação de serviços decorrente do transporte de carga e com trator, máquina de terraplenagem, colheitadeira e assemelhados",
