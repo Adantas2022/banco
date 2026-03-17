@@ -297,6 +297,49 @@ class TestRuralExemptFallback:
         assert "exempt_portion_from_rural_activity" not in result.exempt_income["subsections"]
 
 
+class TestExemptIncomeCode22:
+    @pytest.fixture
+    def extractor(self):
+        return ExemptIncomeExtractor()
+
+    @pytest.fixture
+    def text_with_code_22(self):
+        return (
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS\n"
+            "09. Lucros e dividendos recebidos 50.000,00\n"
+            "Titular 123.456.789-00 12.345.678/0001-90 EMPRESA XYZ 50.000,00\n"
+            "22. Recuperação de Prejuízos em Renda Variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário) 152,02\n"
+            "TOTAL 50.152,02\n"
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA\n"
+        )
+
+    @pytest.fixture
+    def context_with_code_22(self, text_with_code_22):
+        return ExtractionContext(
+            full_text=text_with_code_22,
+            pages_text={1: text_with_code_22},
+            total_pages=1,
+        )
+
+    def test_code_22_extracted_with_total_only(self, extractor, context_with_code_22):
+        result = extractor.extract(context_with_code_22)
+        assert result is not None
+        subsections = result["subsections"]
+        key = "recovery_of_losses_in_variable_income"
+        assert key in subsections
+        code_22 = subsections[key]
+        assert code_22["code"] == "22"
+        assert code_22["total_value"] == 152.02
+        assert code_22["valid_total"] is True
+        assert code_22["items"] is None
+
+    def test_code_22_contributes_to_section_total(self, extractor, context_with_code_22):
+        result = extractor.extract(context_with_code_22)
+        assert result is not None
+        assert result["total_value"] == 50152.02
+        assert result["items_count"] == 1
+
+
 class TestSectionMarkerDetection:
     @pytest.fixture
     def extractor(self):
