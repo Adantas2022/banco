@@ -31,7 +31,7 @@ class ExemptIncomeGuard(ISectionGuard):
             pdf_total = self._calculate_expected_total(extracted_data)
         
         valid = None
-        if pdf_total is not None and pdf_total > 0:
+        if pdf_total is not None and pdf_total >= 0:
             valid = validate_total(total_value, pdf_total, self.TOLERANCE)
         elif total_value > 0:
             valid = True
