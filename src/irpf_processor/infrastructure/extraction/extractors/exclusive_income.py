@@ -63,7 +63,11 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         thirteenth_dependents = self._extract_thirteenth_salary_dependents(section_text)
         if thirteenth_dependents:
             subsections["thirteen_salary_received_by_dependents"] = thirteenth_dependents
-        
+
+        capital_gains = self._extract_capital_gains(section_text)
+        if capital_gains:
+            subsections["capital_gains_from_sale_of_assets_and_or_rights"] = capital_gains
+
         plr = self._extract_profit_sharing(section_lines)
         if plr:
             subsections["profit_or_results_sharing"] = plr
@@ -225,6 +229,25 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                 }
         return None
     
+    def _extract_capital_gains(self, section_text: str) -> Optional[dict]:
+        """Extrai 02. Ganhos de capital na alienação de bens e/ou direitos."""
+        patterns = [
+            r"02[.\s]+(?:Ganhos\s+de\s+)?(?:capital|CAPITAL)\s+(?:na\s+)?(?:aliena[çc][aã]o|ALIENACAO|ALIENAÇÃO)\s+(?:de\s+)?(?:bens|BENS)[^\d]*([\d.,]+)",
+            r"02[.\s]+GANHOS\s+DE\s+CAPITAL[^\d]*([\d.,]+)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, section_text, re.IGNORECASE)
+            if match:
+                value = parse_currency(match.group(1))
+                return {
+                    "name": "02. Ganhos de capital na alienação de bens e/ou direitos",
+                    "code": "02",
+                    "total_value": value,
+                    "valid_total": True,
+                    "items": None
+                }
+        return None
+
     def _extract_profit_sharing(self, section_lines: list[tuple[int, str]]) -> Optional[dict]:
         """Extrai 11. Participação nos lucros ou resultados (PLR).
         
