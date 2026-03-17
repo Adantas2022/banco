@@ -632,6 +632,62 @@ Registro de Aeronave: PTABC"""
         assert parse_currency("200.000,00") == 200000.0
 
 
+class TestLaw14754OptionSuffixRemoval:
+
+    def test_asset_description_does_not_include_law_option_suffix(self, extractor):
+        base_description = "IBAN : PT50003505570003478390043 ; BIC SWIFT : CGDIPTPL"
+        law_suffix_line1 = (
+            "Opção pela atualização do valor do bem ou direito no exterior para o valor "
+            "de mercado em 31/12/2023, nos termos do art. 14 da Lei nº"
+        )
+        law_suffix_line2 = "14.754 , de 2023 : Não"
+
+        page_text = "\n".join(
+            [
+                "DECLARACAO DE BENS E DIREITOS",
+                f"06 01 {base_description} 36,33 0,00",
+                law_suffix_line1,
+                law_suffix_line2,
+            ]
+        )
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        item = result["items"][0]
+        assert item["asset_description"] == base_description
+
+
+class TestCpfExtractionFailures:
+
+    def test_participation_item_without_valid_cpf_keeps_none(self, extractor):
+        page_text = """DECLARACAO DE BENS E DIREITOS
+03 02 40.000 QUOTAS DE CAPITAL DA ECOINTEL ENERGIA RENOVAVEL LTDA 40.000,00 40.000,00
+Bem ou direito pertencente ao: Titular
+CPF: XXXX.XXX.XXX-XX
+CNPJ: 47.968.226/0001-44"""
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        item = result["items"][0]
+        assert item["additional_info"]["beneficiary"] == "Titular"
+        assert item["additional_info"]["cnpj"] == "47.968.226/0001-44"
+        assert item["additional_info"]["cpf"] is None
+
+
 class TestBug88130IsolatedHeaderBoundary:
 
     PAGE_TEXT = "\n".join([

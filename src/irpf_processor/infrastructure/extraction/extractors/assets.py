@@ -524,11 +524,11 @@ class AssetsExtractor(ISectionExtractor):
                 full_description = full_description[:idx].rstrip()
                 break
 
-        full_description = re.sub(
-            r"\s+\d+\.\d+,\s+de\s+\d{4}\s*:.*$",
-            "",
-            full_description
-        ).strip()
+        law_option_pattern = re.compile(
+            r"\s+\d{1,4}[.,]?\d{0,3}\s*,?\s+de\s+\d{4}\s*:\s*(?:Sim|N[ãa]o)\s*$",
+            re.IGNORECASE,
+        )
+        full_description = law_option_pattern.sub("", full_description).strip()
         
         additional_info = self._build_additional_info(
             group_code, raw_lines, full_description
@@ -879,8 +879,11 @@ class AssetsExtractor(ISectionExtractor):
             info["cnpj"] = cnpj_found
         
         for line in lines:
-            if "CPF:" in line:
-                cpf_match = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", line)
+            if "CPF" in line:
+                cpf_match = re.search(
+                    r"CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})",
+                    line,
+                )
                 if cpf_match:
                     info["cpf"] = cpf_match.group(1)
                     break
@@ -932,7 +935,7 @@ class AssetsExtractor(ISectionExtractor):
         if bank:
             info["bank"] = bank.group(1)
         
-        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})", raw_text)
         if cpf:
             info["cpf"] = cpf.group(1)
         
@@ -961,7 +964,7 @@ class AssetsExtractor(ISectionExtractor):
         if beneficiary:
             info["beneficiary"] = beneficiary
         
-        cpf = re.search(r"CPF[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        cpf = re.search(r"CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})", raw_text)
         if cpf:
             info["cpf"] = cpf.group(1)
         
@@ -1138,6 +1141,13 @@ class AssetsExtractor(ISectionExtractor):
             return False
         
         if re.match(r"^CEI/?CNO[:\s]", line, re.IGNORECASE):
+            return False
+        
+        if re.match(
+            r"^\d{1,4}[.,]?\d{0,3}\s*,?\s+de\s+\d{4}\s*:\s*(?:Sim|N[ãa]o)\s*$",
+            line,
+            re.IGNORECASE,
+        ):
             return False
         
         # Linhas que começam com número seguido de hífen são continuação de descrição
