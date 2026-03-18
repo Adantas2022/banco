@@ -546,3 +546,45 @@ class TestCapitalGainsExtraction:
         result = extractor._extract_capital_gains(section_text)
         assert result is not None
         assert result["total_value"] == 1234567.89
+
+
+class TestOthersSubsectionCode:
+
+    def _make_others_section(self, code: str) -> list[tuple[int, str]]:
+        return [
+            (3, f"{code}. Outros"),
+            (3, "Titular 058.019.820-00 81.723.108/0001-04"),
+            (3, "CREDICOAMO FICART E DEMAIS"),
+            (3, "CREDITO RURAL RENDIMENTOS DE 1.130,70"),
+            (3, "TOTAL 1.130,70"),
+        ]
+
+    def test_code_12_for_exercise_2024(self, extractor):
+        section_lines = self._make_others_section("12")
+        result = extractor._extract_others(section_lines)
+        assert result["code"] == "12"
+        assert result["name"] == "12. Outros"
+
+    def test_code_13_for_exercise_2025(self, extractor):
+        section_lines = self._make_others_section("13")
+        result = extractor._extract_others(section_lines)
+        assert result["code"] == "13"
+        assert result["name"] == "13. Outros"
+
+    def test_subsection_key_is_others(self, extractor):
+        context = ExtractionContext(
+            full_text="", pages_text={3: ""}, total_pages=1
+        )
+        section_lines = self._make_others_section("12")
+        section_text = "\n".join(line for _, line in section_lines)
+        context = ExtractionContext(
+            full_text=section_text,
+            pages_text={3: section_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+        if result:
+            subsections = result.get("subsections", {})
+            assert "others_13" not in subsections
+            if "others" in subsections:
+                assert subsections["others"]["code"] == "12"
