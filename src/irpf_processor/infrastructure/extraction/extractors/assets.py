@@ -69,8 +69,10 @@ class AssetsExtractor(ISectionExtractor):
             )
             
             if self._has_section_end_heading(page_text, page_num):
+                end_line = self._find_end_marker_line_in_page(page_text)
                 page_items = self._extract_from_page(
-                    page_text, page_num, next_page_text=next_page_text
+                    page_text, page_num, next_page_text=next_page_text,
+                    max_line=end_line,
                 )
                 items.extend(page_items)
                 
@@ -231,6 +233,16 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
+    def _find_end_marker_line_in_page(self, page_text: str) -> Optional[int]:
+        """Retorna o índice da primeira linha com marcador de fim de seção."""
+        lines = page_text.split("\n")
+        for i, line in enumerate(lines):
+            upper = line.strip().upper()
+            for marker in self.SECTION_END_MARKERS:
+                if marker in upper:
+                    return i
+        return None
+    
     # Aceita formato BR (150.000,00) E formato US (150,000.00)
     CURRENCY_RE = r"(\d[\d.]*,\d{2}|\d[\d,]*\.\d{2})"
 
@@ -239,17 +251,23 @@ class AssetsExtractor(ISectionExtractor):
         page_text: str,
         page_num: int,
         next_page_text: Optional[str] = None,
+        max_line: Optional[int] = None,
     ) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         next_page_lines = next_page_text.split("\n") if next_page_text else []
+        line_limit = max_line if max_line is not None else len(lines)
         
         two_val = re.compile(
             rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
         )
+        # Formato antigo (IRPF 2021/2020): 1 código em vez de group+asset
+        one_code_two_val = re.compile(
+            rf"^(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
+        )
         
         i = 0
-        while i < len(lines):
+        while i < line_limit:
             line = lines[i].strip()
             
             asset_match = two_val.match(line)
@@ -264,6 +282,17 @@ class AssetsExtractor(ISectionExtractor):
                     continue
             
             if not asset_match:
+                single_match = one_code_two_val.match(line)
+                if single_match:
+                    item = self._parse_single_code_asset(
+                        lines, i, single_match, page_num
+                    )
+                    if item:
+                        items.append(item)
+                        i = item.pop("_next_index", i + 1)
+                        continue
+            
+            if not asset_match:
                 item = self._try_fallback_asset(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
@@ -274,6 +303,15 @@ class AssetsExtractor(ISectionExtractor):
             
             if not asset_match:
                 item = self._try_bare_header_asset(
+                    lines, i, page_num, next_page_lines=next_page_lines
+                )
+                if item:
+                    items.append(item)
+                    i = item.pop("_next_index", i + 1)
+                    continue
+            
+            if not asset_match:
+                item = self._try_fallback_asset_single_code(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
                 if item:
@@ -406,6 +444,113 @@ class AssetsExtractor(ISectionExtractor):
             return item
         return None
 
+    def _parse_single_code_asset(
+        self,
+        lines: list[str],
+        idx: int,
+        match,
+        page_num: int,
+    ) -> Optional[dict]:
+        """Parse item de formato antigo com 1 código (IRPF 2021/2020).
+
+        Linha: ``01  APARTAMENTO RESIDENCIAL  140.000,00  140.000,00``
+        group(1)=code, group(2)=desc, group(3)=val1, group(4)=val2.
+        Mapeia para group_code=code, asset_code='01'.
+        """
+        code = match.group(1)
+        desc = match.group(2).strip()
+
+        # Ignorar linhas de header ou TOTAL
+        if len(desc) < 3:
+            return None
+        upper = desc.upper()
+        if upper.startswith("TOTAL") or "CÓDIGO" in upper or "DISCRIMINAÇÃO" in upper:
+            return None
+
+        class _FakeMatch:
+            def __init__(self, groups):
+                self._groups = groups
+            def group(self, n):
+                return self._groups[n]
+
+        fake = _FakeMatch({
+            1: code,
+            2: "01",
+            3: desc,
+            4: match.group(3),
+            5: match.group(4),
+        })
+        return self._parse_asset_block(lines, idx, fake, page_num)
+
+    def _try_fallback_asset_single_code(
+        self,
+        lines: list[str],
+        idx: int,
+        page_num: int,
+        next_page_lines: Optional[list[str]] = None,
+    ) -> Optional[dict]:
+        """Fallback para formato antigo com 1 código e valores ausentes/split.
+
+        Tenta: ``01  APARTAMENTO RESIDENCIAL`` (sem valores na linha).
+        """
+        line = lines[idx].strip()
+
+        header = re.match(r"^(\d{2})\s+(.+?)\s*$", line)
+        if not header:
+            return None
+
+        code = header.group(1)
+        rest = header.group(2).strip()
+
+        if len(rest) < 3:
+            return None
+        upper_rest = rest.upper()
+        if upper_rest.startswith("TOTAL") or "CÓDIGO" in upper_rest:
+            return None
+        # Evitar capturar linhas tipo "105 - BRASIL"
+        if re.match(r"^\d{3}\s*[-–]", line):
+            return None
+
+        vals = re.findall(self.CURRENCY_RE, rest)
+
+        if len(vals) >= 2:
+            v1, v2 = vals[-2], vals[-1]
+            desc = rest[:rest.rfind(vals[-2])].strip()
+            if len(desc) < 3:
+                return None
+        elif len(vals) == 1:
+            v1 = vals[0]
+            desc = rest[:rest.rfind(v1)].strip()
+            if len(desc) < 5:
+                return None
+            v2 = self._find_orphan_value(lines, idx + 1)
+            if not v2 and next_page_lines:
+                v2 = self._find_orphan_value(next_page_lines, 0, max_lines=10)
+            if not v2:
+                v2 = v1
+        else:
+            desc = rest
+            v1, v2 = self._find_two_orphan_values(lines, idx + 1)
+            if (not v1 or not v2) and next_page_lines:
+                v1_next, v2_next = self._find_two_orphan_values(
+                    next_page_lines, 0, max_lines=10
+                )
+                if not v1:
+                    v1 = v1_next
+                if not v2:
+                    v2 = v2_next
+            if not v1 or not v2:
+                return None
+
+        class _FakeMatch:
+            def __init__(self, groups):
+                self._groups = groups
+            def group(self, n):
+                return self._groups[n]
+
+        fake = _FakeMatch({1: code, 2: "01", 3: desc, 4: v1, 5: v2})
+        return self._parse_asset_block(lines, idx, fake, page_num)
+
     def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
@@ -478,6 +623,10 @@ class AssetsExtractor(ISectionExtractor):
             if re.match(r"^\d{2}\s+\d{2}\s*$", next_line):
                 break
             
+            # Formato antigo: 1 código + descrição + valores (ex: "01  APARTAMENTO  140.000,00  140.000,00")
+            if re.match(rf"^\d{{2}}\s+.+?\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$", next_line):
+                break
+            
             # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
             # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
             # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
@@ -496,7 +645,12 @@ class AssetsExtractor(ISectionExtractor):
             if "Página" in next_line and "de" in next_line:
                 break
             
-            if next_line.upper().startswith("TOTAL") or next_line.upper().startswith("TOTAL DE BENS"):
+            # Parar em marcadores de fim de seção
+            upper_next = next_line.upper()
+            if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
+                break
+            
+            if upper_next.startswith("TOTAL") or upper_next.startswith("TOTAL DE BENS"):
                 break
             
             raw_lines.append(next_line)

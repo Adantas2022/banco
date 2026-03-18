@@ -834,3 +834,122 @@ class TestAssetsTotalExtraction:
         assert abs(amount_before - expected_before) < 0.01
         assert abs(amount_current - expected_current) < 0.01
 
+
+class TestOldFormatSingleCode:
+    """Bug #89524: PDFs IRPF 2021/2020 usam 1 código por item, não 2."""
+
+    def test_extracts_single_code_item(self, extractor):
+        """Formato antigo: '01  APARTAMENTO  140.000,00  140.000,00'."""
+        page_text = "\n".join([
+            "DECLARAÇÃO DE BENS E DIREITOS",
+            "CÓDIGO     DISCRIMINAÇÃO                 SITUAÇÃO EM",
+            "31/12/2019              31/12/2020",
+            "01         APARTAMENTO RESIDENCIAL EM SAO PAULO 140.000,00 140.000,00",
+            "105 - BRASIL",
+            "TOTAL 140.000,00 140.000,00",
+            "DÍVIDAS E ÔNUS REAIS",
+        ])
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        item = result["items"][0]
+        assert item["asset_group_code"] == "01"
+        assert item["asset_code"] == "01"
+        assert item["asset_description"] == "APARTAMENTO RESIDENCIAL EM SAO PAULO"
+        assert item["before_year_asset_value"] == 140000.0
+        assert item["current_year_asset_value"] == 140000.0
+        assert item["country_code"] == "105"
+
+    def test_does_not_extract_debt_items_as_assets(self, extractor):
+        """Itens da seção DÍVIDAS não devem ser extraídos como bens."""
+        page1 = "\n".join([
+            "DECLARAÇÃO DE BENS E DIREITOS",
+            "01 APARTAMENTO 140.000,00 140.000,00",
+            "TOTAL 140.000,00 140.000,00",
+        ])
+        page2 = "\n".join([
+            "DÍVIDAS E ÔNUS REAIS",
+            "CÓDIGO   DISCRIMINAÇÃO",
+            "11  FINANCIAMENTO IMOBILIÁRIO 30.000,00 25.000,00 5.000,00",
+            "TOTAL 30.000,00 25.000,00 5.000,00",
+        ])
+        full = page1 + "\n" + page2
+        context = ExtractionContext(
+            full_text=full,
+            pages_text={1: page1, 2: page2},
+            total_pages=2,
+        )
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        assert result["items"][0]["asset_description"] == "APARTAMENTO"
+
+    def test_two_code_format_preferred_over_single_code(self, extractor):
+        """When both formats could match, 2-code format wins."""
+        page_text = "\n".join([
+            "DECLARAÇÃO DE BENS E DIREITOS",
+            "01 01 IMOVEL PRIMEIRO 100.000,00 110.000,00",
+            "01 02 IMOVEL SEGUNDO 200.000,00 220.000,00",
+        ])
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 2
+        assert result["items"][0]["asset_group_code"] == "01"
+        assert result["items"][0]["asset_code"] == "01"
+        assert result["items"][1]["asset_group_code"] == "01"
+        assert result["items"][1]["asset_code"] == "02"
+
+    def test_multiple_single_code_items(self, extractor):
+        """Múltiplos itens com 1 código devem ser extraídos."""
+        page_text = "\n".join([
+            "DECLARAÇÃO DE BENS E DIREITOS",
+            "01 APARTAMENTO 140.000,00 140.000,00",
+            "21 AUTOMOVEL HONDA FIT 45.000,00 40.000,00",
+            "61 CONTA CORRENTE 10.000,00 15.000,00",
+            "TOTAL 195.000,00 195.000,00",
+            "DÍVIDAS E ÔNUS REAIS",
+        ])
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 3
+        codes = [i["asset_group_code"] for i in result["items"]]
+        assert codes == ["01", "21", "61"]
+
+    def test_end_marker_stops_extraction_same_page(self, extractor):
+        """End marker na mesma página impede extração de linhas após ele."""
+        page_text = "\n".join([
+            "DECLARAÇÃO DE BENS E DIREITOS",
+            "01 APARTAMENTO 100.000,00 110.000,00",
+            "DÍVIDAS E ÔNUS REAIS",
+            "CÓDIGO   DISCRIMINAÇÃO",
+            "11 FINANCIAMENTO 50.000,00 40.000,00",
+        ])
+        context = ExtractionContext(
+            full_text=page_text,
+            pages_text={1: page_text},
+            total_pages=1,
+        )
+        result = extractor.extract(context)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+        assert result["items"][0]["asset_group_code"] == "01"
