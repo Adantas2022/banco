@@ -208,21 +208,24 @@ class DebtsExtractor(ISectionExtractor):
                 code = debt_match.group(1)
                 if self._is_valid_debt_code(code):
                     item = self._parse_debt(debt_match, lines, i, page_num)
-                    if item and item["id"] not in seen_ids:
-                        seen_ids.add(item["id"])
-                        items.append(item)
-                        i = item.pop("_next_index", i + 1)
+                    if item:
+                        next_i = item.pop("_next_index", i + 1)
+                        if item["id"] not in seen_ids:
+                            seen_ids.add(item["id"])
+                            items.append(item)
+                        i = next_i
                         continue
             
             # Tentar formato alternativo OCR - código + descrição + valores em linhas separadas
             if re.match(r"^(\d{2})\s+(.+)", normalized_line):
                 item = self._try_parse_multiline_debt(lines, i, page_num, seen_ids)
                 if item:
+                    next_i = item.pop("_next_index", i + 1)
                     if item["id"] not in seen_ids:
                         seen_ids.add(item["id"])
                         items.append(item)
-                        i = item.pop("_next_index", i + 1)
-                        continue
+                    i = next_i
+                    continue
                 
                 # Se não achou valores, guardar como header-only
                 # (Tesseract split-column: descrição e valores em blocos separados)
@@ -238,7 +241,9 @@ class DebtsExtractor(ISectionExtractor):
                             j += 1
                             continue
                         # Parar se encontrar novo item, TOTAL, fim de seção, ou linha de valores
-                        if re.match(r"^\d{2}\s+[A-Z]", nl):
+                        # Normalizar código duplicado OCR (ex: "14 14" -> "14")
+                        normalized_nl = re.sub(r"^(\d{2})\s+\1\s+", r"\1 ", nl)
+                        if re.match(r"^\d{2}\s+[A-Z]", normalized_nl):
                             break
                         if "TOTAL" in upper_nl:
                             break
@@ -388,7 +393,9 @@ class DebtsExtractor(ISectionExtractor):
             # Parar se encontrar novo item
             if re.match(r"^(\d{2})\s+.+\s+[\d.,]+\s+[\d.,]+\s+[\d.,]+\s*$", next_line):
                 break
-            if re.match(r"^(\d{2})\s+[A-Z]", next_line) and self._is_valid_debt_code(re.match(r"^(\d{2})", next_line).group(1)):
+            # Normalizar código duplicado OCR (ex: "14 14" -> "14")
+            next_line_dedup = re.sub(r"^(\d{2})\s+\1\s+", r"\1 ", next_line)
+            if re.match(r"^(\d{2})\s+[A-Z]", next_line_dedup) and self._is_valid_debt_code(re.match(r"^(\d{2})", next_line_dedup).group(1)):
                 break
             
             # Extrair valores se a linha contiver 3 números
@@ -420,7 +427,7 @@ class DebtsExtractor(ISectionExtractor):
         v0 = parse_currency(values[0])
         v1 = parse_currency(values[1])
         v2 = parse_currency(values[2])
-        id_content = f"{normalized_desc}|{v0}|{v1}|{v2}"
+        id_content = f"{normalized_desc}|{v0}|{v1}|{v2}|{page_num}"
         item_id = generate_item_id(id_content)
         
         return {
@@ -472,7 +479,7 @@ class DebtsExtractor(ISectionExtractor):
 
             normalized_desc = re.sub(r"(\S)\(", r"\1 (", h["desc"])
             normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-            id_content = f"{normalized_desc}|{v0}|{v1}|{v2}"
+            id_content = f"{normalized_desc}|{v0}|{v1}|{v2}|{h['page']}"
             item_id = generate_item_id(id_content)
 
             if item_id in seen_ids:
@@ -562,7 +569,7 @@ class DebtsExtractor(ISectionExtractor):
         
         normalized_desc = re.sub(r"(\S)\(", r"\1 (", full_desc)
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
-        id_content = f"{normalized_desc}|{before_val}|{current_val}|{paid_val}"
+        id_content = f"{normalized_desc}|{before_val}|{current_val}|{paid_val}|{page_num}"
         item_id = generate_item_id(id_content)
         
         return {
