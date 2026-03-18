@@ -247,7 +247,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
         """
         # Normalizar linha para OCR (espaços antes da vírgula)
         line = re.sub(r"(\d)\s+,", r"\1,", line.strip())
-        line = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", line)
+        line = self._normalize_ocr_code_line(line)
 
         # Formato: codigo participacao condicao nome area cib
         # Ex: "10 15,00 3 FAZENDA LAMBARI, CAMPOS DE JULIO/MT. 1.200,0 4.695.449-0"
@@ -322,7 +322,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                         break
 
                     # Parar em novo item (formato código participação condição)
-                    norm_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+                    norm_next = self._normalize_ocr_code_line(next_line)
                     if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", norm_next):
                         break
                     # Parar se encontrar apenas código (início de novo item multiline)
@@ -571,6 +571,35 @@ class RuralPropertiesExtractor(ISectionExtractor):
             return area_str[::-1].replace(".", ",", 1)[::-1]
         return area_str
 
+    @staticmethod
+    def _normalize_ocr_code_line(line: str) -> str:
+        """Normaliza artefatos OCR onde código e participação se fundem.
+
+        Caso 1 (dedup exato): '10 10  100,00  1  ...' → '10  100,00  1  ...'
+        Caso 2 (phantom): '10 110  100,00  1  ...' → '10  100,00  1  ...'
+          O OCR insere um número espúrio entre código e participação.
+          Detecta: code(1-2d) + phantom(int sem vírgula) + participation(com vírgula) + condição(1d)
+        """
+        # Caso 1: dedup exato (ex: '10 10' → '10')
+        m = re.match(r'^(\d{1,2})\s+\1(?=\s)', line)
+        if m:
+            return line[:m.start(1) + len(m.group(1))] + line[m.end():]
+
+        # Caso 2: phantom number entre code e participation
+        # Pattern: code + espaço + phantom_int + espaço + real_participation(com vírgula) + espaço + condição
+        m2 = re.match(
+            r'^(\d{1,2})\s+(\d{2,4})\s+([\d.,]+,\d{2})\s+(\d)\s+',
+            line,
+        )
+        if m2:
+            phantom = m2.group(2)
+            real_part = m2.group(3)
+            # Se phantom não tem vírgula (é inteiro puro) e real_part tem vírgula → phantom é artefato
+            if ',' not in phantom and ',' in real_part:
+                return line[:m2.start(2)] + line[m2.end(2):]
+
+        return line
+
     def _normalize_name(self, name: str) -> str:
         name = re.sub(r"\s+", " ", name)
         return name.strip()
@@ -584,7 +613,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             line = lines[j].strip()
             upper_line = line.upper()
 
-            normalized = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", line)
+            normalized = self._normalize_ocr_code_line(line)
             if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized):
                 break
             if re.match(r"^\d{1,2}$", line):
@@ -628,7 +657,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             if "PARTICIPANTE" in upper_next:
                 continue
 
-            normalized_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+            normalized_next = self._normalize_ocr_code_line(next_line)
             if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized_next):
                 break
             if re.match(r"^\d{1,2}$", next_line):
@@ -689,7 +718,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
                 continue
 
             # Parar se encontrar novo item (código participação condição)
-            normalized_next = re.sub(r"^(\d{1,2})\s+\1(?=\s)", r"\1", next_line)
+            normalized_next = self._normalize_ocr_code_line(next_line)
             if re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", normalized_next):
                 break
             # Parar se encontrar apenas código (início de novo item multiline)

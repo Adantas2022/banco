@@ -245,3 +245,45 @@ class TestPageBoundaryParticipants:
         )
         result = extractor.extract(ctx)
         assert result["total_properties"] == 2
+
+
+class TestPhantomCodeOCR:
+    """Bug #90071: OCR insere phantom digits entre código e participação.
+
+    Exemplo: '10 110  100,00  1  FAZENDA...' - o '110' é artefato OCR.
+    """
+
+    def test_normalize_removes_phantom(self, extractor):
+        line = "10 110         100,00                1            FAZENDA SAO VICENTE"
+        result = extractor._normalize_ocr_code_line(line)
+        assert "110" not in result
+        assert result.startswith("10 ")
+
+    def test_normalize_keeps_dedup(self, extractor):
+        """Regressão: dedup exato '10 10' ainda funciona."""
+        line = "10 10   100,00   1   SEM DENOMINACAO"
+        result = extractor._normalize_ocr_code_line(line)
+        assert not result.startswith("10 10 ")
+        assert result.startswith("10 ")
+
+    def test_normalize_no_change_normal(self, extractor):
+        line = "10 100,00 1 FAZENDA LAMBARI 800,0 1.234.567-8"
+        result = extractor._normalize_ocr_code_line(line)
+        assert result == line
+
+    def test_extracts_item_with_phantom_code(self, extractor):
+        """Item com phantom '110' deve ser extraído corretamente."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 110         100,00                1            FAZENDA SAO VICENTE , SANTOS REIS - SAO     36,7         4.149.803-8\n"
+            "BORJA - RS\n"
+            "RECEITAS E DESPESAS - BRASIL (Valores em Reais)\n"
+        )
+        items = extractor._extract_from_page(page, 22, set())
+        assert len(items) == 1
+        assert items[0]["code"] == 10
+        assert items[0]["participation"] == 100.0
+        assert items[0]["area"] == 36.7
+        assert items[0]["cib"] == "4.149.803-8"
+        assert "FAZENDA SAO VICENTE" in items[0]["name_and_location"]
