@@ -98,7 +98,7 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         
         others = self._extract_others(section_lines)
         if others and others.get("items"):
-            subsections["others_13"] = others
+            subsections["others"] = others
         
         total_value = sum(s.get("total_value", 0) for s in subsections.values())
         
@@ -657,17 +657,20 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         return None
     
     def _extract_others(self, section_lines: list[tuple[int, str]]) -> dict:
-        """Extrai 13. Outros (ou 12. Outros em alguns PDFs)."""
+        """Extrai subsection Outros (code 12 or 13 depending on fiscal year)."""
         items = []
         seen_keys = set()
         in_subsection = False
-        
+        detected_code = "13"
+
         lines_list = [line for _, line in section_lines]
-        
+
         for i, (page_num, line) in enumerate(section_lines):
             upper_line = line.upper()
-            
-            if re.search(r"(?:12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE):
+
+            m = re.search(r"(12|13)[.\s]+OUTROS", upper_line, re.IGNORECASE)
+            if m:
+                detected_code = m.group(1)
                 in_subsection = True
                 continue
             
@@ -691,8 +694,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         total = round(sum(i["value"] for i in items), 2)
         
         return {
-            "name": "13. Outros",
-            "code": "13",
+            "name": f"{detected_code}. Outros",
+            "code": detected_code,
             "total_value": total,
             "valid_total": True,
             "items": items if items else None
