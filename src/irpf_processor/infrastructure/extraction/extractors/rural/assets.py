@@ -111,7 +111,7 @@ class RuralAssetsExtractor(ISectionExtractor):
             line = lines[i].strip()
             upper_line = line.upper()
 
-            if "CÓDIGO" in upper_line or "TOTAL" in upper_line:
+            if "CÓDIGO" in upper_line or upper_line.startswith("TOTAL"):
                 i += 1
                 continue
 
@@ -154,7 +154,7 @@ class RuralAssetsExtractor(ISectionExtractor):
         while j < max_line:
             next_line = lines[j].strip()
 
-            if "TOTAL" in next_line.upper():
+            if next_line.upper().startswith("TOTAL"):
                 break
 
             if _ITEM_2VAL_RE.match(next_line) and "CÓDIGO" not in next_line.upper():
