@@ -121,6 +121,36 @@ class TestMultiLineDescription:
         assert "394.631,33" in item["description"]
 
 
+class TestTotalInDescription:
+
+    def test_item_with_total_in_description_is_not_skipped(self, extractor):
+        page_text = _make_section_text(
+            "17 TRONCO PARECE MOVEL, MODELO TOTAL FLEX, NR DE SERIE 0,00 0,00",
+            "PM-0879 ANO DE FABRICACAO 2019, ADQ EM 14/05/2019 DE",
+            "TERRA BOA MAQUINAS AGRICOLAS LTDA 17.897.655/0001-07, NF",
+            "7048, PELO VALOR DE R$ 35.000,00.",
+        )
+        ctx = _make_context({1: page_text})
+        result = extractor.extract(ctx)
+
+        assert result is not None
+        items = result["items"]
+        assert len(items) == 1
+        assert items[0]["code"] == "17"
+        assert "TRONCO PARECE MOVEL" in items[0]["description"]
+        assert "TOTAL FLEX" in items[0]["description"]
+
+    def test_actual_total_row_still_stops_parsing(self, extractor):
+        page_text = _make_section_text(
+            "16 TRATOR ANO 86. 0,00 0,00",
+        )
+        ctx = _make_context({1: page_text})
+        result = extractor.extract(ctx)
+
+        assert result is not None
+        assert len(result["items"]) == 1
+
+
 class TestEndMarkerCaseSensitivity:
 
     def test_end_marker_uppercase(self, extractor):
