@@ -2,6 +2,7 @@
 
 import pytest
 from irpf_processor.infrastructure.extraction.extractors import (
+    IncomePJExtractor,
     IncomePJDependentsExtractor,
     IncomePFExtractor,
     AccumulatedIncomePJExtractor,
@@ -99,6 +100,40 @@ class TestIncomePFExtractor:
     
     def test_section_name(self, extractor):
         assert extractor.section_name == "income_from_individual_to_holder"
+
+
+class TestIncomePJExtractorCpfSupport:
+    @pytest.fixture
+    def extractor(self):
+        return IncomePJExtractor()
+
+    @pytest.fixture
+    def sample_text_with_cpf(self):
+        return """
+        RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR
+
+        DANILO IVANOFF                        28.689,00    0,00        0,00        0,00        0,00
+        CNPJ/CPF: 059.240.961-90
+
+        TOTAL                                 28.689,00    0,00        0,00        0,00        0,00
+        """
+
+    @pytest.fixture
+    def context_with_cpf(self, sample_text_with_cpf):
+        return ExtractionContext(
+            full_text=sample_text_with_cpf,
+            pages_text={2: sample_text_with_cpf},
+            total_pages=2,
+        )
+
+    def test_extracts_item_when_document_is_cpf(self, extractor, context_with_cpf):
+        result = extractor.extract(context_with_cpf)
+        assert result is not None
+        assert len(result["items"]) == 1
+        item = result["items"][0]
+        assert item["payer_name"] == "DANILO IVANOFF"
+        assert item["cpf_cnpj"] == "059.240.961-90"
+        assert item["page"] == 2
 
 
 class TestAccumulatedIncomePJExtractor:

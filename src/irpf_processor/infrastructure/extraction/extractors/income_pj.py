@@ -11,7 +11,9 @@ from ..validation_utils import extract_section_total, create_validated_total
 _NUM = r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})"
 _NAME_CHAR = r"[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d]"
 _NAME_CONT = r"[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ\d\s.,\-/&]"
-_CNPJ_RE = re.compile(r"(\d{2}\.\d{3}\.\d{3})\s*/\s*(\d{4}-\d{2})")
+_CNPJ_RE = re.compile(
+    r"(\d{2}\.\d{3}\.\d{3})\s*/\s*(\d{4}-\d{2})|(\d{3}\.\d{3}\.\d{3}-\d{2})"
+)
 
 _LINE_5VAL_RE = re.compile(
     rf"^({_NAME_CHAR}{_NAME_CONT}+?)\s+{_NUM}\s+{_NUM}\s+{_NUM}\s+{_NUM}\s+{_NUM}\s*$"
@@ -22,11 +24,12 @@ _LINE_4VAL_RE = re.compile(
 
 
 def _find_cnpj(line: str) -> str:
-    """Encontra CNPJ na linha, tolerando espaços ao redor do /."""
     m = _CNPJ_RE.search(line)
-    if m:
-        return f"{m.group(1)}/{m.group(2)}"
-    return ""
+    if not m:
+        return ""
+    if m.group(3):
+        return m.group(3)
+    return f"{m.group(1)}/{m.group(2)}"
 
 
 class IncomePJExtractor(ISectionExtractor):
