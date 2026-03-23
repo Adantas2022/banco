@@ -31,6 +31,14 @@ class ExtractionContext:
 
 class ISectionExtractor(ABC):
     """Interface para extratores de seção (Strategy Pattern)."""
+
+    LLM_PROMPT = ""
+
+    SECTION_MARKERS = []
+    SECTION_MARKER = "DECLARAÇÃO DE BENS E DIREITOS"  # Mantido para compatibilidade
+    SECTION_END_MARKERS = []
+
+    LLM_PROMPT
     
     @property
     @abstractmethod
@@ -47,3 +55,5 @@ class ISectionExtractor(ABC):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         """Extrai dados da seção."""
         pass
+
+    

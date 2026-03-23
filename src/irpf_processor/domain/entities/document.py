@@ -22,6 +22,7 @@ class Document:
     sha256: Optional[str] = None
     pdf_type: Optional[PdfType] = None
     confidence: Optional[float] = None
+    content: Optional[bytes] = None
     attempts: int = 0
     error_step: Optional[str] = None
     error_code: Optional[str] = None

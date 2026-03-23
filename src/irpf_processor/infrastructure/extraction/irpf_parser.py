@@ -10,6 +10,7 @@ Este módulo implementa:
 
 from __future__ import annotations
 
+import asyncio
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -421,13 +422,54 @@ class IRPFParser:
             return
         
         try:
-            data = extractor.extract(context)
+            # Check if extractor has LLM flag and extract_with_llm method
+            use_llm = getattr(extractor, 'LLM', False)
+            has_llm_method = hasattr(extractor, 'extract_with_llm')
+            
+            if use_llm and has_llm_method:
+                # Use async extract_with_llm method
+                context.add_warning(f"[LLM] Starting LLM extraction for {extractor.section_name}...")
+                try:
+                    # Pass extractor's own LLM_PROMPT as the custom prompt
+                    llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
+                    print(f"[LLM] LLM prompt: {llm_prompt}")
+                    data = asyncio.run(extractor.extract_with_llm(context, llm_prompt))
+                    # Check if LLM extraction returned valid data (not None)
+                    print(f"[LLM] LLM extraction result: {data}")
+                    if data:
+                        context.add_warning(f"[LLM] ✓ LLM extraction succeeded for {extractor.section_name}")
+                    else:
+                        # LLM method returned None (error was caught internally)
+                        context.add_warning(
+                            f"[LLM] ✗ LLM extraction failed (check warnings) - falling back to regex"
+                        )
+                        data = extractor.extract(context)
+                        
+                except ModuleNotFoundError as llm_error:
+                    # Import errors during LLM - likely missing Azure OpenAI config
+                    context.add_warning(
+                        f"[LLM] ✗ ModuleNotFoundError: {str(llm_error)} - falling back to regex"
+                    )
+                    # Fall back to regular extract method
+                    data = extractor.extract(context)
+                except Exception as llm_error:
+                    context.add_warning(
+                        f"[LLM] ✗ {type(llm_error).__name__}: {str(llm_error)} - falling back to regex"
+                    )
+                    # Fall back to regular extract method
+                    data = extractor.extract(context)
+            else:
+                # Use regular sync extract method
+                data = extractor.extract(context)
+            
             if data:
                 if self._enable_validation and self._validation_executor:
                     data = self._validation_executor.validate_section(
                         extractor.section_name, data, context
                     )
+
                 self._assign_to_result(extractor.section_name, data, result)
+
         except Exception as e:
             if extractor.section_name in OPTIONAL_SECTIONS:
                 logger.debug(
@@ -446,6 +488,7 @@ class IRPFParser:
     ) -> None:
         if hasattr(result, section_name):
             setattr(result, section_name, data)
+        
     
     def _calculate_confidence(
         self, 
@@ -496,7 +539,7 @@ class IRPFParser:
             return
         if not result.calculation_of_rural_results_in_brazil:
             return
-
+        breakpoint()
         subsections = result.exempt_income.get("subsections", {})
         existing = subsections.get("exempt_portion_from_rural_activity")
         if existing and existing.get("total_value", 0) > 0:

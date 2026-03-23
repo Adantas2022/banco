@@ -1,6 +1,10 @@
 """Extrator de declaração de bens e direitos."""
 
+import os
 import re
+import json
+import tempfile
+import asyncio
 from typing import Any, Optional
 
 from .base import ExtractionContext, ISectionExtractor
@@ -10,6 +14,8 @@ from ..validation_utils import extract_section_total, create_validated_total
 
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
+
+    LLM = True
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
@@ -26,6 +32,95 @@ class AssetsExtractor(ISectionExtractor):
         "DOAÇÕES EFETUADAS",
         "DOACOES EFETUADAS",
     ]
+
+    LLM_PROMPT = """
+                Para declaracoes de Imposto de Renda Pessoa Fisica (IRPF).
+
+                *** REGRA ABSOLUTA DE SCHEMA ***
+                Produza SOMENTE os campos descritos neste template.
+                NAO adicione campos extras, NAO invente chaves novas.
+                Campos inexistentes no documento = null. Nunca omita uma chave do envelope.
+                O JSON final deve ser ESTRUTURALMENTE IDENTICO ao schema abaixo.
+
+                ================================================================
+                SECAO 2 - DECLARACAO DE BENS E DIREITOS
+                ================================================================
+                REGRA: lista TODOS os bens. Cada linha = um objeto separado. Nao omita nenhum.
+
+                {   
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                    {
+                        "id": "string (hash MD5 gerado com base no conteudo do item)",
+                        "asset_group_code": "string (ex: '01', '02', '03')",
+                        "asset_code": "string (ex: '01', '11')",
+                        "asset_description": "string - copie o texto presente na terceira coluna da tabela, este texto descreve o que é o item",
+                        "before_year_asset_value": numero,
+                        "current_year_asset_value": numero,
+                        "country_code": "string ex: '105'",
+                        "country_name": "string em maiusculas ex: 'BRASIL'",
+                        "additional_info": { <ver regras abaixo por tipo de bem> },
+                        "country_valid": true,
+                        "page": numero
+                    }
+                    ],
+                    "last_year_total_value": numero,
+                    "current_year_total_value": numero,
+                    "pages_with_problems": []
+                }
+
+                REGRAS DE additional_info POR TIPO DE BEM:
+                
+                asset_group_code = 01 (Imoveis):
+                    "additional_info": {
+                        "municipal_registration": "string ou null",
+                        "street_address": "string ou null",
+                        "complement": "string ou null",
+                        "city": "string ou null",
+                        "area": "string ou null",
+                        "registered_at_registy_office": true | false | null,
+                        "matriculation": "string ou null",
+                        "number": "string ou null",
+                        "neighborhood": "string ou null",
+                        "state": "string 2 letras ou null",
+                        "acquisition_date": "DD/MM/YYYY ou null",
+                        "registry_office_name": "string ou null",
+                        "zipcode": "string ou null"
+                    }
+
+                asset_group_code = 02 (Veiculos / Moveis):
+                    "additional_info": {
+                        "renavam": "string ou null"
+                    }
+
+                asset_group_code = 03 (Participacoes Societarias):
+                    "additional_info": {
+                        "beneficiary": "string (ex: 'Titular') ou null",
+                        "cnpj": "string com mascara ou null",
+                        "cpf": "string com mascara ou null"
+                    }
+
+                asset_group_code = 04 (Aplicacoes/Investimentos):
+                    "additional_info": {
+                        "beneficiary": "string com mascara ou null",
+                        "cnpj": "string com mascara ou null",
+                        "bank": "string com mascara ou null",
+                        "cpf": "string com mascara ou null",
+                        "agency": "string com mascara ou null",
+                        "account": "string com mascara ou null",
+                    }
+
+                asset_group_code = 06 (Outros bens e direitos):
+                    "additional_info": {
+                        "beneficiary": "string com mascara ou null",
+                        "cnpj": "string com mascara ou null",
+                        "bank": "string com mascara ou null",
+                        "cpf": "string com mascara ou null",
+                        "agency": "string com mascara ou null",
+                        "account": "string com mascara ou null",
+                        "is_payment_account": true or false
+                    },
+                """
     
     def __init__(self):
         """Inicializa o extractor com rastreamento de estado da seção."""
@@ -39,6 +134,293 @@ class AssetsExtractor(ISectionExtractor):
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
+
+    def extract_section_pages(self, context: ExtractionContext) -> list[int]:
+        """
+        Extract page numbers from SECTION_MARKERS until SECTION_END_MARKERS.
+        
+        Returns a list of page numbers that comprise the assets declaration section.
+        
+        Args:
+            context: ExtractionContext with document pages
+            
+        Returns:
+            List of page numbers (0-indexed) in the section, or empty list if section not found
+        """
+        section_pages = []
+        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
+        
+        # Temporarily manage state for this operation
+        original_section_started = self._section_started
+        original_section_start_page = self._section_start_page
+        
+        try:
+            self._section_started = False
+            self._section_start_page = -1
+            
+            for page_idx, (page_num, page_text) in enumerate(sorted_pages):
+                upper_text = page_text.upper()
+                
+                # Check for section start
+                if not self._section_started and any(marker in upper_text for marker in self.SECTION_MARKERS):
+                    self._section_started = True
+                    self._section_start_page = page_num
+                    section_pages.append(page_num)
+                    continue
+                
+                # Only process if section has started
+                if not self._section_started:
+                    continue
+                
+                # Check for section end
+                if self._has_section_end_heading(page_text, page_num):
+                    break
+                
+                # Add pages within the section
+                section_pages.append(page_num)
+        
+        finally:
+            # Restore original state
+            self._section_started = original_section_started
+            self._section_start_page = original_section_start_page
+        
+        return section_pages
+
+    def save_section_pages_as_pdf(self, context: ExtractionContext, pages: list[int]) -> str:
+        """
+        Create a temporary PDF file from selected pages.
+        
+        Args:
+            context: ExtractionContext with PDF path
+            pages: List of page numbers (0-indexed) to include in temp PDF
+            
+        Returns:
+            Path to the temporary PDF file, or None if creation failed
+        """
+        selected_pages = set(pages)
+        temp_pdf_path = None
+        
+        if context.pdf_path and selected_pages:
+            import tempfile
+            from pypdf import PdfWriter, PdfReader
+            
+            try:
+                reader = PdfReader(context.pdf_path)
+                writer = PdfWriter()
+                
+                for page_num in sorted(selected_pages):
+                    if 0 <= page_num < len(reader.pages):
+                        writer.add_page(reader.pages[page_num])
+                
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                    writer.write(tmp)
+                    temp_pdf_path = tmp.name
+            except Exception as e:
+                context.add_warning(f"Failed to create temporary PDF: {str(e)}")
+                
+        return temp_pdf_path
+
+    async def extract_with_llm(
+        self, 
+        context: ExtractionContext,
+        custom_prompt: Optional[str] = None
+    ) -> Optional[dict[str, Any]]:
+        """
+        Extract assets section using LLM (with temp PDF from selected pages).
+        
+        This function:
+        1. Extracts section page numbers from SECTION_MARKERS to SECTION_END_MARKERS
+        2. Creates a temporary PDF with only the relevant pages
+        3. Sends the temp PDF to SimpleIRProvider for LLM extraction
+        4. Transforms the LLM response to match the expected format
+        
+        Args:
+            context: ExtractionContext with document pages and PDF path
+            custom_prompt: Optional custom prompt to pass to the LLM provider
+            
+        Returns:
+            Dictionary with extracted data in the same format as extract() method,
+            or None if extraction fails
+        """
+        try:
+            # Step 1: Extract section pages
+            section_pages = self.extract_section_pages(context)
+            if not section_pages:
+                context.add_warning("No assets section pages found")
+                return None
+            
+            # Step 2: Create temporary PDF with selected pages
+            temp_pdf_path = self.save_section_pages_as_pdf(context, section_pages)
+            
+            if not temp_pdf_path:
+                context.add_warning("Failed to create temporary PDF for LLM extraction")
+                return None
+            
+            try:
+                # Step 3: Read temp PDF and create Document object
+                with open(temp_pdf_path, "rb") as f:
+                    pdf_content = f.read()
+                
+                # Import Document here to avoid circular imports
+                from irpf_processor.domain.entities.document import Document
+                from irpf_processor.domain.enums import DocumentStatus
+                doc = Document(
+                    tenant_id="llm_extraction",
+                    filename=os.path.basename(context.pdf_path or "assets.pdf"),
+                    content_type="application/pdf",
+                    storage_uri=temp_pdf_path,
+                    status=DocumentStatus.RECEIVED
+                )
+                doc.sha256 = Document.calculate_sha256(pdf_content)
+                doc.content = pdf_content  # Set content for LLM provider
+                
+                # Step 4: Use SimpleIRProvider for LLM extraction
+                from irpf_processor.infrastructure.llm.simple_ir_provider import SimpleIRProvider
+                
+                try:
+                    context.add_warning(f"[LLM] About to initialize SimpleIRProvider...")
+                    provider = SimpleIRProvider()
+                    context.add_warning(f"[LLM] SimpleIRProvider initialized successfully")
+                except Exception as init_err:
+                    context.add_warning(f"[LLM] Failed to initialize provider: {type(init_err).__name__}: {str(init_err)}")
+                    raise
+                
+                # Use the extractor's own LLM_PROMPT if no custom_prompt provided
+                assets_prompt = custom_prompt or getattr(self, 'LLM_PROMPT', None)
+                
+                context.add_warning(f"[LLM] Provider initialized, calling extract...")
+                
+                # Call LLM extraction (breaking async if needed)
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # If already in async context, use run_in_executor
+                    extraction_result = await loop.run_in_executor(
+                        None,
+                        lambda: asyncio.run(provider.extract(doc, assets_prompt))
+                    )
+                else:
+                    extraction_result = await provider.extract(doc, assets_prompt)
+                
+                context.add_warning(f"[LLM] Extract completed, got response")
+                context.add_warning(f"[LLM] Response type: {type(extraction_result).__name__}")
+                
+                # Step 5: Transform LLM response to expected format
+                llm_data = extraction_result.extracted_data
+                context.add_warning(f"[LLM] Response data: {llm_data}")
+                
+                # Debug: Log what we got from LLM
+                context.add_warning(f"[LLM] Response keys: {list(llm_data.keys()) if isinstance(llm_data, dict) else 'not a dict'}")
+                context.add_warning(f"[LLM] Full response: {str(llm_data)[:500]}")
+                
+                items = []
+                if isinstance(llm_data.get("items"), list):
+                    for item in llm_data["items"]:
+                        # Normalize item structure
+                        normalized_item = self._normalize_llm_item(item)
+                        items.append(normalized_item)
+                
+                if not items:
+                    context.add_warning("LLM extraction returned no items")
+                    return None
+                
+                # Calculate totals
+                last_year_total = sum_currency_values(
+                    [i.get("before_year_asset_value", 0) for i in items],
+                    as_int=False
+                )
+                current_year_total = sum_currency_values(
+                    [i.get("current_year_asset_value", 0) for i in items],
+                    as_int=False
+                )
+                
+                # Extract totals from LLM data if provided
+                pdf_last_year = llm_data.get("last_year_total_value")
+                pdf_current_year = llm_data.get("current_year_total_value")
+                
+                return {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": items,
+                    "last_year_total_value": last_year_total,
+                    "current_year_total_value": current_year_total,
+                    "total_values": {
+                        "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
+                        "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
+                    },
+                    "pages_with_problems": [],
+                    "extraction_method": "llm"
+                }
+            
+            finally:
+                # Clean up temp PDF
+                if os.path.exists(temp_pdf_path):
+                    try:
+                        os.unlink(temp_pdf_path)
+                    except Exception as e:
+                        context.add_warning(f"Failed to clean up temp PDF: {str(e)}")
+        
+        except Exception as e:
+            context.add_warning(f"LLM extraction failed: {type(e).__name__}: {str(e)}")
+            return None
+
+    def _normalize_llm_item(self, item: dict) -> dict:
+        """
+        Normalize LLM extracted item to match expected format.
+        
+        Args:
+            item: Dictionary from LLM containing asset information
+            
+        Returns:
+            Normalized dictionary matching AssetsExtractor item format
+        """
+        # Ensure required fields exist
+        group_code = str(item.get("asset_group_code", "00")).zfill(2)
+        asset_code = str(item.get("asset_code", "00")).zfill(2)
+        description = str(item.get("asset_description") or item.get("description", "")).strip()
+        
+        # Parse currency values
+        before_value = self._parse_llm_currency(item.get("before_year_asset_value"))
+        current_value = self._parse_llm_currency(item.get("current_year_asset_value"))
+        
+        item_id = generate_item_id(f"{group_code}{asset_code}{description[:50]}")
+        
+        return {
+            "id": item_id,
+            "asset_group_code": group_code,
+            "asset_code": asset_code,
+            "asset_description": description,
+            "before_year_asset_value": before_value,
+            "current_year_asset_value": current_value,
+            "country_code": str(item.get("country_code", "105")).zfill(3),
+            "country_name": str(item.get("country_name", "BRASIL")).upper(),
+            "additional_info": item.get("additional_info", {}),
+            "country_valid": item.get("country_valid", True),
+            "page": item.get("page", 0),
+        }
+
+    def _parse_llm_currency(self, value: Any) -> float:
+        """
+        Parse currency value from LLM response.
+        
+        Args:
+            value: Value that could be string, float, int, or dict
+            
+        Returns:
+            Float representation of the currency value
+        """
+        if value is None:
+            return 0.0
+        
+        if isinstance(value, (int, float)):
+            return float(value)
+        
+        if isinstance(value, str):
+            return parse_currency(value)
+        
+        if isinstance(value, dict) and "value" in value:
+            return self._parse_llm_currency(value["value"])
+        
+        return 0.0
+
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -69,10 +451,8 @@ class AssetsExtractor(ISectionExtractor):
             )
             
             if self._has_section_end_heading(page_text, page_num):
-                end_line = self._find_end_marker_line_in_page(page_text)
                 page_items = self._extract_from_page(
-                    page_text, page_num, next_page_text=next_page_text,
-                    max_line=end_line,
+                    page_text, page_num, next_page_text=next_page_text
                 )
                 items.extend(page_items)
                 
@@ -129,7 +509,8 @@ class AssetsExtractor(ISectionExtractor):
                 "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
                 "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
             },
-            "pages_with_problems": []
+            "pages_with_problems": [],
+            "extraction_method": "regex"
         }
     
     def _extract_assets_total(self, page_text: str) -> list[float]:
@@ -233,16 +614,6 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
-    def _find_end_marker_line_in_page(self, page_text: str) -> Optional[int]:
-        """Retorna o índice da primeira linha com marcador de fim de seção."""
-        lines = page_text.split("\n")
-        for i, line in enumerate(lines):
-            upper = line.strip().upper()
-            for marker in self.SECTION_END_MARKERS:
-                if marker in upper:
-                    return i
-        return None
-    
     # Aceita formato BR (150.000,00) E formato US (150,000.00)
     CURRENCY_RE = r"(\d[\d.]*,\d{2}|\d[\d,]*\.\d{2})"
 
@@ -251,23 +622,17 @@ class AssetsExtractor(ISectionExtractor):
         page_text: str,
         page_num: int,
         next_page_text: Optional[str] = None,
-        max_line: Optional[int] = None,
     ) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         next_page_lines = next_page_text.split("\n") if next_page_text else []
-        line_limit = max_line if max_line is not None else len(lines)
         
         two_val = re.compile(
             rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
         )
-        # Formato antigo (IRPF 2021/2020): 1 código em vez de group+asset
-        one_code_two_val = re.compile(
-            rf"^(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
-        )
         
         i = 0
-        while i < line_limit:
+        while i < len(lines):
             line = lines[i].strip()
             
             asset_match = two_val.match(line)
@@ -282,17 +647,6 @@ class AssetsExtractor(ISectionExtractor):
                     continue
             
             if not asset_match:
-                single_match = one_code_two_val.match(line)
-                if single_match:
-                    item = self._parse_single_code_asset(
-                        lines, i, single_match, page_num
-                    )
-                    if item:
-                        items.append(item)
-                        i = item.pop("_next_index", i + 1)
-                        continue
-            
-            if not asset_match:
                 item = self._try_fallback_asset(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
@@ -303,15 +657,6 @@ class AssetsExtractor(ISectionExtractor):
             
             if not asset_match:
                 item = self._try_bare_header_asset(
-                    lines, i, page_num, next_page_lines=next_page_lines
-                )
-                if item:
-                    items.append(item)
-                    i = item.pop("_next_index", i + 1)
-                    continue
-            
-            if not asset_match:
-                item = self._try_fallback_asset_single_code(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
                 if item:
@@ -444,113 +789,6 @@ class AssetsExtractor(ISectionExtractor):
             return item
         return None
 
-    def _parse_single_code_asset(
-        self,
-        lines: list[str],
-        idx: int,
-        match,
-        page_num: int,
-    ) -> Optional[dict]:
-        """Parse item de formato antigo com 1 código (IRPF 2021/2020).
-
-        Linha: ``01  APARTAMENTO RESIDENCIAL  140.000,00  140.000,00``
-        group(1)=code, group(2)=desc, group(3)=val1, group(4)=val2.
-        Mapeia para group_code=code, asset_code='01'.
-        """
-        code = match.group(1)
-        desc = match.group(2).strip()
-
-        # Ignorar linhas de header ou TOTAL
-        if len(desc) < 3:
-            return None
-        upper = desc.upper()
-        if upper.startswith("TOTAL") or "CÓDIGO" in upper or "DISCRIMINAÇÃO" in upper:
-            return None
-
-        class _FakeMatch:
-            def __init__(self, groups):
-                self._groups = groups
-            def group(self, n):
-                return self._groups[n]
-
-        fake = _FakeMatch({
-            1: code,
-            2: "01",
-            3: desc,
-            4: match.group(3),
-            5: match.group(4),
-        })
-        return self._parse_asset_block(lines, idx, fake, page_num)
-
-    def _try_fallback_asset_single_code(
-        self,
-        lines: list[str],
-        idx: int,
-        page_num: int,
-        next_page_lines: Optional[list[str]] = None,
-    ) -> Optional[dict]:
-        """Fallback para formato antigo com 1 código e valores ausentes/split.
-
-        Tenta: ``01  APARTAMENTO RESIDENCIAL`` (sem valores na linha).
-        """
-        line = lines[idx].strip()
-
-        header = re.match(r"^(\d{2})\s+(.+?)\s*$", line)
-        if not header:
-            return None
-
-        code = header.group(1)
-        rest = header.group(2).strip()
-
-        if len(rest) < 3:
-            return None
-        upper_rest = rest.upper()
-        if upper_rest.startswith("TOTAL") or "CÓDIGO" in upper_rest:
-            return None
-        # Evitar capturar linhas tipo "105 - BRASIL"
-        if re.match(r"^\d{3}\s*[-–]", line):
-            return None
-
-        vals = re.findall(self.CURRENCY_RE, rest)
-
-        if len(vals) >= 2:
-            v1, v2 = vals[-2], vals[-1]
-            desc = rest[:rest.rfind(vals[-2])].strip()
-            if len(desc) < 3:
-                return None
-        elif len(vals) == 1:
-            v1 = vals[0]
-            desc = rest[:rest.rfind(v1)].strip()
-            if len(desc) < 5:
-                return None
-            v2 = self._find_orphan_value(lines, idx + 1)
-            if not v2 and next_page_lines:
-                v2 = self._find_orphan_value(next_page_lines, 0, max_lines=10)
-            if not v2:
-                v2 = v1
-        else:
-            desc = rest
-            v1, v2 = self._find_two_orphan_values(lines, idx + 1)
-            if (not v1 or not v2) and next_page_lines:
-                v1_next, v2_next = self._find_two_orphan_values(
-                    next_page_lines, 0, max_lines=10
-                )
-                if not v1:
-                    v1 = v1_next
-                if not v2:
-                    v2 = v2_next
-            if not v1 or not v2:
-                return None
-
-        class _FakeMatch:
-            def __init__(self, groups):
-                self._groups = groups
-            def group(self, n):
-                return self._groups[n]
-
-        fake = _FakeMatch({1: code, 2: "01", 3: desc, 4: v1, 5: v2})
-        return self._parse_asset_block(lines, idx, fake, page_num)
-
     def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
@@ -623,10 +861,6 @@ class AssetsExtractor(ISectionExtractor):
             if re.match(r"^\d{2}\s+\d{2}\s*$", next_line):
                 break
             
-            # Formato antigo: 1 código + descrição + valores (ex: "01  APARTAMENTO  140.000,00  140.000,00")
-            if re.match(rf"^\d{{2}}\s+.+?\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$", next_line):
-                break
-            
             # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
             # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
             # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
@@ -645,12 +879,7 @@ class AssetsExtractor(ISectionExtractor):
             if "Página" in next_line and "de" in next_line:
                 break
             
-            # Parar em marcadores de fim de seção
-            upper_next = next_line.upper()
-            if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if upper_next.startswith("TOTAL") or upper_next.startswith("TOTAL DE BENS"):
+            if next_line.upper().startswith("TOTAL") or next_line.upper().startswith("TOTAL DE BENS"):
                 break
             
             raw_lines.append(next_line)

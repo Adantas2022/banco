@@ -11,6 +11,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install corporate CA certificate (Zscaler)
+COPY asa-certificate.cer /usr/local/share/ca-certificates/asa-certificate.crt
+RUN update-ca-certificates
+
+# Make pip and requests use the system CA bundle
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    PIP_CERT=/etc/ssl/certs/ca-certificates.crt
+
+RUN find /etc/apt/sources.list.d/ -type f -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g' {} +
+
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \

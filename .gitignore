@@ -101,3 +101,4 @@ docs/PROPOSTA_AGENTES_V1.md
 # GCP credential files
 gcp-super-*.json
 credentials/
+asa-certificate.cer

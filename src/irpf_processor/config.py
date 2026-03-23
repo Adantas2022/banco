@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     gcp_bucket: str = "irpf-documents"
     gcp_credentials_path: str = ""
     gcp_auth_type: Literal["adc", "service_account", "anonymous"] = "adc"
-    gcp_emulator_endpoint: str = ""
+    gcp_emulator_endpoint: str = "http://localhost:4443"
 
     # OCR
     ocr_engine: Literal["tesseract", "docling", "documentai"] = "tesseract"

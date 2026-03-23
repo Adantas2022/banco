@@ -43,3 +43,33 @@ class ExtractionResult:
     def has_warnings(self) -> bool:
         """Verifica se há avisos."""
         return len(self.warnings) > 0
+
+    @property
+    def extracted_data(self) -> dict[str, Any]:
+        """Alias para formatted_data para compatibilidade com LLM providers."""
+        return self.formatted_data
+
+    @classmethod
+    def from_extraction(
+        cls,
+        document_filename: str,
+        extracted_data: dict[str, Any],
+        processing_time: float,
+    ):
+        """Cria um resultado de extração a partir dos dados extraídos.
+        
+        Nota: Este é um construtor simplificado para uso em LLM extraction.
+        """
+        # Importar aqui para evitar circular imports
+        from irpf_processor.domain.enums import PdfType
+        from irpf_processor.domain.value_objects import Confidence, DocumentId, TenantId
+        
+        return cls(
+            document_id=DocumentId(value=document_filename),
+            tenant_id=TenantId(value="llm_extraction"),
+            pdf_type=PdfType.UNKNOWN,
+            raw_data={},
+            formatted_data=extracted_data,
+            confidence=Confidence(overall=1.0, extraction_method="digital"),
+            processing_time_ms=int(processing_time * 1000),
+        )
