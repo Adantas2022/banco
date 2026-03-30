@@ -7,15 +7,20 @@ import tempfile
 import asyncio
 from typing import Any, Optional
 
+from irpf_processor.domain.entities import extraction_result
+
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id, sum_currency_values
 from ..validation_utils import extract_section_total, create_validated_total
+from irpf_processor.shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
 
-    LLM = True
+    LLM_EXTRACTION_ENABLED = True
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
@@ -34,14 +39,6 @@ class AssetsExtractor(ISectionExtractor):
     ]
 
     LLM_PROMPT = """
-                Para declaracoes de Imposto de Renda Pessoa Fisica (IRPF).
-
-                *** REGRA ABSOLUTA DE SCHEMA ***
-                Produza SOMENTE os campos descritos neste template.
-                NAO adicione campos extras, NAO invente chaves novas.
-                Campos inexistentes no documento = null. Nunca omita uma chave do envelope.
-                O JSON final deve ser ESTRUTURALMENTE IDENTICO ao schema abaixo.
-
                 ================================================================
                 SECAO 2 - DECLARACAO DE BENS E DIREITOS
                 ================================================================
@@ -59,7 +56,7 @@ class AssetsExtractor(ISectionExtractor):
                         "current_year_asset_value": numero,
                         "country_code": "string ex: '105'",
                         "country_name": "string em maiusculas ex: 'BRASIL'",
-                        "additional_info": { <ver regras abaixo por tipo de bem> },
+                        "additional_info": { <ver regras abaixo> },
                         "country_valid": true,
                         "page": numero
                     }
@@ -69,58 +66,35 @@ class AssetsExtractor(ISectionExtractor):
                     "pages_with_problems": []
                 }
 
-                REGRAS DE additional_info POR TIPO DE BEM:
+                REGRAS DE additional_info, retorne apenas os campos presentes no documento, não use o campo descrição para deduzir os campos, caso o campo não esteja presente não retorne o campo, caso o campo esteja presente mas sem valor, preencha com null:
                 
-                asset_group_code = 01 (Imoveis):
-                    "additional_info": {
-                        "municipal_registration": "string ou null",
-                        "street_address": "string ou null",
-                        "complement": "string ou null",
-                        "city": "string ou null",
-                        "area": "string ou null",
-                        "registered_at_registy_office": true | false | null,
-                        "matriculation": "string ou null",
-                        "number": "string ou null",
-                        "neighborhood": "string ou null",
-                        "state": "string 2 letras ou null",
-                        "acquisition_date": "DD/MM/YYYY ou null",
-                        "registry_office_name": "string ou null",
-                        "zipcode": "string ou null"
-                    }
+                "additional_info": {
+                    "municipal_registration": "string ou null",
+                    "street_address": "string ou null",
+                    "complement": "string ou null",
+                    "city": "string ou null",
+                    "area": "string ou null",
+                    "registered_at_registy_office": true | false | null,
+                    "matriculation": "string ou null",
+                    "number": "string ou null",
+                    "neighborhood": "string ou null",
+                    "state": "string 2 letras ou null",
+                    "acquisition_date": "DD/MM/YYYY ou null",
+                    "registry_office_name": "string ou null",
+                    "zipcode": "string ou null",
+                    "renavam": "string ou null",
+                    "beneficiary": "string (ex: 'Titular') ou null",
+                    "cnpj": "string com mascara ou null",
+                    "cpf": "string com mascara ou null",
+                    "bank": "string com mascara ou null",
+                    "agency": "string com mascara ou null",
+                    "account": "string com mascara ou null",
+                    "is_payment_account": true or false,
+                    "traded_on_stock_market": true or false
+                }
 
-                asset_group_code = 02 (Veiculos / Moveis):
-                    "additional_info": {
-                        "renavam": "string ou null"
-                    }
-
-                asset_group_code = 03 (Participacoes Societarias):
-                    "additional_info": {
-                        "beneficiary": "string (ex: 'Titular') ou null",
-                        "cnpj": "string com mascara ou null",
-                        "cpf": "string com mascara ou null"
-                    }
-
-                asset_group_code = 04 (Aplicacoes/Investimentos):
-                    "additional_info": {
-                        "beneficiary": "string com mascara ou null",
-                        "cnpj": "string com mascara ou null",
-                        "bank": "string com mascara ou null",
-                        "cpf": "string com mascara ou null",
-                        "agency": "string com mascara ou null",
-                        "account": "string com mascara ou null",
-                    }
-
-                asset_group_code = 06 (Outros bens e direitos):
-                    "additional_info": {
-                        "beneficiary": "string com mascara ou null",
-                        "cnpj": "string com mascara ou null",
-                        "bank": "string com mascara ou null",
-                        "cpf": "string com mascara ou null",
-                        "agency": "string com mascara ou null",
-                        "account": "string com mascara ou null",
-                        "is_payment_account": true or false
-                    },
-                """
+                Extraia todos os BENS e seus respectivos detalhes.
+            """
     
     def __init__(self):
         """Inicializa o extractor com rastreamento de estado da seção."""
@@ -135,91 +109,6 @@ class AssetsExtractor(ISectionExtractor):
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
 
-    def extract_section_pages(self, context: ExtractionContext) -> list[int]:
-        """
-        Extract page numbers from SECTION_MARKERS until SECTION_END_MARKERS.
-        
-        Returns a list of page numbers that comprise the assets declaration section.
-        
-        Args:
-            context: ExtractionContext with document pages
-            
-        Returns:
-            List of page numbers (0-indexed) in the section, or empty list if section not found
-        """
-        section_pages = []
-        sorted_pages = sorted(context.pages_text.items(), key=lambda x: x[0])
-        
-        # Temporarily manage state for this operation
-        original_section_started = self._section_started
-        original_section_start_page = self._section_start_page
-        
-        try:
-            self._section_started = False
-            self._section_start_page = -1
-            
-            for page_idx, (page_num, page_text) in enumerate(sorted_pages):
-                upper_text = page_text.upper()
-                
-                # Check for section start
-                if not self._section_started and any(marker in upper_text for marker in self.SECTION_MARKERS):
-                    self._section_started = True
-                    self._section_start_page = page_num
-                    section_pages.append(page_num)
-                    continue
-                
-                # Only process if section has started
-                if not self._section_started:
-                    continue
-                
-                # Check for section end
-                if self._has_section_end_heading(page_text, page_num):
-                    break
-                
-                # Add pages within the section
-                section_pages.append(page_num)
-        
-        finally:
-            # Restore original state
-            self._section_started = original_section_started
-            self._section_start_page = original_section_start_page
-        
-        return section_pages
-
-    def save_section_pages_as_pdf(self, context: ExtractionContext, pages: list[int]) -> str:
-        """
-        Create a temporary PDF file from selected pages.
-        
-        Args:
-            context: ExtractionContext with PDF path
-            pages: List of page numbers (0-indexed) to include in temp PDF
-            
-        Returns:
-            Path to the temporary PDF file, or None if creation failed
-        """
-        selected_pages = set(pages)
-        temp_pdf_path = None
-        
-        if context.pdf_path and selected_pages:
-            import tempfile
-            from pypdf import PdfWriter, PdfReader
-            
-            try:
-                reader = PdfReader(context.pdf_path)
-                writer = PdfWriter()
-                
-                for page_num in sorted(selected_pages):
-                    if 0 <= page_num < len(reader.pages):
-                        writer.add_page(reader.pages[page_num])
-                
-                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                    writer.write(tmp)
-                    temp_pdf_path = tmp.name
-            except Exception as e:
-                context.add_warning(f"Failed to create temporary PDF: {str(e)}")
-                
-        return temp_pdf_path
-
     async def extract_with_llm(
         self, 
         context: ExtractionContext,
@@ -231,7 +120,7 @@ class AssetsExtractor(ISectionExtractor):
         This function:
         1. Extracts section page numbers from SECTION_MARKERS to SECTION_END_MARKERS
         2. Creates a temporary PDF with only the relevant pages
-        3. Sends the temp PDF to SimpleIRProvider for LLM extraction
+        3. Sends the temp PDF to IRProvider for LLM extraction
         4. Transforms the LLM response to match the expected format
         
         Args:
@@ -243,121 +132,82 @@ class AssetsExtractor(ISectionExtractor):
             or None if extraction fails
         """
         try:
-            # Step 1: Extract section pages
-            section_pages = self.extract_section_pages(context)
-            if not section_pages:
-                context.add_warning("No assets section pages found")
+            # Step 1: Get LLM Extraction
+            extraction_result = await self.get_llm_extraction_data(context, custom_prompt)
+            
+            if not extraction_result:
+                context.add_warning("LLM extraction returned no chunks")
+                return None
+
+            # Step 2: Merge chunks — page-based overlap removal
+            chunks = extraction_result  # list[dict]
+            logger.info("llm_assets_chunks_received", chunks_count=len(chunks))
+
+            items = []
+            pdf_last_year = None
+            pdf_current_year = None
+            for chunk_idx, chunk in enumerate(chunks):
+                if not isinstance(chunk, dict):
+                    continue
+                chunk_items = chunk.get("items", [])
+                if not isinstance(chunk_items, list):
+                    continue
+
+                if chunk_idx > 0 and chunk_items:
+                    # Overlap: a primeira página deste chunk = última do anterior
+                    overlap_page = chunk_items[0].get("page")
+                    if overlap_page is not None:
+                        # Contar itens neste chunk com a página sobreposta
+                        overlap_count = sum(
+                            1 for it in chunk_items if it.get("page") == overlap_page
+                        )
+                        # Remover os últimos N itens do merged que têm essa página
+                        removed = 0
+                        while removed < overlap_count and items:
+                            if items[-1].get("page") == overlap_page:
+                                items.pop()
+                                removed += 1
+                            else:
+                                break
+                        logger.info("llm_assets_chunk_overlap", chunk_idx=chunk_idx, overlap_page=overlap_page, overlap_count=overlap_count, removed=removed)
+
+                for item in chunk_items:
+                    normalized_item = self._normalize_llm_item(item)
+                    items.append(normalized_item)
+                # Take last non-None totals (usually on final pages)
+                if chunk.get("last_year_total_value") is not None:
+                    pdf_last_year = chunk["last_year_total_value"]
+                if chunk.get("current_year_total_value") is not None:
+                    pdf_current_year = chunk["current_year_total_value"]
+
+            logger.info("llm_assets_merge_complete", items_count=len(items), chunks_count=len(chunks))
+            
+            if not items:
+                context.add_warning("LLM extraction returned no items")
                 return None
             
-            # Step 2: Create temporary PDF with selected pages
-            temp_pdf_path = self.save_section_pages_as_pdf(context, section_pages)
+            ## Step 3: Calculate totals
+            last_year_total = sum_currency_values(
+                [i.get("before_year_asset_value", 0) for i in items],
+                as_int=False
+            )
+            current_year_total = sum_currency_values(
+                [i.get("current_year_asset_value", 0) for i in items],
+                as_int=False
+            )
             
-            if not temp_pdf_path:
-                context.add_warning("Failed to create temporary PDF for LLM extraction")
-                return None
-            
-            try:
-                # Step 3: Read temp PDF and create Document object
-                with open(temp_pdf_path, "rb") as f:
-                    pdf_content = f.read()
-                
-                # Import Document here to avoid circular imports
-                from irpf_processor.domain.entities.document import Document
-                from irpf_processor.domain.enums import DocumentStatus
-                doc = Document(
-                    tenant_id="llm_extraction",
-                    filename=os.path.basename(context.pdf_path or "assets.pdf"),
-                    content_type="application/pdf",
-                    storage_uri=temp_pdf_path,
-                    status=DocumentStatus.RECEIVED
-                )
-                doc.sha256 = Document.calculate_sha256(pdf_content)
-                doc.content = pdf_content  # Set content for LLM provider
-                
-                # Step 4: Use SimpleIRProvider for LLM extraction
-                from irpf_processor.infrastructure.llm.simple_ir_provider import SimpleIRProvider
-                
-                try:
-                    context.add_warning(f"[LLM] About to initialize SimpleIRProvider...")
-                    provider = SimpleIRProvider()
-                    context.add_warning(f"[LLM] SimpleIRProvider initialized successfully")
-                except Exception as init_err:
-                    context.add_warning(f"[LLM] Failed to initialize provider: {type(init_err).__name__}: {str(init_err)}")
-                    raise
-                
-                # Use the extractor's own LLM_PROMPT if no custom_prompt provided
-                assets_prompt = custom_prompt or getattr(self, 'LLM_PROMPT', None)
-                
-                context.add_warning(f"[LLM] Provider initialized, calling extract...")
-                
-                # Call LLM extraction (breaking async if needed)
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If already in async context, use run_in_executor
-                    extraction_result = await loop.run_in_executor(
-                        None,
-                        lambda: asyncio.run(provider.extract(doc, assets_prompt))
-                    )
-                else:
-                    extraction_result = await provider.extract(doc, assets_prompt)
-                
-                context.add_warning(f"[LLM] Extract completed, got response")
-                context.add_warning(f"[LLM] Response type: {type(extraction_result).__name__}")
-                
-                # Step 5: Transform LLM response to expected format
-                llm_data = extraction_result.extracted_data
-                context.add_warning(f"[LLM] Response data: {llm_data}")
-                
-                # Debug: Log what we got from LLM
-                context.add_warning(f"[LLM] Response keys: {list(llm_data.keys()) if isinstance(llm_data, dict) else 'not a dict'}")
-                context.add_warning(f"[LLM] Full response: {str(llm_data)[:500]}")
-                
-                items = []
-                if isinstance(llm_data.get("items"), list):
-                    for item in llm_data["items"]:
-                        # Normalize item structure
-                        normalized_item = self._normalize_llm_item(item)
-                        items.append(normalized_item)
-                
-                if not items:
-                    context.add_warning("LLM extraction returned no items")
-                    return None
-                
-                # Calculate totals
-                last_year_total = sum_currency_values(
-                    [i.get("before_year_asset_value", 0) for i in items],
-                    as_int=False
-                )
-                current_year_total = sum_currency_values(
-                    [i.get("current_year_asset_value", 0) for i in items],
-                    as_int=False
-                )
-                
-                # Extract totals from LLM data if provided
-                pdf_last_year = llm_data.get("last_year_total_value")
-                pdf_current_year = llm_data.get("current_year_total_value")
-                
-                return {
-                    "section_name": "Declaração de Bens e Direitos",
-                    "items": items,
-                    "last_year_total_value": last_year_total,
-                    "current_year_total_value": current_year_total,
-                    "total_values": {
-                        "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
-                        "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
-                    },
-                    "pages_with_problems": [],
-                    "extraction_method": "llm"
-                }
-            
-            finally:
-                # Clean up temp PDF
-                if os.path.exists(temp_pdf_path):
-                    try:
-                        os.unlink(temp_pdf_path)
-                    except Exception as e:
-                        context.add_warning(f"Failed to clean up temp PDF: {str(e)}")
-        
+            return {
+                "section_name": "Declaração de Bens e Direitos",
+                "items": items,
+                "last_year_total_value": last_year_total,
+                "current_year_total_value": current_year_total,
+                "total_values": {
+                    "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
+                    "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
+                },
+                "pages_with_problems": [],
+                "extraction_method": "llm"
+            }
         except Exception as e:
             context.add_warning(f"LLM extraction failed: {type(e).__name__}: {str(e)}")
             return None
@@ -396,31 +246,6 @@ class AssetsExtractor(ISectionExtractor):
             "country_valid": item.get("country_valid", True),
             "page": item.get("page", 0),
         }
-
-    def _parse_llm_currency(self, value: Any) -> float:
-        """
-        Parse currency value from LLM response.
-        
-        Args:
-            value: Value that could be string, float, int, or dict
-            
-        Returns:
-            Float representation of the currency value
-        """
-        if value is None:
-            return 0.0
-        
-        if isinstance(value, (int, float)):
-            return float(value)
-        
-        if isinstance(value, str):
-            return parse_currency(value)
-        
-        if isinstance(value, dict) and "value" in value:
-            return self._parse_llm_currency(value["value"])
-        
-        return 0.0
-
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []

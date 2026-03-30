@@ -227,6 +227,7 @@ class IRPFParser:
         auto_detect: bool = True,
         template_registry: Optional[ITemplateRegistry] = None,
         enable_validation: bool = True,
+        max_llm_parallel: int = 5
     ):
         self._custom_extractors = extractors
         self._auto_detect = auto_detect
@@ -240,6 +241,7 @@ class IRPFParser:
         self._enable_validation = enable_validation
         self._validation_executor: Optional[ValidationExecutor] = None
         self._validation_summary: Optional[dict] = None
+        self._llm_semaphore = asyncio.Semaphore(max_llm_parallel)
     
     @property
     def detected_version(self) -> Optional[str]:
@@ -338,10 +340,13 @@ class IRPFParser:
         else:
             extractors = self._custom_extractors or self._create_default_extractors()
         
-        for extractor in extractors:
-            self._run_extractor(extractor, context, result)
+        # for extractor in extractors:
+        #     self._run_extractor(extractor, context, result)
 
-        self._propagate_rural_exempt_to_exempt_income(result)
+        # Run extractors in parallel
+        asyncio.run(self.run_all_extractors(extractors, context, result))
+
+        # self._propagate_rural_exempt_to_exempt_income(result)
 
         if self._enable_validation and self._validation_executor:
             self._validation_summary = self._validation_executor.get_validation_summary(
@@ -360,7 +365,51 @@ class IRPFParser:
         result.equity_evolution = self._calculate_equity_evolution(result)
         
         return result
+
     
+    async def run_all_extractors(self, extractors, context, result):
+        tasks = [
+            self._run_extractor_async(extractor, context, result)
+            for extractor in extractors
+        ]
+        await asyncio.gather(*tasks)
+
+    
+    async def _run_extractor_async(self, extractor, context, result):
+        if not extractor.can_extract(context):
+            return
+
+        try:
+            use_llm = getattr(extractor, 'LLM_EXTRACTION_ENABLED', False)
+            has_llm_method = hasattr(extractor, 'extract_with_llm')
+
+            if use_llm and has_llm_method:
+                async with self._llm_semaphore:
+                    context.add_warning(f"[LLM] Starting async LLM for {extractor.section_name}")
+                    try:
+                        llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
+                        data = await extractor.extract_with_llm(context, llm_prompt)
+                    except Exception as e:
+                        context.add_warning(f"[LLM] Failed: {e}, fallback to sync extract()")
+                        loop = asyncio.get_running_loop()
+                        data = await loop.run_in_executor(None, extractor.extract, context)
+
+            else:
+                # Sync extractor → run in background thread
+                loop = asyncio.get_running_loop()
+                data = await loop.run_in_executor(None, extractor.extract, context)
+
+            if data:
+                if self._enable_validation and self._validation_executor:
+                    data = self._validation_executor.validate_section(
+                        extractor.section_name, data, context
+                    )
+                self._assign_to_result(extractor.section_name, data, result)
+
+        except Exception as e:
+            context.add_warning(f"Erro ao extrair {extractor.section_name}: {e}")
+
+
     def get_document_profile(self) -> Optional[DocumentProfile]:
         """Retorna o perfil do último documento processado."""
         return self._last_profile
@@ -423,7 +472,7 @@ class IRPFParser:
         
         try:
             # Check if extractor has LLM flag and extract_with_llm method
-            use_llm = getattr(extractor, 'LLM', False)
+            use_llm = getattr(extractor, 'LLM_EXTRACTION_ENABLED', False)
             has_llm_method = hasattr(extractor, 'extract_with_llm')
             
             if use_llm and has_llm_method:
@@ -432,10 +481,8 @@ class IRPFParser:
                 try:
                     # Pass extractor's own LLM_PROMPT as the custom prompt
                     llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
-                    print(f"[LLM] LLM prompt: {llm_prompt}")
                     data = asyncio.run(extractor.extract_with_llm(context, llm_prompt))
-                    # Check if LLM extraction returned valid data (not None)
-                    print(f"[LLM] LLM extraction result: {data}")
+
                     if data:
                         context.add_warning(f"[LLM] ✓ LLM extraction succeeded for {extractor.section_name}")
                     else:
@@ -539,7 +586,7 @@ class IRPFParser:
             return
         if not result.calculation_of_rural_results_in_brazil:
             return
-        breakpoint()
+
         subsections = result.exempt_income.get("subsections", {})
         existing = subsections.get("exempt_portion_from_rural_activity")
         if existing and existing.get("total_value", 0) > 0:
@@ -627,6 +674,7 @@ class IRPFParser:
         total_pages: int = 1,
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
+        pdf_path: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         pages_text = self._split_text_by_pages(text, total_pages)
         return self.parse_from_pages_text(
@@ -636,6 +684,7 @@ class IRPFParser:
             version=version,
             ocr_confidence=ocr_confidence,
             warning_message="Texto extraido via OCR",
+            pdf_path=pdf_path,
         )
 
     def parse_from_pages_text(
@@ -646,6 +695,7 @@ class IRPFParser:
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
         warning_message: str = "Texto extraido via OCR (estrutura por pagina preservada)",
+        pdf_path: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         ordered_pages = {
             page_num: pages_text[page_num]
@@ -663,6 +713,7 @@ class IRPFParser:
             full_text=full_text,
             pages_text=ordered_pages,
             total_pages=context_total_pages,
+            pdf_path=pdf_path,
         )
         return self._parse_ocr_context(
             context=context,

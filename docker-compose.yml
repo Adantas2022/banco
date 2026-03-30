@@ -146,13 +146,14 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      - ./src:/app/src:ro
+      # - ./src:/app/src:ro
+      - ./src:/app/src
 
   worker-router:
     build:
       context: .
       dockerfile: Dockerfile
-      target: worker
+      target: worker-router
     container_name: irpf-processor-worker-router
     restart: unless-stopped
     env_file:
@@ -186,7 +187,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: worker
+      target: worker-digital
     container_name: irpf-processor-worker-digital
     restart: unless-stopped
     env_file:
@@ -214,7 +215,8 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      - ./src:/app/src:ro
+      # - ./src:/app/src:ro
+      - ./src:/app/src
 
   worker-ocr:
     build:
@@ -250,7 +252,8 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      - ./src:/app/src:ro
+      # - ./src:/app/src:ro
+      - ./src:/app/src
       - ./credentials:/app/credentials:ro
 
   prometheus:

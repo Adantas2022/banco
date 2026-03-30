@@ -25,6 +25,7 @@ wheels/
 venv/
 ENV/
 env/
+venv_*/
 
 # IDE
 .idea/
@@ -84,6 +85,7 @@ spec.md
 batch_results*.json
 docs/
 scripts/
+local_tests/
 
 # Business confidential
 business/

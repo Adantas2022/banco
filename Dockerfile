@@ -73,9 +73,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 CMD ["uvicorn", "irpf_processor.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # ===========================================
-# WORKER SERVICE (Digital - sem OCR pesado)
+# WORKER SERVICE (ROUTER)
 # ===========================================
-FROM base as worker
+FROM base as worker-router
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
@@ -93,7 +93,32 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 
-CMD ["dramatiq", "irpf_processor.presentation.workers", "--processes", "2", "--threads", "4"]
+CMD ["dramatiq", "irpf_processor.presentation.workers.router_worker", "--processes", "1", "--threads", "2"]
+
+# ===========================================
+# WORKER SERVICE (Digital - sem OCR pesado)
+# ===========================================
+FROM base as worker-digital
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-por \
+    poppler-utils \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY src/ /app/src/
+COPY tests/ /app/tests/
+
+# RUN pip install --no-cache-dir docling docling-core docling-ibm-models tesserocr
+
+CMD ["dramatiq", "irpf_processor.presentation.workers.extraction_worker", "--processes", "1", "--threads", "1"]
 
 # ===========================================
 # WORKER-OCR SERVICE (com Docling + Tesseract)
@@ -122,7 +147,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 
-RUN pip install --no-cache-dir docling docling-core docling-ibm-models tesserocr
+# RUN pip install --no-cache-dir docling docling-core docling-ibm-models tesserocr
 
 CMD ["dramatiq", "irpf_processor.presentation.workers.ocr_worker", "--processes", "1", "--threads", "1"]
 
