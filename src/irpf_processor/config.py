@@ -3,7 +3,29 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# ── Azure OpenAI Model Profiles ───────────────────────────────────────────────
+# Maps profile name → env var suffix. Each profile reads from:
+#   AZURE_OPENAI_ENDPOINT_<SUFFIX>, AZURE_OPENAI_API_KEY_<SUFFIX>,
+#   AZURE_OPENAI_DEPLOYMENT_<SUFFIX>, AZURE_OPENAI_API_VERSION_<SUFFIX>,
+#   AZURE_OPENAI_MAX_TOKENS_<SUFFIX>
+# To add a new model, add an entry here + the corresponding fields in Settings.
+AZURE_MODEL_PROFILES: dict[str, str] = {
+    "gpt-4.1-mini": "gpt_4_1_mini",
+    "gpt-5.4-mini": "gpt_5_4_mini",
+}
+
+# Fields resolved per profile (main field → profile-specific field)
+_AZURE_PROFILE_FIELDS = [
+    "azure_openai_endpoint",
+    "azure_openai_api_key",
+    "azure_openai_deployment",
+    "azure_openai_api_version",
+    "azure_openai_max_tokens",
+]
 
 
 class Settings(BaseSettings):
@@ -56,12 +78,29 @@ class Settings(BaseSettings):
     ocr_engine: Literal["tesseract", "docling", "documentai"] = "tesseract"
 
     # ── Azure OpenAI ──────────────────────────────────────────────────────
+    # Set AZURE_OPENAI_MODEL_PROFILE to a profile name (e.g. "gpt-4.1-mini")
+    # to auto-fill endpoint, deployment, api_version, max_tokens from the profile.
+    # Any explicit env var overrides the profile value.
+    azure_openai_model_profile: str = ""
     azure_openai_endpoint: str = ""
     azure_openai_api_key: str = ""
     azure_openai_api_version: str = ""
     azure_openai_deployment: str = ""
     azure_openai_deployment_fallback: str = ""
     azure_openai_max_tokens: int = 32768
+
+    # Per-profile Azure OpenAI config (env var per model)
+    azure_openai_endpoint_gpt_4_1_mini: str = ""
+    azure_openai_api_key_gpt_4_1_mini: str = ""
+    azure_openai_deployment_gpt_4_1_mini: str = ""
+    azure_openai_api_version_gpt_4_1_mini: str = ""
+    azure_openai_max_tokens_gpt_4_1_mini: int = 0
+
+    azure_openai_endpoint_gpt_5_4_mini: str = ""
+    azure_openai_api_key_gpt_5_4_mini: str = ""
+    azure_openai_deployment_gpt_5_4_mini: str = ""
+    azure_openai_api_version_gpt_5_4_mini: str = ""
+    azure_openai_max_tokens_gpt_5_4_mini: int = 0
 
     # LLM parameters
     llm_max_input_chars: int = 45000
@@ -142,6 +181,32 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = ""
+
+    @model_validator(mode="after")
+    def _apply_model_profile(self) -> "Settings":
+        """Fill blank Azure OpenAI fields from the selected model profile."""
+        profile_name = self.azure_openai_model_profile
+        if not profile_name:
+            return self
+
+        suffix = AZURE_MODEL_PROFILES.get(profile_name)
+        if not suffix:
+            raise ValueError(
+                f"Unknown model profile '{profile_name}'. "
+                f"Available: {list(AZURE_MODEL_PROFILES.keys())}"
+            )
+
+        for base_field in _AZURE_PROFILE_FIELDS:
+            profile_field = f"{base_field}_{suffix}"
+            profile_value = getattr(self, profile_field, None)
+            if not profile_value:
+                continue
+            main_value = getattr(self, base_field)
+            main_default = self.model_fields[base_field].default
+            if main_value == main_default:
+                object.__setattr__(self, base_field, profile_value)
+
+        return self
 
     @property
     def is_development(self) -> bool:

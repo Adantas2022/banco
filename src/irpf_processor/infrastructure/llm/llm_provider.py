@@ -212,7 +212,7 @@ class LLMProvider(ABC):
         return client.chat.completions.create(
             model=get_settings().azure_openai_deployment,
             messages=messages,
-            max_tokens=32768,
+            max_tokens=get_settings().azure_openai_max_tokens,
             temperature=0,
             top_p=1,
             seed=_FIXED_SEED,
