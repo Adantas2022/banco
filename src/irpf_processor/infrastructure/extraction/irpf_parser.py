@@ -380,7 +380,7 @@ class IRPFParser:
             return
 
         try:
-            use_llm = getattr(extractor, 'LLM_EXTRACTION_ENABLED', False)
+            use_llm = getattr(extractor, 'llm_extraction_enabled', False)
             has_llm_method = hasattr(extractor, 'extract_with_llm')
 
             if use_llm and has_llm_method:
@@ -472,7 +472,7 @@ class IRPFParser:
         
         try:
             # Check if extractor has LLM flag and extract_with_llm method
-            use_llm = getattr(extractor, 'LLM_EXTRACTION_ENABLED', False)
+            use_llm = getattr(extractor, 'llm_extraction_enabled', False)
             has_llm_method = hasattr(extractor, 'extract_with_llm')
             
             if use_llm and has_llm_method:

@@ -19,8 +19,6 @@ logger = get_logger(__name__)
 
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
-
-    LLM_EXTRACTION_ENABLED = True
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
@@ -94,7 +92,7 @@ class AssetsExtractor(ISectionExtractor):
                 }
 
                 Extraia todos os BENS e seus respectivos detalhes.
-            """
+                """
     
     def __init__(self):
         """Inicializa o extractor com rastreamento de estado da seção."""

@@ -93,6 +93,39 @@ class Settings(BaseSettings):
     # Extraction
     confidence_threshold: float = 0.6
     max_retry_attempts: int = 3
+
+    # LLM Extraction — per-section toggles (env var = LLM_EXTRACTION_<SECTION_NAME>)
+    llm_extraction_assets_declaration: bool = False
+    llm_extraction_debts_and_encumbrances: bool = False
+    llm_extraction_donations_made: bool = False
+    llm_extraction_payments_made: bool = False
+    llm_extraction_exempt_income: bool = False
+    llm_extraction_exclusive_taxation_income: bool = False
+    llm_extraction_income_from_legal_person_to_holder: bool = False
+    llm_extraction_income_from_legal_person_to_dependents: bool = False
+    llm_extraction_income_from_individual_to_holder: bool = False
+    llm_extraction_income_from_individual_to_dependents: bool = False
+    llm_extraction_income_from_legal_person_to_holder_with_suspended_requirements: bool = False
+    llm_extraction_income_from_legal_person_to_dependents_with_suspended_requirements: bool = False
+    llm_extraction_accumulated_income_from_legal_person_to_holder: bool = False
+    llm_extraction_accumulated_income_from_legal_person_to_dependents: bool = False
+    llm_extraction_taxpayer_identification: bool = False
+    llm_extraction_receipt: bool = False
+    llm_extraction_rural_activity_assets_in_brazil: bool = False
+    llm_extraction_rural_activity_assets_abroad: bool = False
+    llm_extraction_rural_activity_debts_in_brazil: bool = False
+    llm_extraction_rural_activity_debts_abroad: bool = False
+    llm_extraction_exploited_rural_properties_in_brazil: bool = False
+    llm_extraction_exploited_rural_properties_abroad: bool = False
+    llm_extraction_rural_income_and_expenditure_in_brazil: bool = False
+    llm_extraction_rural_income_and_expenditure_abroad: bool = False
+    llm_extraction_livestock_movement_in_brazil: bool = False
+    llm_extraction_livestock_movement_abroad: bool = False
+    llm_extraction_calculation_of_rural_results_in_brazil: bool = False
+    llm_extraction_calculation_of_rural_results_abroad: bool = False
+
+    # LLM Provider
+    llm_max_images_per_call: int = 5
     
     # Testing/Development flags
     skip_duplicate_check: bool = False  # Set to True to always reprocess documents (ignores SHA256 cache)

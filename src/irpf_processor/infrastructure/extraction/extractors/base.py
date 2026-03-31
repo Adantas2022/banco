@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile, os, asyncio
 from pypdf import PdfWriter, PdfReader
 from ..table_extractor import parse_currency
+from irpf_processor.config import get_settings
 from irpf_processor.shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -46,9 +47,15 @@ class ISectionExtractor(ABC):
     """Interface para extratores de seção (Strategy Pattern)."""
 
     LLM_PROMPT = ""
-    LLM_EXTRACTION_ENABLED = False
     SECTION_MARKERS = []
     SECTION_END_MARKERS = []
+
+    @property
+    def llm_extraction_enabled(self) -> bool:
+        """Check if LLM extraction is enabled for this section via env var."""
+        settings = get_settings()
+        key = f"llm_extraction_{self.section_name}"
+        return getattr(settings, key, False)
 
     @property
     @abstractmethod

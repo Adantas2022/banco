@@ -121,8 +121,8 @@ class LLMProvider(ABC):
         return data
 
     def _get_max_images_per_call(self) -> int:
-        """Max pages per LLM call when chunking. Override in subclasses."""
-        return 5
+        """Max pages per LLM call when chunking. Configurable via LLM_MAX_IMAGES_PER_CALL env var."""
+        return get_settings().llm_max_images_per_call
 
     def _get_chunk_annotation(self, start: int, end: int, total: int) -> str:
         """Per-chunk prompt suffix — apenas regras de paginação."""
