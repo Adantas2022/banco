@@ -121,15 +121,40 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
     db = get_sync_db()
     storage = get_storage_service()
 
-    document = db["documents"].find_one({
-        "document_id": document_id,
-        "tenant_id": tenant_id,
-    })
-
-    if not document:
-        logger.error("Document not found for OCR", document_id=document_id)
-        WORKER_JOBS_TOTAL.labels(worker_name="ocr_worker", status="not_found").inc()
+    # ---------- idempotency guard ----------
+    # Atomically claim the document: only proceed if status is still
+    # RECEIVED, ROUTED, or FAILED (FAILED allows Dramatiq retries to
+    # re-attempt after a transient error).  Status PROCESSING means
+    # another worker is actively handling it — skip to avoid duplicates.
+    claimed = db["documents"].find_one_and_update(
+        {
+            "document_id": document_id,
+            "tenant_id": tenant_id,
+            "status": {"$in": [
+                DocumentStatus.RECEIVED.value,
+                DocumentStatus.ROUTED.value,
+                DocumentStatus.FAILED.value,
+            ]},
+        },
+        {"$set": {
+            "status": DocumentStatus.PROCESSING.value,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+    if claimed is None:
+        document = db["documents"].find_one({
+            "document_id": document_id,
+            "tenant_id": tenant_id,
+        })
+        current = document["status"] if document else "missing"
+        logger.info(
+            "Skipping duplicate OCR processing",
+            document_id=document_id,
+            current_status=current,
+        )
         return
+
+    document = claimed
 
     try:
         orchestrator = create_ocr_orchestrator()

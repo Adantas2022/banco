@@ -99,9 +99,32 @@ def route_document(document_id: str, tenant_id: str) -> None:
                 total_pages=detection_result.total_pages,
             )
 
-            update_document_pdf_type(db, document_id, tenant_id, pdf_type.value)
-            record_status_transition(tenant_id, "RECEIVED", "ROUTED")
             record_pdf_type_detection(pdf_type.value, detection_result.confidence)
+
+            # ---------- idempotency guard ----------
+            # Atomically mark as ROUTED only if still RECEIVED.
+            # If a retry fires after .send() already succeeded,
+            # this prevents sending the message a second time.
+            claimed = db["documents"].find_one_and_update(
+                {
+                    "document_id": document_id,
+                    "tenant_id": tenant_id,
+                    "status": DocumentStatus.RECEIVED.value,
+                },
+                {"$set": {
+                    "status": DocumentStatus.ROUTED.value,
+                    "pdf_type": pdf_type.value,
+                    "updated_at": datetime.now(timezone.utc),
+                }},
+            )
+            if claimed is None:
+                logger.info(
+                    "Document already routed, skipping duplicate send",
+                    document_id=document_id,
+                )
+                return
+
+            record_status_transition(tenant_id, "RECEIVED", "ROUTED")
 
             if pdf_type in (OcrPdfType.IMAGE, OcrPdfType.MIXED):
                 from irpf_processor.presentation.workers.ocr_worker import process_ocr_document

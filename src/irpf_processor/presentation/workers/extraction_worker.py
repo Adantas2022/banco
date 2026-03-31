@@ -99,7 +99,7 @@ def detect_document_category(pdf_content: bytes) -> DocumentCategory:
         return DocumentCategory.UNKNOWN
 
 
-@dramatiq.actor(max_retries=3, min_backoff=1000, max_backoff=60000)
+@dramatiq.actor(max_retries=3, min_backoff=1000, max_backoff=60000, time_limit=1800000)
 def process_document(document_id: str, tenant_id: str) -> None:
     start_time = time.perf_counter()
     document_category = DocumentCategory.UNKNOWN
@@ -113,21 +113,46 @@ def process_document(document_id: str, tenant_id: str) -> None:
     db = get_sync_db()
     storage = get_storage_service()
 
-    document = get_document_sync(db, document_id, tenant_id)
+    # ---------- idempotency guard ----------
+    # Atomically claim the document: only proceed if status is still
+    # RECEIVED, ROUTED, or FAILED (FAILED allows Dramatiq retries to
+    # re-attempt after a transient error).  Status PROCESSING means
+    # another worker is actively handling it — skip to avoid duplicates.
+    claimed = db["documents"].find_one_and_update(
+        {
+            "document_id": document_id,
+            "tenant_id": tenant_id,
+            "status": {"$in": [
+                DocumentStatus.RECEIVED.value,
+                DocumentStatus.ROUTED.value,
+                DocumentStatus.FAILED.value,
+            ]},
+        },
+        {"$set": {
+            "status": DocumentStatus.PROCESSING.value,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+    if claimed is None:
+        # Another worker already picked this up, or it is already done.
+        document = get_document_sync(db, document_id, tenant_id)
+        current = document["status"] if document else "missing"
+        logger.info(
+            "Skipping duplicate processing",
+            document_id=document_id,
+            current_status=current,
+        )
+        return
+
+    document = claimed  # use the pre-update snapshot
+
     if not document:
         logger.error("Document not found", document_id=document_id)
         WORKER_JOBS_TOTAL.labels(worker_name="extraction_worker", status="not_found").inc()
         return
 
     try:
-        record_status_transition(tenant_id, "RECEIVED", "ROUTED")
-        update_status_sync(
-            db=db,
-            document_id=document_id,
-            tenant_id=tenant_id,
-            status=DocumentStatus.ROUTED,
-            pdf_type=PdfType.DIGITAL.value,
-        )
+        record_status_transition(tenant_id, "ROUTED", "PROCESSING")
 
         storage_key = extract_storage_key(document["storage_uri"])
         pdf_content = storage.download_sync(storage_key)

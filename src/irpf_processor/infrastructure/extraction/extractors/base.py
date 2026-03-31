@@ -110,8 +110,8 @@ class ISectionExtractor(ABC):
                 if not self._section_started:
                     continue
                 
-                # Check for section end
-                if self._has_section_end_heading(page_text, page_num):
+                # Check for section end (simple text match for page selection)
+                if any(marker in upper_text for marker in self.SECTION_END_MARKERS):
                     section_pages[page_num] = page_text  # incluir página de fronteira
                     break
                 

@@ -202,7 +202,7 @@ services:
       - PUSHGATEWAY_URL=pushgateway:9091
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
-    command: dramatiq irpf_processor.presentation.workers --queues default --processes 2 --threads 4
+    command: dramatiq irpf_processor.presentation.workers --queues default --processes 4 --threads 8
     depends_on:
       mongo:
         condition: service_healthy
@@ -239,7 +239,7 @@ services:
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/documentai-key.json
-    command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 1 --threads 1
+    command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 2 --threads 4
     depends_on:
       mongo:
         condition: service_healthy
