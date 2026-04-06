@@ -1,15 +1,18 @@
 # ===========================================
-# BASE IMAGE
+# BASE
 # ===========================================
-FROM python:3.11-slim as base
+ARG JFROG_USER
+ARG JFROG_TOKEN
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+FROM https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/docker-virtual-asa/python:3.11-slim as base
+#FROM python:3.11-slim as base
 
 WORKDIR /app
+
+# CONFIGURAÇÃO DO JFROG PARA O PIP
+ENV PIP_INDEX_URL=""https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
+# Se houver problemas com certificado SSL da sua empresa, descomente a linha abaixo:
+# ENV PIP_TRUSTED_HOST="asascfi.jfrog.io"
 
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,6 +35,7 @@ COPY src/ /app/src/
 
 # Usar requirements.lock para builds reproduzíveis
 # Fallback para pyproject.toml se lock não existir
+# NOTA: O pip aqui já vai usar o JFrog automaticamente devido ao ENV na base
 RUN pip install --upgrade pip && \
     if [ -f requirements.lock ]; then \
         pip install -r requirements.lock; \
@@ -84,7 +88,8 @@ COPY tests/ /app/tests/
 CMD ["dramatiq", "irpf_processor.presentation.workers", "--processes", "2", "--threads", "4"]
 
 # ===========================================
-# WORKER-OCR SERVICE (com Docling + Tesseract)
+# WORKER-OCR SERVICE (com
+ Docling + Tesseract)
 # ===========================================
 FROM base as worker-ocr
 
@@ -110,6 +115,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 
+# O pip aqui também utilizará o JFrog automaticamente
 RUN pip install --no-cache-dir docling docling-core docling-ibm-models tesserocr
 
 CMD ["dramatiq", "irpf_processor.presentation.workers.ocr_worker", "--processes", "1", "--threads", "1"]
@@ -136,6 +142,7 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Instalar dependências de desenvolvimento
+# O pip aqui também utilizará o JFrog automaticamente
 RUN pip install pytest pytest-asyncio pytest-cov httpx
 
 # Copiar código fonte
