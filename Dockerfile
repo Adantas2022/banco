@@ -4,13 +4,13 @@
 ARG JFROG_USER
 ARG JFROG_TOKEN
 
-FROM https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/docker-virtual-asa/python:3.11-slim as base
+FROM 'https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/docker-virtual-asa/python:3.11-slim' as base
 #FROM python:3.11-slim as base
 
 WORKDIR /app
 
 # CONFIGURAÇÃO DO JFROG PARA O PIP
-ENV PIP_INDEX_URL=""https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
+ENV PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
 # Se houver problemas com certificado SSL da sua empresa, descomente a linha abaixo:
 # ENV PIP_TRUSTED_HOST="asascfi.jfrog.io"
 
