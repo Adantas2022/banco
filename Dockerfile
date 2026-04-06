@@ -11,14 +11,16 @@ WORKDIR /app
 ARG JFROG_USER
 ARG JFROG_TOKEN
 
-# 3. Troca a URL oficial do Debian pela URL do seu JFrog
-# Esse comando usa "sed" para substituir os links sem estragar o resto do arquivo
-RUN sed -i 's|http://deb.debian.org/debian-security|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
-    sed -i 's|http://deb.debian.org/debian|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
-    sed -i 's|http://deb.debian.org/debian-security|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true && \
-    sed -i 's|http://deb.debian.org/debian|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true
+# 3. Limpa as configurações antigas e cria uma nova EXCLUSIVA para o JFrog
+# O "Trusted: yes" resolve o erro de "is not signed"
+RUN rm -f /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list && \
+    echo "Types: deb\n\
+URIs: https://asascfi.jfrog.io/artifactory/asa-debian-virtual\n\
+Suites: trixie trixie-updates\n\
+Components: main\n\
+Trusted: yes\n" > /etc/apt/sources.list.d/jfrog.sources
 
-# 4. Injeta a autenticação no APT, faz o update, instala o que precisa (ex: curl) e apaga a senha
+# 4. Injeta a autenticação no APT, faz o update, instala o curl e apaga a senha
 RUN set -e; \
     if [ -z "${JFROG_USER}" ] || [ -z "${JFROG_TOKEN}" ]; then \
         echo "ERRO: JFROG_USER ou JFROG_TOKEN estão vazios! Passe eles via --build-arg."; \
