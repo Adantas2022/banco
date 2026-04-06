@@ -41,9 +41,10 @@ FROM base AS builder
 ARG JFROG_USER
 ARG JFROG_TOKEN
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf \
+    && apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
 # Copiar arquivos de dependências
 COPY pyproject.toml ./
@@ -86,17 +87,14 @@ CMD ["uvicorn", "irpf_processor.main:app", "--host", "0.0.0.0", "--port", "8000"
 # WORKER SERVICE (Digital - sem OCR pesado)
 # ===========================================
 FROM base AS worker
+ARG JFROG_USER
+ARG JFROG_TOKEN
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    tesseract-ocr-por \
-    poppler-utils \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-por poppler-utils libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
@@ -112,20 +110,15 @@ FROM base AS worker-ocr
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    tesseract-ocr-por \
-    libtesseract-dev \
-    libleptonica-dev \
-    poppler-utils \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    build-essential \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+ARG JFROG_USER
+ARG JFROG_TOKEN
+
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-por libtesseract-dev libleptonica-dev poppler-utils \
+    libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 build-essential pkg-config \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
@@ -143,16 +136,14 @@ CMD ["dramatiq", "irpf_processor.presentation.workers.ocr_worker", "--processes"
 FROM base AS dev
 
 # Instalar Tesseract OCR + dependencias de imagem para OpenCV
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    tesseract-ocr-por \
-    poppler-utils \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
+ARG JFROG_USER
+ARG JFROG_TOKEN
+
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-por poppler-utils libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
 # Copiar dependências instaladas do builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
