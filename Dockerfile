@@ -7,13 +7,25 @@ FROM asascfi.jfrog.io/docker-virtual-asa/python:3.11-slim AS base
 
 WORKDIR /app
 
-# CONFIGURAÇÃO DO JFROG PARA O PIP
-#ENV PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
+# 1. Declarar as credenciais na base para podermos autenticar o apt-get
+ARG JFROG_USER
+ARG JFROG_TOKEN
 
-# Instalar dependências do sistema
+# 2. Configurar a autenticação do APT de forma segura (não fica salvo no sources.list)
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf
+
+# 3. Substituir os endereços oficiais do Debian pela URL do seu JFrog
+# ATENÇÃO: Substitua a palavra "debian-virtual" pelo nome correto do seu repositório Debian/Ubuntu lá no JFrog!
+RUN sed -i 's|http://deb.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's|http://security.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
+    sed -i 's|http://deb.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true && \
+    sed -i 's|http://security.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true
+
+# 4. Agora o apt-get update vai bater no seu JFrog com sucesso!
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
 
 # ===========================================
 # BUILDER - Instalar dependências Python
