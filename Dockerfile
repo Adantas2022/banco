@@ -88,8 +88,7 @@ COPY tests/ /app/tests/
 CMD ["dramatiq", "irpf_processor.presentation.workers", "--processes", "2", "--threads", "4"]
 
 # ===========================================
-# WORKER-OCR SERVICE (com
- Docling + Tesseract)
+# WORKER-OCR SERVICE (com Docling + Tesseract)
 # ===========================================
 FROM base as worker-ocr
 
