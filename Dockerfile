@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ===========================================
 # BUILDER - Instalar dependências Python
 # ===========================================
-FROM base as builder
+FROM base AS builder
 
 ARG JFROG_USER
 ARG JFROG_TOKEN
@@ -58,7 +58,7 @@ RUN PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifac
 # ===========================================
 # API SERVICE
 # ===========================================
-FROM base as api
+FROM base AS api
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
@@ -79,7 +79,7 @@ CMD ["uvicorn", "irpf_processor.main:app", "--host", "0.0.0.0", "--port", "8000"
 # ===========================================
 # WORKER SERVICE (Digital - sem OCR pesado)
 # ===========================================
-FROM base as worker
+FROM base AS worker
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
@@ -102,7 +102,7 @@ CMD ["dramatiq", "irpf_processor.presentation.workers", "--processes", "2", "--t
 # ===========================================
 # WORKER-OCR SERVICE (com Docling + Tesseract)
 # ===========================================
-FROM base as worker-ocr
+FROM base AS worker-ocr
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
 
@@ -134,7 +134,7 @@ CMD ["dramatiq", "irpf_processor.presentation.workers.ocr_worker", "--processes"
 # ===========================================
 # DEVELOPMENT
 # ===========================================
-FROM base as dev
+FROM base AS dev
 
 # Instalar Tesseract OCR + dependencias de imagem para OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
