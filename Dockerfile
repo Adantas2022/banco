@@ -1,18 +1,14 @@
 # ===========================================
 # BASE
 # ===========================================
-ARG JFROG_USER
-ARG JFROG_TOKEN
 
-FROM 'https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/docker-virtual-asa/python:3.11-slim' as base
+FROM asascfi.jfrog.io/docker-virtual-asa/python:3.11-slim AS base
 #FROM python:3.11-slim as base
 
 WORKDIR /app
 
 # CONFIGURAÇÃO DO JFROG PARA O PIP
-ENV PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
-# Se houver problemas com certificado SSL da sua empresa, descomente a linha abaixo:
-# ENV PIP_TRUSTED_HOST="asascfi.jfrog.io"
+#ENV PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/asa-pypi-virtual/simple"
 
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -23,6 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # BUILDER - Instalar dependências Python
 # ===========================================
 FROM base as builder
+
+ARG JFROG_USER
+ARG JFROG_TOKEN
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -36,7 +35,8 @@ COPY src/ /app/src/
 # Usar requirements.lock para builds reproduzíveis
 # Fallback para pyproject.toml se lock não existir
 # NOTA: O pip aqui já vai usar o JFrog automaticamente devido ao ENV na base
-RUN pip install --upgrade pip && \
+RUN PIP_INDEX_URL="https://${JFROG_USER}:${JFROG_TOKEN}@asascfi.jfrog.io/artifactory/api/pypi/pypi-virtual/simple" \
+    pip install --upgrade pip && \
     if [ -f requirements.lock ]; then \
         pip install -r requirements.lock; \
     else \
