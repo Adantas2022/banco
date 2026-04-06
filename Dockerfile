@@ -6,7 +6,7 @@ FROM asascfi.jfrog.io/docker-virtual-asa/python:3.11-slim AS base
 #FROM python:3.11-slim as base
 
 WORKDIR /app
-
+ENV PYTHONPATH=/app/src
 # 1. Declarar as credenciais na base para podermos autenticar o apt-get
 ARG JFROG_USER
 ARG JFROG_TOKEN
