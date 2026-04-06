@@ -12,19 +12,19 @@ ARG JFROG_USER
 ARG JFROG_TOKEN
 
 # 2. Configurar a autenticação do APT de forma segura (não fica salvo no sources.list)
-RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf
+# 2. Completely replace the default sources with a clean JFrog configuration
+RUN rm -f /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list && \
+    echo "Types: deb\n\
+URIs: https://asascfi.jfrog.io/artifactory/asa-debian-virtual\n\
+Suites: trixie trixie-updates trixie-security\n\
+Components: main\n" > /etc/apt/sources.list.d/jfrog.sources
 
-# 3. Substituir os endereços oficiais do Debian pela URL do seu JFrog
-# ATENÇÃO: Substitua a palavra "debian-virtual" pelo nome correto do seu repositório Debian/Ubuntu lá no JFrog!
-RUN sed -i 's|http://deb.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
-    sed -i 's|http://security.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true && \
-    sed -i 's|http://deb.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true && \
-    sed -i 's|http://security.debian.org|https://asascfi.jfrog.io/artifactory/asa-debian-virtual|g' /etc/apt/sources.list 2>/dev/null || true
-
-# 4. Agora o apt-get update vai bater no seu JFrog com sucesso!
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# 3. Inject credentials securely, run apt-get, and clean up in a SINGLE step
+RUN echo "machine asascfi.jfrog.io login ${JFROG_USER} password ${JFROG_TOKEN}" > /etc/apt/auth.conf.d/jfrog.conf \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
 
 # ===========================================
