@@ -12,11 +12,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install corporate CA certificate (Zscaler) FIRST — before any HTTPS connections
+COPY asa-certificate.cer /usr/local/share/ca-certificates/asa-certificate.crt
+RUN update-ca-certificates
+
+# Make pip and requests use the system CA bundle
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    PIP_CERT=/etc/ssl/certs/ca-certificates.crt
+
 # 1. Declarar as credenciais na base para podermos autenticar o apt-get
 ARG JFROG_USER
 ARG JFROG_TOKEN
 
-# 3. Limpa as configurações antigas e cria uma nova EXCLUSIVA para o JFrog
+# 2. Limpa as configurações antigas e cria uma nova EXCLUSIVA para o JFrog
 # O "Trusted: yes" resolve o erro de "is not signed"
 RUN rm -f /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list && \ 
     echo "Types: deb\n\
@@ -25,7 +35,7 @@ Suites: trixie trixie-updates\n\
 Components: main\n\
 Trusted: yes\n" > /etc/apt/sources.list.d/jfrog.sources
 
-# 4. Injeta a autenticação no APT, faz o update, instala o curl e apaga a senha
+# 3. Injeta a autenticação no APT, faz o update, instala o curl e apaga a senha
 RUN set -e; \ 
     if [ -z "${JFROG_USER}" ] || [ -z "${JFROG_TOKEN}" ]; then \
         echo "ERRO: JFROG_USER ou JFROG_TOKEN estão vazios! Passe eles via --build-arg."; \
@@ -37,22 +47,7 @@ RUN set -e; \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/apt/auth.conf.d/jfrog.conf
 
-# Install corporate CA certificate (Zscaler)
-COPY asa-certificate.cer /usr/local/share/ca-certificates/asa-certificate.crt
-RUN update-ca-certificates
-
-# Make pip and requests use the system CA bundle
-ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    PIP_CERT=/etc/ssl/certs/ca-certificates.crt
-
 RUN find /etc/apt/sources.list.d/ -type f -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g' {} +
-
-# Instalar dependências do sistema
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
 
 # ===========================================
 # BUILDER - Instalar dependências Python

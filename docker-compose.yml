@@ -112,6 +112,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: api
+      args:
+        JFROG_USER: ${JFROG_USER}
+        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-api
     restart: unless-stopped
     ports:
@@ -154,6 +157,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: worker-router
+      args:
+        JFROG_USER: ${JFROG_USER}
+        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-worker-router
     restart: unless-stopped
     env_file:
@@ -188,6 +194,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: worker-digital
+      args:
+        JFROG_USER: ${JFROG_USER}
+        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-worker-digital
     restart: unless-stopped
     env_file:
@@ -223,6 +232,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: worker-ocr
+      args:
+        JFROG_USER: ${JFROG_USER}
+        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-worker-ocr
     restart: unless-stopped
     env_file:
