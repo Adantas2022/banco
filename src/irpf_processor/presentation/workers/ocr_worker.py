@@ -233,6 +233,7 @@ def process_ocr_document(document_id: str, tenant_id: str) -> None:
                     total_pages=ocr_result.total_pages,
                     ocr_confidence=ocr_result.confidence,
                     pdf_path=str(tmp_path),
+                    document_id=document_id,
                 )
                 template_version = parser.detected_version or "ocr"
             

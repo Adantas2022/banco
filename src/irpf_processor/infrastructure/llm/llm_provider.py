@@ -124,61 +124,30 @@ class LLMProvider(ABC):
         """Max pages per LLM call when chunking. Configurable via LLM_MAX_IMAGES_PER_CALL env var."""
         return get_settings().llm_max_images_per_call
 
-    def _get_chunk_annotation(self, start: int, end: int, total: int) -> str:
-        """Per-chunk prompt suffix — apenas regras de paginação."""
-        annotation = (
-            f"\n\nATENÇÃO: Você está analisando as páginas {start + 1} a {end} "
-            f"de um documento de {total} páginas no total.\n\n"
-            "REGRAS PARA EXTRAÇÃO EM CHUNKS:\n"
-            "• Extraia TODOS os itens que aparecem nestas páginas — NÃO resuma, NÃO omita.\n"
-            "• Mantenha o mesmo schema JSON solicitado acima.\n"
-            "• Se um item começa em uma página e terminar na outra, crie um item parcial com os campos disponíveis.\n"
-            "• Arrays são acumulativos: inclua cada item individual visível nestas páginas.\n"
-            "• É MELHOR retornar itens duplicados (serão deduplicados depois) do que omitir itens.\n"
-            "• NUNCA retorne total > 0 com array vazio — isso indica itens não extraídos.\n"
-            "• Se a tabela tem linha de 'Total', extraia-a como campo numérico, NÃO como item do array."
-        )
-
-        return annotation
-
-    def _get_overlap_annotation(self, last_item: dict) -> str:
-        """Instrução para completar item parcial do chunk anterior."""
-        item_json = json.dumps(last_item, ensure_ascii=False, indent=2)
-        return (
-            "\n\nULTIMO ITEM DO CHUNK ANTERIOR:\n"
-            
-            "Preste muita atenção na PRIMEIRA página deste chunk e verifique se contém continuação deste item, "
-            "retorne-o COMPLETO (dados do chunk anterior + dados novos) "
-            'e adicione o campo "item_overlap": true.\n'
-            'Se NÃO houver continuação, repita o item e adicione o campo "item_overlap": false.\n'
-            'Adicione item_overlap apenas neste item, não em outros itens do chunk.\n'
-            'Ultimo item:\n'
-            f"{item_json}"
-        )
-
-    @staticmethod
-    def _extract_last_item(parsed: dict) -> Optional[dict]:
-        """Extrai o último item do primeiro array encontrado no JSON parseado."""
-        if not isinstance(parsed, dict):
-            return None
-        for value in parsed.values():
-            if isinstance(value, list) and len(value) > 0 and isinstance(value[-1], dict):
-                return value[-1]
-        return None
-
     def _build_content(
         self,
         user_prompt: str,
         images: Optional[list[bytes]] = None,
+        text: Optional[str] = None,
     ) -> list[dict]:
         """Build content blocks for Azure OpenAI API."""
         content: list[dict] = [{"type": "text", "text": user_prompt}]
+
+        if text:
+            content.append({"type": "text", "text": (
+                "TEXTO EXTRAÍDO DAS PÁGINAS (via OCR/pdfplumber):\n"
+                "Use este texto como referência auxiliar para valores numéricos, nomes, CPFs, CNPJs e códigos "
+                "que possam estar ilegíveis ou ambíguos nas imagens. "
+                "Em caso de divergência entre o texto e a imagem, priorize a imagem, "
+                "mas use o texto para confirmar valores e evitar erros de leitura.\n\n"
+                f"{text}"
+            )})
 
         if images:
             for i, img in enumerate(images):
                 content.append(make_image_content(img, "image/png"))
 
-        logger.debug("build_content", images=len(images) if images else 0)
+        logger.debug("build_content", images=len(images) if images else 0, has_text=bool(text))
 
         return content
 
@@ -209,20 +178,51 @@ class LLMProvider(ABC):
         """Call Azure OpenAI with automatic retry (3 attempts, exponential backoff)."""
         client = self._get_client()
 
-        return client.chat.completions.create(
+        # DEBUG: Print full prompt before calling LLM
+        # print("\n" + "=" * 80)
+        # print("[DEBUG] LLM CALL - MESSAGES BEING SENT:")
+        # print("=" * 80)
+        # for msg in messages:
+        #     role = msg.get("role", "unknown")
+        #     content = msg.get("content", "")
+        #     if isinstance(content, str):
+        #         print(f"\n[{role.upper()}] (text, {len(content)} chars):")
+        #         print(content[:5000])
+        #         if len(content) > 5000:
+        #             print(f"... (truncated, total {len(content)} chars)")
+        #     elif isinstance(content, list):
+        #         print(f"\n[{role.upper()}] ({len(content)} blocks):")
+        #         for i, block in enumerate(content):
+        #             btype = block.get("type", "unknown")
+        #             if btype == "text":
+        #                 text_val = block.get("text", "")
+        #                 print(f"  Block {i} [text, {len(text_val)} chars]:")
+        #                 print(f"    {text_val[:3000]}")
+        #                 if len(text_val) > 3000:
+        #                     print(f"    ... (truncated, total {len(text_val)} chars)")
+        #             elif btype == "image_url":
+        #                 url = block.get("image_url", {}).get("url", "")
+        #                 print(f"  Block {i} [image, url prefix: {url[:80]}...]")
+        # print("=" * 80 + "\n")
+
+        response = client.chat.completions.create(
             model=get_settings().azure_openai_deployment,
             messages=messages,
-            max_tokens=get_settings().azure_openai_max_tokens,
-            temperature=0,
+            # max_tokens=get_settings().azure_openai_max_tokens,
+            max_completion_tokens=get_settings().azure_openai_max_tokens,
+            # temperature=0,
             top_p=1,
             seed=_FIXED_SEED,
             response_format={"type": "json_object"},
         )
 
+        return response
+
     def _call_pdf_chunked(
         self,
         user_prompt: str,
         images: list[bytes],
+        pages_text: Optional[list[str]] = None,
     ) -> list[dict]:
         """Split images into chunks and call the LLM once per chunk.
 
@@ -251,7 +251,6 @@ class LLMProvider(ABC):
         )
 
         chunks_data: list[dict] = []
-        last_item: Optional[dict] = None  # Para overlap entre chunks
 
         for chunk_idx in range(num_chunks):
             stride = max_per_call - overlap
@@ -261,12 +260,12 @@ class LLMProvider(ABC):
 
             logger.info("pdf_chunk_start", chunk_idx=chunk_idx, page_start=start, page_end=end, images=len(chunk_images))
 
-            chunk_prompt = user_prompt + self._get_chunk_annotation(
-                start, end, total_pages,
-            )
+            chunk_prompt = user_prompt
+
+            chunk_text = "\n\n".join(pages_text[start:end]) if pages_text else None
 
             content = self._build_content(
-                chunk_prompt, chunk_images,
+                chunk_prompt, chunk_images, text=chunk_text,
             )
 
             logger.debug(
@@ -310,9 +309,6 @@ class LLMProvider(ABC):
             logger.debug("pdf_chunk_parsed", chunk_idx=chunk_idx, parsed_keys=list(parsed.keys()) if isinstance(parsed, dict) else "NOT_A_DICT")
             chunks_data.append(parsed)
 
-            # Guardar último item para overlap no próximo chunk
-            last_item = self._extract_last_item(parsed)
-
         logger.info("pdf_chunked_extraction_complete", successful_chunks=len(chunks_data))
 
         return chunks_data
@@ -322,6 +318,7 @@ class LLMProvider(ABC):
         document: Document,
         custom_prompt: Optional[str] = None,
         method: str = "pdf_images",
+        pages_text: Optional[list[str]] = None,
     ) -> list[dict]:
         """
         Extract data from document using Azure OpenAI.
@@ -362,13 +359,14 @@ class LLMProvider(ABC):
         t_api_start = time.time()
         try:
             if method == "pdf_images_chunked":
-                chunks = self._call_pdf_chunked(user_prompt, images)
+                chunks = self._call_pdf_chunked(user_prompt, images, pages_text=pages_text)
                 logger.info("llm_extract_chunked_complete", chunks=len(chunks))
                 return chunks
 
             if method == "pdf_images":
+                text_block = "\n\n".join(pages_text) if pages_text else None
                 content = self._build_content(
-                    user_prompt, images,
+                    user_prompt, images, text=text_block,
                 )
             else:
                 content = [

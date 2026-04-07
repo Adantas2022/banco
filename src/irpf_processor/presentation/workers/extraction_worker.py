@@ -184,7 +184,7 @@ def process_document(document_id: str, tenant_id: str) -> None:
                 template_version = "recibo"
             else:
                 parser = IRPFParser()
-                result = parser.parse(tmp_path)
+                result = parser.parse(tmp_path, document_id=document_id)
                 template_version = parser.detected_version or "unknown"
             
             extraction_duration = time.perf_counter() - extraction_start

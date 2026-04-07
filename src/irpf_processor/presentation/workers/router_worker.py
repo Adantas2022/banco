@@ -52,11 +52,11 @@ def update_document_pdf_type(db, document_id: str, tenant_id: str, pdf_type: str
     )
 
 
-@dramatiq.actor(queue_name="extraction-router", max_retries=2, min_backoff=500, max_backoff=5000, time_limit=600000)
+@dramatiq.actor(queue_name="extraction-router", max_retries=2, min_backoff=500, max_backoff=5000, time_limit=1800000)
 def route_document(document_id: str, tenant_id: str) -> None:
     """Route document to appropriate extraction queue.
     
-    time_limit=600000 (10 minutes) - PDF type detection can be slow for large/complex PDFs
+    time_limit=1800000 (30 minutes) - PDF type detection can be slow for large/complex PDFs
     """
     start_time = time.perf_counter()
     logger.info(

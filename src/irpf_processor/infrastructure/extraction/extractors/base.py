@@ -27,6 +27,7 @@ class ExtractionContext:
     pages_text: dict[int, str]
     total_pages: int = 0
     pdf_path: Optional[str] = None
+    document_id: Optional[str] = None
     warnings: list[str] = field(default_factory=list)
     
     def add_warning(self, message: str) -> None:
@@ -110,8 +111,13 @@ class ISectionExtractor(ABC):
                 if not self._section_started:
                     continue
                 
-                # Check for section end (simple text match for page selection)
-                if any(marker in upper_text for marker in self.SECTION_END_MARKERS):
+                # Check for section end (marker must be at start of a line)
+                upper_lines = upper_text.split("\n")
+                if any(
+                    line.lstrip().startswith(marker)
+                    for line in upper_lines
+                    for marker in self.SECTION_END_MARKERS
+                ):
                     section_pages[page_num] = page_text  # incluir página de fronteira
                     break
                 
@@ -156,14 +162,14 @@ class ISectionExtractor(ABC):
                     if 0 <= page_num < len(reader.pages):
                         writer.add_page(reader.pages[page_num - 1])  # reader is 0-indexed, but page_num is 1-indexed
                 
-                with tempfile.NamedTemporaryFile(
-                    suffix=".pdf",
-                    delete=False,
-                    dir=TMP_DIR
-                ) as tmp:
+                doc_id = context.document_id or "doc"
+                section = getattr(self, "section_name", "section")
+                pages_label = "_".join(str(p) for p in sorted(selected_pages))
+                filename = f"{doc_id}__{section}__pages_{pages_label}.pdf"
+                temp_pdf_path = str(TMP_DIR / filename)
+                with open(temp_pdf_path, "wb") as tmp:
                     writer.write(tmp)
-                    temp_pdf_path = tmp.name
-                    logger.info("temp_pdf_created", path=temp_pdf_path, pages=sorted(selected_pages))
+                logger.info("temp_pdf_created", document_id=context.document_id, path=temp_pdf_path, pages=sorted(selected_pages))
 
             except Exception as e:
                 context.add_warning(f"Failed to create temporary PDF: {str(e)}")
@@ -241,6 +247,9 @@ class ISectionExtractor(ABC):
                 method = "pdf_images" if len(section_pages) <= max_per_call else "pdf_images_chunked"
                 context.add_warning(f"[LLM] Using method={method} ({len(section_pages)} pages, max_per_call={max_per_call})")
                 
+                # Build ordered list of page texts aligned with the temp PDF pages
+                pages_text_list = [section_pages[p] for p in sorted(section_pages.keys())]
+                
                 # Call LLM extraction (breaking async if needed)
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
@@ -249,14 +258,16 @@ class ISectionExtractor(ABC):
                         None,
                         lambda: asyncio.run(provider.extract(
                             doc, user_prompt, method=method,
+                            pages_text=pages_text_list,
                         ))
                     )
                 else:
                     chunks = await provider.extract(
                         doc, user_prompt, method=method,
+                        pages_text=pages_text_list,
                     )
 
-                logger.info("llm_extract_chunks_returned", chunks_count=len(chunks))
+                logger.info("llm_extract_chunks_returned", document_id=context.document_id, chunks_count=len(chunks))
 
                 return chunks
 

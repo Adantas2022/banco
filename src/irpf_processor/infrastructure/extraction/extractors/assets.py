@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
     
+    
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
         "DECLARAÇÃO DE BENS E DIREITOS",
@@ -56,7 +57,7 @@ class AssetsExtractor(ISectionExtractor):
                         "country_name": "string em maiusculas ex: 'BRASIL'",
                         "additional_info": { <ver regras abaixo> },
                         "country_valid": true,
-                        "page": numero
+                        "page": numero (A página está presente no final de cada pagina, por exemplo: Página 1 de 12, ou seja, page=1)
                     }
                     ],
                     "last_year_total_value": numero,
@@ -137,6 +138,25 @@ class AssetsExtractor(ISectionExtractor):
                 context.add_warning("LLM extraction returned no chunks")
                 return None
 
+            # Debug: save each chunk to disk
+            save_debug_chunks = True
+            if save_debug_chunks:
+                debug_base = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+                    "tmp",
+                    context.document_id or "unknown",
+                )
+                debug_chunks_dir = os.path.join(debug_base, "chunks")
+                debug_result_dir = os.path.join(debug_base, "result")
+                os.makedirs(debug_chunks_dir, exist_ok=True)
+                os.makedirs(debug_result_dir, exist_ok=True)
+
+                for idx, chunk in enumerate(extraction_result):
+                    chunk_path = os.path.join(debug_chunks_dir, f"chunk_{idx}.txt")
+                    with open(chunk_path, "w", encoding="utf-8") as f:
+                        f.write(json.dumps(chunk, indent=2, ensure_ascii=False))
+                    logger.info("debug_chunk_saved", path=chunk_path)
+
             # Step 2: Merge chunks — page-based overlap removal
             chunks = extraction_result  # list[dict]
             logger.info("llm_assets_chunks_received", chunks_count=len(chunks))
@@ -174,12 +194,25 @@ class AssetsExtractor(ISectionExtractor):
                     items.append(normalized_item)
                 # Take last non-None totals (usually on final pages)
                 if chunk.get("last_year_total_value") is not None:
-                    pdf_last_year = chunk["last_year_total_value"]
+                    pdf_last_year = self._parse_llm_currency(chunk["last_year_total_value"])
                 if chunk.get("current_year_total_value") is not None:
-                    pdf_current_year = chunk["current_year_total_value"]
+                    pdf_current_year = self._parse_llm_currency(chunk["current_year_total_value"])
 
             logger.info("llm_assets_merge_complete", items_count=len(items), chunks_count=len(chunks))
-            
+
+            # Debug: save merged result to disk
+            if save_debug_chunks:
+                merged_result_path = os.path.join(debug_result_dir, "merged_result.txt")
+                with open(merged_result_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps({
+                        "items": items,
+                        "last_year_total_value": pdf_last_year,
+                        "current_year_total_value": pdf_current_year,
+                        "chunks_count": len(chunks),
+                        "items_count": len(items),
+                    }, indent=2, ensure_ascii=False))
+                logger.info("debug_merged_result_saved", path=merged_result_path)
+
             if not items:
                 context.add_warning("LLM extraction returned no items")
                 return None
@@ -197,8 +230,8 @@ class AssetsExtractor(ISectionExtractor):
             return {
                 "section_name": "Declaração de Bens e Direitos",
                 "items": items,
-                "last_year_total_value": last_year_total,
-                "current_year_total_value": current_year_total,
+                "last_year_total_value": pdf_last_year,
+                "current_year_total_value": pdf_current_year,
                 "total_values": {
                     "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
                     "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)

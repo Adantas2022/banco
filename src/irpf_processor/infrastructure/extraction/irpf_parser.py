@@ -301,17 +301,20 @@ class IRPFParser:
         self, 
         pdf_source: Union[str, Path, bytes],
         version: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         """Parseia documento IRPF com detecção dinâmica de seções e versão.
         
         Args:
             pdf_source: Caminho do PDF, Path ou bytes
             version: Versão específica do template (opcional, detecta automaticamente)
+            document_id: ID do documento (opcional, usado para debug)
             
         Returns:
             IRPFDeclarationResult com os dados extraídos
         """
         context = self._create_context(pdf_source)
+        context.document_id = document_id
         self._last_context = context
         result = IRPFDeclarationResult(total_pages=context.total_pages)
         
@@ -566,7 +569,7 @@ class IRPFParser:
     
     def _calculate_total_value(self, result: IRPFDeclarationResult) -> int:
         if result.assets_declaration:
-            value = result.assets_declaration.get("current_year_total_value", 0)
+            value = result.assets_declaration.get("current_year_total_value") or 0
             return int(value)
         return 0
     
@@ -574,8 +577,8 @@ class IRPFParser:
         if not result.assets_declaration:
             return 0
 
-        current_year = result.assets_declaration.get("current_year_total_value", 0.0)
-        last_year = result.assets_declaration.get("last_year_total_value", 0.0)
+        current_year = result.assets_declaration.get("current_year_total_value") or 0.0
+        last_year = result.assets_declaration.get("last_year_total_value") or 0.0
 
         return int(current_year - last_year)
 
@@ -675,6 +678,7 @@ class IRPFParser:
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
         pdf_path: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         pages_text = self._split_text_by_pages(text, total_pages)
         return self.parse_from_pages_text(
@@ -685,6 +689,7 @@ class IRPFParser:
             ocr_confidence=ocr_confidence,
             warning_message="Texto extraido via OCR",
             pdf_path=pdf_path,
+            document_id=document_id,
         )
 
     def parse_from_pages_text(
@@ -696,6 +701,7 @@ class IRPFParser:
         ocr_confidence: Optional[float] = None,
         warning_message: str = "Texto extraido via OCR (estrutura por pagina preservada)",
         pdf_path: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         ordered_pages = {
             page_num: pages_text[page_num]
@@ -714,6 +720,7 @@ class IRPFParser:
             pages_text=ordered_pages,
             total_pages=context_total_pages,
             pdf_path=pdf_path,
+            document_id=document_id,
         )
         return self._parse_ocr_context(
             context=context,
