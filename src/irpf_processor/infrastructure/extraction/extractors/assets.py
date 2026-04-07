@@ -1,15 +1,25 @@
 """Extrator de declaração de bens e direitos."""
 
+import os
 import re
+import json
+import tempfile
+import asyncio
 from typing import Any, Optional
+
+from irpf_processor.domain.entities import extraction_result
 
 from .base import ExtractionContext, ISectionExtractor
 from ..table_extractor import parse_currency, generate_item_id, sum_currency_values
 from ..validation_utils import extract_section_total, create_validated_total
+from irpf_processor.shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AssetsExtractor(ISectionExtractor):
     """Extrai declaração de bens e direitos."""
+    
     
     # Marcadores incluindo variações OCR comuns (ex: "Ç" pode virar "G" no OCR)
     SECTION_MARKERS = [
@@ -26,6 +36,64 @@ class AssetsExtractor(ISectionExtractor):
         "DOAÇÕES EFETUADAS",
         "DOACOES EFETUADAS",
     ]
+
+    LLM_PROMPT = """
+                ================================================================
+                SECAO 2 - DECLARACAO DE BENS E DIREITOS
+                ================================================================
+                REGRA: lista TODOS os bens. Cada linha = um objeto separado. Nao omita nenhum.
+
+                {   
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                    {
+                        "id": "string (hash MD5 gerado com base no conteudo do item)",
+                        "asset_group_code": "string (ex: '01', '02', '03')",
+                        "asset_code": "string (ex: '01', '11')",
+                        "asset_description": "string - copie o texto presente na terceira coluna da tabela, este texto descreve o que é o item",
+                        "before_year_asset_value": numero,
+                        "current_year_asset_value": numero,
+                        "country_code": "string ex: '105'",
+                        "country_name": "string em maiusculas ex: 'BRASIL'",
+                        "additional_info": { <ver regras abaixo> },
+                        "country_valid": true,
+                        "page": numero (A página está presente no final de cada pagina, por exemplo: Página 1 de 12, ou seja, page=1)
+                    }
+                    ],
+                    "last_year_total_value": numero,
+                    "current_year_total_value": numero,
+                    "pages_with_problems": []
+                }
+
+                REGRAS DE additional_info, retorne apenas os campos presentes no documento, não use o campo descrição para deduzir os campos, caso o campo não esteja presente não retorne o campo, caso o campo esteja presente mas sem valor, preencha com null:
+                
+                "additional_info": {
+                    "municipal_registration": "string ou null",
+                    "street_address": "string ou null",
+                    "complement": "string ou null",
+                    "city": "string ou null",
+                    "area": "string ou null",
+                    "registered_at_registy_office": true | false | null,
+                    "matriculation": "string ou null",
+                    "number": "string ou null",
+                    "neighborhood": "string ou null",
+                    "state": "string 2 letras ou null",
+                    "acquisition_date": "DD/MM/YYYY ou null",
+                    "registry_office_name": "string ou null",
+                    "zipcode": "string ou null",
+                    "renavam": "string ou null",
+                    "beneficiary": "string (ex: 'Titular') ou null",
+                    "cnpj": "string com mascara ou null",
+                    "cpf": "string com mascara ou null",
+                    "bank": "string com mascara ou null",
+                    "agency": "string com mascara ou null",
+                    "account": "string com mascara ou null",
+                    "is_payment_account": true or false,
+                    "traded_on_stock_market": true or false
+                }
+
+                Extraia todos os BENS e seus respectivos detalhes.
+                """
     
     def __init__(self):
         """Inicializa o extractor com rastreamento de estado da seção."""
@@ -39,6 +107,176 @@ class AssetsExtractor(ISectionExtractor):
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
+
+    async def extract_with_llm(
+        self, 
+        context: ExtractionContext,
+        custom_prompt: Optional[str] = None
+    ) -> Optional[dict[str, Any]]:
+        """
+        Extract assets section using LLM (with temp PDF from selected pages).
+        
+        This function:
+        1. Extracts section page numbers from SECTION_MARKERS to SECTION_END_MARKERS
+        2. Creates a temporary PDF with only the relevant pages
+        3. Sends the temp PDF to IRProvider for LLM extraction
+        4. Transforms the LLM response to match the expected format
+        
+        Args:
+            context: ExtractionContext with document pages and PDF path
+            custom_prompt: Optional custom prompt to pass to the LLM provider
+            
+        Returns:
+            Dictionary with extracted data in the same format as extract() method,
+            or None if extraction fails
+        """
+        try:
+            # Step 1: Get LLM Extraction
+            extraction_result = await self.get_llm_extraction_data(context, custom_prompt)
+            
+            if not extraction_result:
+                context.add_warning("LLM extraction returned no chunks")
+                return None
+
+            # Debug: save each chunk to disk
+            save_debug_chunks = True
+            if save_debug_chunks:
+                debug_base = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+                    "tmp",
+                    context.document_id or "unknown",
+                )
+                debug_chunks_dir = os.path.join(debug_base, "chunks")
+                debug_result_dir = os.path.join(debug_base, "result")
+                os.makedirs(debug_chunks_dir, exist_ok=True)
+                os.makedirs(debug_result_dir, exist_ok=True)
+
+                for idx, chunk in enumerate(extraction_result):
+                    chunk_path = os.path.join(debug_chunks_dir, f"chunk_{idx}.txt")
+                    with open(chunk_path, "w", encoding="utf-8") as f:
+                        f.write(json.dumps(chunk, indent=2, ensure_ascii=False))
+                    logger.info("debug_chunk_saved", path=chunk_path)
+
+            # Step 2: Merge chunks — page-based overlap removal
+            chunks = extraction_result  # list[dict]
+            logger.info("llm_assets_chunks_received", chunks_count=len(chunks))
+
+            items = []
+            pdf_last_year = None
+            pdf_current_year = None
+            for chunk_idx, chunk in enumerate(chunks):
+                if not isinstance(chunk, dict):
+                    continue
+                chunk_items = chunk.get("items", [])
+                if not isinstance(chunk_items, list):
+                    continue
+
+                if chunk_idx > 0 and chunk_items:
+                    # Overlap: a primeira página deste chunk = última do anterior
+                    overlap_page = chunk_items[0].get("page")
+                    if overlap_page is not None:
+                        # Contar itens neste chunk com a página sobreposta
+                        overlap_count = sum(
+                            1 for it in chunk_items if it.get("page") == overlap_page
+                        )
+                        # Remover os últimos N itens do merged que têm essa página
+                        removed = 0
+                        while removed < overlap_count and items:
+                            if items[-1].get("page") == overlap_page:
+                                items.pop()
+                                removed += 1
+                            else:
+                                break
+                        logger.info("llm_assets_chunk_overlap", chunk_idx=chunk_idx, overlap_page=overlap_page, overlap_count=overlap_count, removed=removed)
+
+                for item in chunk_items:
+                    normalized_item = self._normalize_llm_item(item)
+                    items.append(normalized_item)
+                # Take last non-None totals (usually on final pages)
+                if chunk.get("last_year_total_value") is not None:
+                    pdf_last_year = self._parse_llm_currency(chunk["last_year_total_value"])
+                if chunk.get("current_year_total_value") is not None:
+                    pdf_current_year = self._parse_llm_currency(chunk["current_year_total_value"])
+
+            logger.info("llm_assets_merge_complete", items_count=len(items), chunks_count=len(chunks))
+
+            # Debug: save merged result to disk
+            if save_debug_chunks:
+                merged_result_path = os.path.join(debug_result_dir, "merged_result.txt")
+                with open(merged_result_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps({
+                        "items": items,
+                        "last_year_total_value": pdf_last_year,
+                        "current_year_total_value": pdf_current_year,
+                        "chunks_count": len(chunks),
+                        "items_count": len(items),
+                    }, indent=2, ensure_ascii=False))
+                logger.info("debug_merged_result_saved", path=merged_result_path)
+
+            if not items:
+                context.add_warning("LLM extraction returned no items")
+                return None
+            
+            ## Step 3: Calculate totals
+            last_year_total = sum_currency_values(
+                [i.get("before_year_asset_value", 0) for i in items],
+                as_int=False
+            )
+            current_year_total = sum_currency_values(
+                [i.get("current_year_asset_value", 0) for i in items],
+                as_int=False
+            )
+            
+            return {
+                "section_name": "Declaração de Bens e Direitos",
+                "items": items,
+                "last_year_total_value": pdf_last_year,
+                "current_year_total_value": pdf_current_year,
+                "total_values": {
+                    "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
+                    "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
+                },
+                "pages_with_problems": [],
+                "extraction_method": "llm"
+            }
+        except Exception as e:
+            context.add_warning(f"LLM extraction failed: {type(e).__name__}: {str(e)}")
+            return None
+
+    def _normalize_llm_item(self, item: dict) -> dict:
+        """
+        Normalize LLM extracted item to match expected format.
+        
+        Args:
+            item: Dictionary from LLM containing asset information
+            
+        Returns:
+            Normalized dictionary matching AssetsExtractor item format
+        """
+        # Ensure required fields exist
+        group_code = str(item.get("asset_group_code", "00")).zfill(2)
+        asset_code = str(item.get("asset_code", "00")).zfill(2)
+        description = str(item.get("asset_description") or item.get("description", "")).strip()
+        
+        # Parse currency values
+        before_value = self._parse_llm_currency(item.get("before_year_asset_value"))
+        current_value = self._parse_llm_currency(item.get("current_year_asset_value"))
+        
+        item_id = generate_item_id(f"{group_code}{asset_code}{description[:50]}")
+        
+        return {
+            "id": item_id,
+            "asset_group_code": group_code,
+            "asset_code": asset_code,
+            "asset_description": description,
+            "before_year_asset_value": before_value,
+            "current_year_asset_value": current_value,
+            "country_code": str(item.get("country_code", "105")).zfill(3),
+            "country_name": str(item.get("country_name", "BRASIL")).upper(),
+            "additional_info": item.get("additional_info", {}),
+            "country_valid": item.get("country_valid", True),
+            "page": item.get("page", 0),
+        }
     
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         items = []
@@ -69,10 +307,8 @@ class AssetsExtractor(ISectionExtractor):
             )
             
             if self._has_section_end_heading(page_text, page_num):
-                end_line = self._find_end_marker_line_in_page(page_text)
                 page_items = self._extract_from_page(
-                    page_text, page_num, next_page_text=next_page_text,
-                    max_line=end_line,
+                    page_text, page_num, next_page_text=next_page_text
                 )
                 items.extend(page_items)
                 
@@ -129,7 +365,8 @@ class AssetsExtractor(ISectionExtractor):
                 "before_year_asset_value": create_validated_total(last_year_total, pdf_last_year),
                 "current_year_asset_value": create_validated_total(current_year_total, pdf_current_year)
             },
-            "pages_with_problems": []
+            "pages_with_problems": [],
+            "extraction_method": "regex"
         }
     
     def _extract_assets_total(self, page_text: str) -> list[float]:
@@ -233,16 +470,6 @@ class AssetsExtractor(ISectionExtractor):
                         return True
         return False
     
-    def _find_end_marker_line_in_page(self, page_text: str) -> Optional[int]:
-        """Retorna o índice da primeira linha com marcador de fim de seção."""
-        lines = page_text.split("\n")
-        for i, line in enumerate(lines):
-            upper = line.strip().upper()
-            for marker in self.SECTION_END_MARKERS:
-                if marker in upper:
-                    return i
-        return None
-    
     # Aceita formato BR (150.000,00) E formato US (150,000.00)
     CURRENCY_RE = r"(\d[\d.]*,\d{2}|\d[\d,]*\.\d{2})"
 
@@ -251,23 +478,17 @@ class AssetsExtractor(ISectionExtractor):
         page_text: str,
         page_num: int,
         next_page_text: Optional[str] = None,
-        max_line: Optional[int] = None,
     ) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         next_page_lines = next_page_text.split("\n") if next_page_text else []
-        line_limit = max_line if max_line is not None else len(lines)
         
         two_val = re.compile(
             rf"^(?:\d+\s+)?(\d{{2}})\s+(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
         )
-        # Formato antigo (IRPF 2021/2020): 1 código em vez de group+asset
-        one_code_two_val = re.compile(
-            rf"^(\d{{2}})\s+(.+?)\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$"
-        )
         
         i = 0
-        while i < line_limit:
+        while i < len(lines):
             line = lines[i].strip()
             
             asset_match = two_val.match(line)
@@ -282,17 +503,6 @@ class AssetsExtractor(ISectionExtractor):
                     continue
             
             if not asset_match:
-                single_match = one_code_two_val.match(line)
-                if single_match:
-                    item = self._parse_single_code_asset(
-                        lines, i, single_match, page_num
-                    )
-                    if item:
-                        items.append(item)
-                        i = item.pop("_next_index", i + 1)
-                        continue
-            
-            if not asset_match:
                 item = self._try_fallback_asset(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
@@ -303,15 +513,6 @@ class AssetsExtractor(ISectionExtractor):
             
             if not asset_match:
                 item = self._try_bare_header_asset(
-                    lines, i, page_num, next_page_lines=next_page_lines
-                )
-                if item:
-                    items.append(item)
-                    i = item.pop("_next_index", i + 1)
-                    continue
-            
-            if not asset_match:
-                item = self._try_fallback_asset_single_code(
                     lines, i, page_num, next_page_lines=next_page_lines
                 )
                 if item:
@@ -444,113 +645,6 @@ class AssetsExtractor(ISectionExtractor):
             return item
         return None
 
-    def _parse_single_code_asset(
-        self,
-        lines: list[str],
-        idx: int,
-        match,
-        page_num: int,
-    ) -> Optional[dict]:
-        """Parse item de formato antigo com 1 código (IRPF 2021/2020).
-
-        Linha: ``01  APARTAMENTO RESIDENCIAL  140.000,00  140.000,00``
-        group(1)=code, group(2)=desc, group(3)=val1, group(4)=val2.
-        Mapeia para group_code=code, asset_code='01'.
-        """
-        code = match.group(1)
-        desc = match.group(2).strip()
-
-        # Ignorar linhas de header ou TOTAL
-        if len(desc) < 3:
-            return None
-        upper = desc.upper()
-        if upper.startswith("TOTAL") or "CÓDIGO" in upper or "DISCRIMINAÇÃO" in upper:
-            return None
-
-        class _FakeMatch:
-            def __init__(self, groups):
-                self._groups = groups
-            def group(self, n):
-                return self._groups[n]
-
-        fake = _FakeMatch({
-            1: code,
-            2: "01",
-            3: desc,
-            4: match.group(3),
-            5: match.group(4),
-        })
-        return self._parse_asset_block(lines, idx, fake, page_num)
-
-    def _try_fallback_asset_single_code(
-        self,
-        lines: list[str],
-        idx: int,
-        page_num: int,
-        next_page_lines: Optional[list[str]] = None,
-    ) -> Optional[dict]:
-        """Fallback para formato antigo com 1 código e valores ausentes/split.
-
-        Tenta: ``01  APARTAMENTO RESIDENCIAL`` (sem valores na linha).
-        """
-        line = lines[idx].strip()
-
-        header = re.match(r"^(\d{2})\s+(.+?)\s*$", line)
-        if not header:
-            return None
-
-        code = header.group(1)
-        rest = header.group(2).strip()
-
-        if len(rest) < 3:
-            return None
-        upper_rest = rest.upper()
-        if upper_rest.startswith("TOTAL") or "CÓDIGO" in upper_rest:
-            return None
-        # Evitar capturar linhas tipo "105 - BRASIL"
-        if re.match(r"^\d{3}\s*[-–]", line):
-            return None
-
-        vals = re.findall(self.CURRENCY_RE, rest)
-
-        if len(vals) >= 2:
-            v1, v2 = vals[-2], vals[-1]
-            desc = rest[:rest.rfind(vals[-2])].strip()
-            if len(desc) < 3:
-                return None
-        elif len(vals) == 1:
-            v1 = vals[0]
-            desc = rest[:rest.rfind(v1)].strip()
-            if len(desc) < 5:
-                return None
-            v2 = self._find_orphan_value(lines, idx + 1)
-            if not v2 and next_page_lines:
-                v2 = self._find_orphan_value(next_page_lines, 0, max_lines=10)
-            if not v2:
-                v2 = v1
-        else:
-            desc = rest
-            v1, v2 = self._find_two_orphan_values(lines, idx + 1)
-            if (not v1 or not v2) and next_page_lines:
-                v1_next, v2_next = self._find_two_orphan_values(
-                    next_page_lines, 0, max_lines=10
-                )
-                if not v1:
-                    v1 = v1_next
-                if not v2:
-                    v2 = v2_next
-            if not v1 or not v2:
-                return None
-
-        class _FakeMatch:
-            def __init__(self, groups):
-                self._groups = groups
-            def group(self, n):
-                return self._groups[n]
-
-        fake = _FakeMatch({1: code, 2: "01", 3: desc, 4: v1, 5: v2})
-        return self._parse_asset_block(lines, idx, fake, page_num)
-
     def _find_orphan_value(self, lines: list[str], start: int, max_lines: int = 25) -> Optional[str]:
         for j in range(start, min(start + max_lines, len(lines))):
             s = lines[j].strip()
@@ -623,10 +717,6 @@ class AssetsExtractor(ISectionExtractor):
             if re.match(r"^\d{2}\s+\d{2}\s*$", next_line):
                 break
             
-            # Formato antigo: 1 código + descrição + valores (ex: "01  APARTAMENTO  140.000,00  140.000,00")
-            if re.match(rf"^\d{{2}}\s+.+?\s+{self.CURRENCY_RE}\s+{self.CURRENCY_RE}\s*$", next_line):
-                break
-            
             # Código de país: 3 dígitos seguido de nome do país (ex: "105 - BRASIL", "767 - SUÍÇA")
             # Não captura linhas como "250 - MOTOR 1812CC" que são continuação de descrição
             # Critérios: exatamente 3 dígitos, nome curto (≤3 palavras), sem números no nome
@@ -645,12 +735,7 @@ class AssetsExtractor(ISectionExtractor):
             if "Página" in next_line and "de" in next_line:
                 break
             
-            # Parar em marcadores de fim de seção
-            upper_next = next_line.upper()
-            if any(marker in upper_next for marker in self.SECTION_END_MARKERS):
-                break
-            
-            if upper_next.startswith("TOTAL") or upper_next.startswith("TOTAL DE BENS"):
+            if next_line.upper().startswith("TOTAL") or next_line.upper().startswith("TOTAL DE BENS"):
                 break
             
             raw_lines.append(next_line)

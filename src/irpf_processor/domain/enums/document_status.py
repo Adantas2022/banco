@@ -8,6 +8,7 @@ class DocumentStatus(str, Enum):
 
     RECEIVED = "RECEIVED"
     ROUTED = "ROUTED"
+    PROCESSING = "PROCESSING"
     EXTRACTED = "EXTRACTED"
     READY = "READY"
     FAILED = "FAILED"
@@ -22,7 +23,14 @@ class DocumentStatus(str, Enum):
                 DocumentStatus.QUARANTINED,
             },
             DocumentStatus.ROUTED: {
+                DocumentStatus.PROCESSING,
                 DocumentStatus.EXTRACTED,
+                DocumentStatus.FAILED,
+                DocumentStatus.QUARANTINED,
+            },
+            DocumentStatus.PROCESSING: {
+                DocumentStatus.EXTRACTED,
+                DocumentStatus.READY,
                 DocumentStatus.FAILED,
                 DocumentStatus.QUARANTINED,
             },
@@ -31,7 +39,9 @@ class DocumentStatus(str, Enum):
                 DocumentStatus.FAILED,
             },
             DocumentStatus.READY: set(),
-            DocumentStatus.FAILED: set(),
+            DocumentStatus.FAILED: {
+                DocumentStatus.PROCESSING,  # allow Dramatiq retries
+            },
             DocumentStatus.QUARANTINED: set(),
         }
         return target in valid_transitions.get(self, set())
@@ -42,4 +52,4 @@ class DocumentStatus(str, Enum):
 
     def is_processable(self) -> bool:
         """Verifica se documento pode ser processado."""
-        return self in (DocumentStatus.RECEIVED, DocumentStatus.ROUTED, DocumentStatus.EXTRACTED)
+        return self in (DocumentStatus.RECEIVED, DocumentStatus.ROUTED, DocumentStatus.PROCESSING, DocumentStatus.EXTRACTED)

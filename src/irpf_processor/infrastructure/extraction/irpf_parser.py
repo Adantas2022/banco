@@ -10,6 +10,7 @@ Este módulo implementa:
 
 from __future__ import annotations
 
+import asyncio
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -226,6 +227,7 @@ class IRPFParser:
         auto_detect: bool = True,
         template_registry: Optional[ITemplateRegistry] = None,
         enable_validation: bool = True,
+        max_llm_parallel: int = 5
     ):
         self._custom_extractors = extractors
         self._auto_detect = auto_detect
@@ -239,6 +241,7 @@ class IRPFParser:
         self._enable_validation = enable_validation
         self._validation_executor: Optional[ValidationExecutor] = None
         self._validation_summary: Optional[dict] = None
+        self._llm_semaphore = asyncio.Semaphore(max_llm_parallel)
     
     @property
     def detected_version(self) -> Optional[str]:
@@ -298,17 +301,20 @@ class IRPFParser:
         self, 
         pdf_source: Union[str, Path, bytes],
         version: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         """Parseia documento IRPF com detecção dinâmica de seções e versão.
         
         Args:
             pdf_source: Caminho do PDF, Path ou bytes
             version: Versão específica do template (opcional, detecta automaticamente)
+            document_id: ID do documento (opcional, usado para debug)
             
         Returns:
             IRPFDeclarationResult com os dados extraídos
         """
         context = self._create_context(pdf_source)
+        context.document_id = document_id
         self._last_context = context
         result = IRPFDeclarationResult(total_pages=context.total_pages)
         
@@ -337,10 +343,13 @@ class IRPFParser:
         else:
             extractors = self._custom_extractors or self._create_default_extractors()
         
-        for extractor in extractors:
-            self._run_extractor(extractor, context, result)
+        # for extractor in extractors:
+        #     self._run_extractor(extractor, context, result)
 
-        self._propagate_rural_exempt_to_exempt_income(result)
+        # Run extractors in parallel
+        asyncio.run(self.run_all_extractors(extractors, context, result))
+
+        # self._propagate_rural_exempt_to_exempt_income(result)
 
         if self._enable_validation and self._validation_executor:
             self._validation_summary = self._validation_executor.get_validation_summary(
@@ -359,7 +368,51 @@ class IRPFParser:
         result.equity_evolution = self._calculate_equity_evolution(result)
         
         return result
+
     
+    async def run_all_extractors(self, extractors, context, result):
+        tasks = [
+            self._run_extractor_async(extractor, context, result)
+            for extractor in extractors
+        ]
+        await asyncio.gather(*tasks)
+
+    
+    async def _run_extractor_async(self, extractor, context, result):
+        if not extractor.can_extract(context):
+            return
+
+        try:
+            use_llm = getattr(extractor, 'llm_extraction_enabled', False)
+            has_llm_method = hasattr(extractor, 'extract_with_llm')
+
+            if use_llm and has_llm_method:
+                async with self._llm_semaphore:
+                    context.add_warning(f"[LLM] Starting async LLM for {extractor.section_name}")
+                    try:
+                        llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
+                        data = await extractor.extract_with_llm(context, llm_prompt)
+                    except Exception as e:
+                        context.add_warning(f"[LLM] Failed: {e}, fallback to sync extract()")
+                        loop = asyncio.get_running_loop()
+                        data = await loop.run_in_executor(None, extractor.extract, context)
+
+            else:
+                # Sync extractor → run in background thread
+                loop = asyncio.get_running_loop()
+                data = await loop.run_in_executor(None, extractor.extract, context)
+
+            if data:
+                if self._enable_validation and self._validation_executor:
+                    data = self._validation_executor.validate_section(
+                        extractor.section_name, data, context
+                    )
+                self._assign_to_result(extractor.section_name, data, result)
+
+        except Exception as e:
+            context.add_warning(f"Erro ao extrair {extractor.section_name}: {e}")
+
+
     def get_document_profile(self) -> Optional[DocumentProfile]:
         """Retorna o perfil do último documento processado."""
         return self._last_profile
@@ -421,13 +474,52 @@ class IRPFParser:
             return
         
         try:
-            data = extractor.extract(context)
+            # Check if extractor has LLM flag and extract_with_llm method
+            use_llm = getattr(extractor, 'llm_extraction_enabled', False)
+            has_llm_method = hasattr(extractor, 'extract_with_llm')
+            
+            if use_llm and has_llm_method:
+                # Use async extract_with_llm method
+                context.add_warning(f"[LLM] Starting LLM extraction for {extractor.section_name}...")
+                try:
+                    # Pass extractor's own LLM_PROMPT as the custom prompt
+                    llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
+                    data = asyncio.run(extractor.extract_with_llm(context, llm_prompt))
+
+                    if data:
+                        context.add_warning(f"[LLM] ✓ LLM extraction succeeded for {extractor.section_name}")
+                    else:
+                        # LLM method returned None (error was caught internally)
+                        context.add_warning(
+                            f"[LLM] ✗ LLM extraction failed (check warnings) - falling back to regex"
+                        )
+                        data = extractor.extract(context)
+                        
+                except ModuleNotFoundError as llm_error:
+                    # Import errors during LLM - likely missing Azure OpenAI config
+                    context.add_warning(
+                        f"[LLM] ✗ ModuleNotFoundError: {str(llm_error)} - falling back to regex"
+                    )
+                    # Fall back to regular extract method
+                    data = extractor.extract(context)
+                except Exception as llm_error:
+                    context.add_warning(
+                        f"[LLM] ✗ {type(llm_error).__name__}: {str(llm_error)} - falling back to regex"
+                    )
+                    # Fall back to regular extract method
+                    data = extractor.extract(context)
+            else:
+                # Use regular sync extract method
+                data = extractor.extract(context)
+            
             if data:
                 if self._enable_validation and self._validation_executor:
                     data = self._validation_executor.validate_section(
                         extractor.section_name, data, context
                     )
+
                 self._assign_to_result(extractor.section_name, data, result)
+
         except Exception as e:
             if extractor.section_name in OPTIONAL_SECTIONS:
                 logger.debug(
@@ -446,6 +538,7 @@ class IRPFParser:
     ) -> None:
         if hasattr(result, section_name):
             setattr(result, section_name, data)
+        
     
     def _calculate_confidence(
         self, 
@@ -476,7 +569,7 @@ class IRPFParser:
     
     def _calculate_total_value(self, result: IRPFDeclarationResult) -> int:
         if result.assets_declaration:
-            value = result.assets_declaration.get("current_year_total_value", 0)
+            value = result.assets_declaration.get("current_year_total_value") or 0
             return int(value)
         return 0
     
@@ -484,8 +577,8 @@ class IRPFParser:
         if not result.assets_declaration:
             return 0
 
-        current_year = result.assets_declaration.get("current_year_total_value", 0.0)
-        last_year = result.assets_declaration.get("last_year_total_value", 0.0)
+        current_year = result.assets_declaration.get("current_year_total_value") or 0.0
+        last_year = result.assets_declaration.get("last_year_total_value") or 0.0
 
         return int(current_year - last_year)
 
@@ -584,6 +677,8 @@ class IRPFParser:
         total_pages: int = 1,
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
+        pdf_path: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         pages_text = self._split_text_by_pages(text, total_pages)
         return self.parse_from_pages_text(
@@ -593,6 +688,8 @@ class IRPFParser:
             version=version,
             ocr_confidence=ocr_confidence,
             warning_message="Texto extraido via OCR",
+            pdf_path=pdf_path,
+            document_id=document_id,
         )
 
     def parse_from_pages_text(
@@ -603,6 +700,8 @@ class IRPFParser:
         version: Optional[str] = None,
         ocr_confidence: Optional[float] = None,
         warning_message: str = "Texto extraido via OCR (estrutura por pagina preservada)",
+        pdf_path: Optional[str] = None,
+        document_id: Optional[str] = None,
     ) -> IRPFDeclarationResult:
         ordered_pages = {
             page_num: pages_text[page_num]
@@ -620,6 +719,8 @@ class IRPFParser:
             full_text=full_text,
             pages_text=ordered_pages,
             total_pages=context_total_pages,
+            pdf_path=pdf_path,
+            document_id=document_id,
         )
         return self._parse_ocr_context(
             context=context,

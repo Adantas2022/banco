@@ -25,6 +25,7 @@ wheels/
 venv/
 ENV/
 env/
+venv_*/
 
 # IDE
 .idea/
@@ -84,6 +85,7 @@ spec.md
 batch_results*.json
 docs/
 scripts/
+local_tests/
 
 # Business confidential
 business/
@@ -101,3 +103,4 @@ docs/PROPOSTA_AGENTES_V1.md
 # GCP credential files
 gcp-super-*.json
 credentials/
+asa-certificate.cer

@@ -125,7 +125,7 @@ class CrossValidationCalculator:
             )
         
         items = assets.get("items", [])
-        declared_total = assets.get("current_year_total_value", 0)
+        declared_total = assets.get("current_year_total_value") or 0
         
         if not items:
             return ValidationResult(
@@ -174,7 +174,7 @@ class CrossValidationCalculator:
             )
         
         items = debts.get("items", [])
-        declared_total = debts.get("current_year_total_value", 0)
+        declared_total = debts.get("current_year_total_value") or 0
         
         if not items or not declared_total:
             return ValidationResult(

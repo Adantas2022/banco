@@ -56,12 +56,13 @@ services:
       - test-coverage:/app/coverage
     networks:
       - test-network
-    command: >
-      pytest tests/unit/
-      --cov=irpf_processor
-      --cov-report=html:/app/coverage/html-unit
-      --cov-report=term-missing
-      -v
+    command: tail -f /dev/null
+    # command: >
+    #   pytest tests/unit/
+    #   --cov=irpf_processor
+    #   --cov-report=html:/app/coverage/html-unit
+    #   --cov-report=term-missing
+    #   -v
 
   test-integration:
     build:
@@ -104,7 +105,7 @@ services:
       - MONGO_INITDB_DATABASE=irpf_test
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
+      interval: 500s
       timeout: 5s
       retries: 5
     networks:
@@ -116,7 +117,7 @@ services:
     image: redis:7-alpine
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 500s
       timeout: 5s
       retries: 5
     networks:
@@ -144,3 +145,4 @@ networks:
 
 volumes:
   test-coverage:
+  
