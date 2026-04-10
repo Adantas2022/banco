@@ -1,7 +1,7 @@
 # ===========================================
 # BASE IMAGE
 # ===========================================
-FROM asa-docker-ollama-virtual.asa.com.br/docker-virtual-asa/python:3.11-slim AS base
+FROM asa-docker-ollama-virtual.asa.com.br/library/python:3.11-slim AS base
 # FROM python:3.11-slim as base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
