@@ -1,7 +1,8 @@
 # ===========================================
 # BASE IMAGE
 # ===========================================
-FROM asascfi-docker-virtual-asa.jfrog.io/python:3.11-slim AS base
+FROM asa-docker-ollama-virtual.asa.com.br/python:3.11-slim AS base
+
 # FROM python:3.11-slim as base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
