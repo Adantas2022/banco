@@ -14,14 +14,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install corporate CA certificate (Zscaler) FIRST — before any HTTPS connections
-COPY asa-certificate.cer /usr/local/share/ca-certificates/asa-certificate.crt
-RUN update-ca-certificates
+#### COMENTEI PQ ESTÁ QUEBRANDO A PIPE VER COM BRAYAN #####
+#COPY asa-certificate.cer /usr/local/share/ca-certificates/asa-certificate.crt
+#RUN update-ca-certificates
 
 # Make pip and requests use the system CA bundle
-ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    PIP_CERT=/etc/ssl/certs/ca-certificates.crt
+#ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+#    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+#    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+#    PIP_CERT=/etc/ssl/certs/ca-certificates.crt
 
 # 1. Declarar as credenciais na base para podermos autenticar o apt-get
 ARG JFROG_USER
