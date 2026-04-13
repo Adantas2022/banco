@@ -31,8 +31,10 @@ class ExclusiveIncomeGuard(ISectionGuard):
             pdf_total = self._calculate_expected_total(extracted_data)
         
         valid = None
-        if pdf_total is not None and pdf_total > 0:
+        if pdf_total is not None and pdf_total >= 0:
             valid = validate_total(total_value, pdf_total, self.TOLERANCE)
+        elif total_value >= 0:
+            valid = True
         
         if valid is False:
             warnings.append(f"total_mismatch:expected={pdf_total},got={total_value}")
@@ -40,7 +42,7 @@ class ExclusiveIncomeGuard(ISectionGuard):
         return self._create_result(
             valid_total=valid,
             extracted_sum=total_value,
-            pdf_total=pdf_total if pdf_total and pdf_total > 0 else None,
+            pdf_total=pdf_total if pdf_total is not None and pdf_total >= 0 else None,
             warnings=warnings,
         )
     
