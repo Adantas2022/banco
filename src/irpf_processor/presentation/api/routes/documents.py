@@ -247,6 +247,12 @@ async def get_document_result(
             detail="Document not found",
         )
 
+    if document.status == DocumentStatus.FAILED:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Unable to retrieve document result because it could not be processed."
+        )
+
     if document.status != DocumentStatus.READY:
         raise HTTPException(
             status_code=status.HTTP_202_ACCEPTED,
