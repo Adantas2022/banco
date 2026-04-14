@@ -228,7 +228,7 @@ class TestGetDocumentResult:
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_raises_409_when_document_not_ready(self):
+    async def test_raises_202_when_document_not_ready(self):
         mock_document = MagicMock()
         mock_document.status = DocumentStatus.ROUTED
 
@@ -242,8 +242,26 @@ class TestGetDocumentResult:
                 doc_repo=mock_repo
             )
 
-        assert exc_info.value.status_code == 409
-        assert "not ready" in exc_info.value.detail
+        assert exc_info.value.status_code == 202
+        assert "Current status: ROUTED" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_raises_422_when_document_failed(self):
+        mock_document = MagicMock()
+        mock_document.status = DocumentStatus.FAILED
+
+        mock_repo = MagicMock()
+        mock_repo.get_by_id = AsyncMock(return_value=mock_document)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_document_result(
+                document_id="doc-123",
+                tenant_id="tenant-456",
+                doc_repo=mock_repo
+            )
+
+        assert exc_info.value.status_code == 422
+        assert "processed" in exc_info.value.detail
 
     @pytest.mark.asyncio
     @patch("irpf_processor.presentation.api.routes.documents.get_database")
