@@ -318,3 +318,163 @@ class TestExtractionContext:
         assert 1 in result
         assert 3 in result
         assert 2 not in result
+
+
+class TestTaxpayerExtractorDigitalPdf:
+
+    @pytest.fixture
+    def digital_pdf_text(self):
+        return (
+            "DECLARAÇÃO DE AJUSTE ANUAL\n"
+            "EXERCÍCIO 2025\n"
+            "Ano - Calendário  2024\n"
+            "\n"
+            "IDENTIFICAÇÃO DO CONTRIBUINTE\n"
+            "CPF: 252.500.728-01\n"
+            "Nome: GABRIEL DE CARVALHO DIAS\n"
+            "\n"
+            "Natureza da Ocupação: 12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR\n"
+            "Ocupação Principal: 610 - PRODUTOR NA EXPLORAÇÃO AGROPECUÁRIA\n"
+            "Tipo de declaração: Declaração de Ajuste Anual Original\n"
+            "\n"
+            "Endereço: RUA PASCHOAL BARDARO Número: 1075\n"
+            "Complemento: SALA 101 E 102 Bairro Distrito: JARDIM BOTANICO\n"
+            "Município: RIBEIRÃO PRETO UF: SP\n"
+            "CEP: 14021-655\n"
+            "\n"
+            "DDD / Telefone: (16) 3620-1234\n"
+            "E-mail: edson.silva@grupolpcd.com.br\n"
+            "DDD / Celular: (16) 98227-0110\n"
+        )
+
+    def test_extracts_calendar_year_with_spaced_separator(self, extractor, digital_pdf_text):
+        context = ExtractionContext(
+            full_text=digital_pdf_text,
+            pages_text={1: digital_pdf_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["calendar_year"] == "2024"
+
+    def test_extracts_occupation_nature_with_ocupacao_in_description(self, extractor):
+        text = (
+            "CPF: 326.141.952-00\n"
+            "Natureza da Ocupação: 91 - NATUREZA DA OCUPAÇÃO NÃO ESPECIFICADA ANTERIORMENTE\n"
+            "Ocupação Principal: 610 - PRODUTOR NA EXPLORAÇÃO AGROPECUÁRIA\n"
+        )
+        context = ExtractionContext(
+            full_text=text,
+            pages_text={1: text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert "91" in result["occupation_nature"]
+        assert "ANTERIORMENTE" in result["occupation_nature"]
+
+    def test_extracts_number_sn(self, extractor):
+        text = (
+            "CPF: 326.141.952-00\n"
+            "Endereço: ESTRADA LINHA 6 Número: SN\n"
+            "Complemento: Bairro/Distrito: ZONA RURAL\n"
+            "Município: CEREJEIRAS UF: RO\n"
+        )
+        context = ExtractionContext(
+            full_text=text,
+            pages_text={1: text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["contact_and_address"]["number"] == "SN"
+
+    def test_extracts_number_s_slash_n(self, extractor):
+        text = (
+            "CPF: 326.141.952-00\n"
+            "Endereço: RUA TESTE Número: S/N\n"
+            "Município: SAO PAULO UF: SP\n"
+        )
+        context = ExtractionContext(
+            full_text=text,
+            pages_text={1: text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["contact_and_address"]["number"] == "S/N"
+
+    def test_complement_includes_bairro_distrito_inline(self, extractor, digital_pdf_text):
+        context = ExtractionContext(
+            full_text=digital_pdf_text,
+            pages_text={1: digital_pdf_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+        address = result["contact_and_address"]
+
+        assert "SALA 101 E 102" in address["complement"]
+        assert "JARDIM BOTANICO" in address["complement"]
+
+    def test_neighborhood_not_captured_from_inline_complement(self, extractor, digital_pdf_text):
+        context = ExtractionContext(
+            full_text=digital_pdf_text,
+            pages_text={1: digital_pdf_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+        address = result["contact_and_address"]
+
+        assert "Distrito" not in address.get("neighborhood", "")
+
+    def test_neighborhood_captured_when_standalone_label(self, extractor):
+        text = (
+            "CPF: 326.141.952-00\n"
+            "Endereço: ESTRADA LINHA 6 Número: SN\n"
+            "Complemento:\n"
+            "Bairro/Distrito: ZONA RURAL\n"
+            "Município: CEREJEIRAS UF: RO\n"
+        )
+        context = ExtractionContext(
+            full_text=text,
+            pages_text={1: text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["contact_and_address"]["neighborhood"] == "ZONA RURAL"
+
+    def test_extracts_cell_phone_with_spaced_ddd(self, extractor, digital_pdf_text):
+        context = ExtractionContext(
+            full_text=digital_pdf_text,
+            pages_text={1: digital_pdf_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["contact_and_address"]["cell_phone"] == "(16) 98227-0110"
+
+    def test_full_digital_extraction(self, extractor, digital_pdf_text):
+        context = ExtractionContext(
+            full_text=digital_pdf_text,
+            pages_text={1: digital_pdf_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+
+        assert result["cpf"] == "252.500.728-01"
+        assert result["exercise_year"] == "2025"
+        assert result["calendar_year"] == "2024"
+        assert "12" in result["occupation_nature"]
+        assert "610" in result["main_occupation"]
+        assert result["contact_and_address"]["uf"] == "SP"
+        assert result["contact_and_address"]["number"] == "1075"

@@ -43,21 +43,21 @@ class TaxpayerExtractor(ISectionExtractor):
         "cpf": r"CPF[:\s]*(\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2})",
         "name": r"(?:NOME|Nome)[:\s]*([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-ZÁÀÂÃÉÊÍÓÔÕÚÇa-záàâãéêíóôõúç\s]+?)(?:\n|CPF)",
         "exercise_year": r"EXERC[ÍI]CIO\s*(\d{4})",
-        "calendar_year": r"ANO[- ]CALEND[ÁA]RIO\s*(\d{4})",
+        "calendar_year": r"ANO\s*[-–]\s*CALEND[ÁAáa]RIO[:\s]*(\d{4})",
         # Patterns melhorados para OCR - capturam valor na mesma linha OU na linha seguinte
         "occupation_nature": r"Natureza da Ocupa[çc][ãa]o[:\s]*\n?\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]+)",
         "main_occupation": r"Ocupa[çc][ãa]o Principal[:\s]*\n?\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s]+)",
         "type_ir": r"Tipo de declara[çc][ãa]o[:\s]*\n?\s*(Declara[çc][ãa]o\s+de\s+Ajuste\s+Anual[^N\n]*)",
         "street": r"Endere[çc]o[:\s]*(.+?)(?:\s+N[úu]mero|$)",
-        "number": r"N[úu]mero[:\s]*(\d+)",
-        "complement": r"Complemento[:\s]*(.+?)(?:\s+Bairro|$)",
-        "neighborhood": r"Bairro(?:/Distrito)?[:\s]*(.+?)(?:\s+Munic|$)",
+        "number": r"N[úu]mero[:\s]*(\d+|S/?N)",
+        "complement": r"Complemento[:\s]*(.+?)(?:\s+Munic[íi]pio|\n|$)",
+        "neighborhood": r"(?:^|\n)\s*Bairro(?:\s*/\s*Distrito)?[:\s]*(.+?)(?:\s+Munic|$)",
         "city": r"Munic[íi]pio[:\s]*(.+?)(?:\s+UF|$)",
         "uf": r"UF[:\s]*([A-Z]{2})",
         "zip_code": r"CEP[:\s]*(\d{5}[-\s]?\d{3})",
-        "phone": r"(?:DDD/)?Telefone[:\s]*([\d\s()-]+?)(?:\n|$)",
+        "phone": r"(?:DDD\s*/\s*)?Telefone[:\s]*([\d\s()-]+?)(?:\n|$)",
         "email": r"E-mail[:\s]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
-        "cell_phone": r"(?:DDD/)?Celular[:\s]*(\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4})",
+        "cell_phone": r"(?:DDD\s*/\s*)?Celular[:\s]*(\(?\d{2}\)?\s*\d{4,5}[-\s]?\d{4})",
     }
     
     @property
@@ -105,11 +105,11 @@ class TaxpayerExtractor(ISectionExtractor):
         # Pattern mais flexível para OCR - captura código e descrição
         patterns = [
             # Formato: "Natureza da Ocupação: 12 - PROPRIETARIO..."
-            r"Natureza\s+da\s+Ocupa[çcg][ãa]o[:\s]*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|Ocupa[çcg]|$)",
+            r"Natureza\s+da\s+Ocupa[çcg][ãa]o[:\s]*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|Ocupa[çcg][ãa]o\s+Principal|$)",
             # Formato com quebra de linha
             r"Natureza\s+da\s+Ocupa[çcg][ãa]o[:\s]*\n\s*(\d+\s*[-–]\s*[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][A-Za-zÀ-ÿ\s,./()-]+?)(?:\n|$)",
             # Formato OCR sem acentos
-            r"Natureza\s+da\s+Ocupacao[:\s]*(\d+\s*[-–]\s*[A-Z][A-Za-z\s,./()-]+?)(?:\n|Ocup|$)",
+            r"Natureza\s+da\s+Ocupacao[:\s]*(\d+\s*[-–]\s*[A-Z][A-Za-z\s,./()-]+?)(?:\n|Ocupacao\s+Principal|$)",
         ]
         
         for pattern in patterns:
