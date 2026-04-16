@@ -227,7 +227,6 @@ class IRPFParser:
         auto_detect: bool = True,
         template_registry: Optional[ITemplateRegistry] = None,
         enable_validation: bool = True,
-        max_llm_parallel: int = 5
     ):
         self._custom_extractors = extractors
         self._auto_detect = auto_detect
@@ -241,7 +240,6 @@ class IRPFParser:
         self._enable_validation = enable_validation
         self._validation_executor: Optional[ValidationExecutor] = None
         self._validation_summary: Optional[dict] = None
-        self._llm_semaphore = asyncio.Semaphore(max_llm_parallel)
     
     @property
     def detected_version(self) -> Optional[str]:
@@ -387,15 +385,14 @@ class IRPFParser:
             has_llm_method = hasattr(extractor, 'extract_with_llm')
 
             if use_llm and has_llm_method:
-                async with self._llm_semaphore:
-                    context.add_warning(f"[LLM] Starting async LLM for {extractor.section_name}")
-                    try:
-                        llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
-                        data = await extractor.extract_with_llm(context, llm_prompt)
-                    except Exception as e:
-                        context.add_warning(f"[LLM] Failed: {e}, fallback to sync extract()")
-                        loop = asyncio.get_running_loop()
-                        data = await loop.run_in_executor(None, extractor.extract, context)
+                context.add_warning(f"[LLM] Starting async LLM for {extractor.section_name}")
+                try:
+                    llm_prompt = getattr(extractor, 'LLM_PROMPT', None)
+                    data = await extractor.extract_with_llm(context, llm_prompt)
+                except Exception as e:
+                    context.add_warning(f"[LLM] Failed: {e}, fallback to sync extract()")
+                    loop = asyncio.get_running_loop()
+                    data = await loop.run_in_executor(None, extractor.extract, context)
 
             else:
                 # Sync extractor → run in background thread

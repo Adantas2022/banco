@@ -41,7 +41,7 @@ class AssetsExtractor(ISectionExtractor):
                 ================================================================
                 SECAO 2 - DECLARACAO DE BENS E DIREITOS
                 ================================================================
-                REGRA: lista TODOS os bens. Cada linha = um objeto separado. Nao omita nenhum.
+                REGRA: lista TODOS os bens. Cada linha = um objeto separado. Nao omita nenhum. Extraia somente os itens da sessão DECLARACAO DE BENS E DIREITOS.
 
                 {   
                     "section_name": "Declaração de Bens e Direitos",
@@ -51,8 +51,8 @@ class AssetsExtractor(ISectionExtractor):
                         "asset_group_code": "string (ex: '01', '02', '03')",
                         "asset_code": "string (ex: '01', '11')",
                         "asset_description": "string - copie o texto presente na terceira coluna da tabela, este texto descreve o que é o item",
-                        "before_year_asset_value": numero,
-                        "current_year_asset_value": numero,
+                        "before_year_asset_value": valor monetário BRL - copie extamente o valor, não trunquee, não arredonde, mantenha o valor exato presente na declaração,
+                        "current_year_asset_value": valor monetário BRL, copie extamente o valor, não trunquee, não arredonde, mantenha o valor exato presente na declaração,
                         "country_code": "string ex: '105'",
                         "country_name": "string em maiusculas ex: 'BRASIL'",
                         "additional_info": { <ver regras abaixo> },
@@ -60,8 +60,8 @@ class AssetsExtractor(ISectionExtractor):
                         "page": numero (A página está presente no final de cada pagina, por exemplo: Página 1 de 12, ou seja, page=1)
                     }
                     ],
-                    "last_year_total_value": numero,
-                    "current_year_total_value": numero,
+                    "last_year_total_value": valor monetário BRL - copie extamente o valor, não trunquee, não arredonde, mantenha o valor exato presente na declaração,
+                    "current_year_total_value": valor monetário BRL - copie extamente o valor, não trunquee, não arredonde, mantenha o valor exato presente na declaração,
                     "pages_with_problems": []
                 }
 

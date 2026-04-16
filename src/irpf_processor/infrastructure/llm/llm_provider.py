@@ -138,8 +138,7 @@ class LLMProvider(ABC):
                 "TEXTO EXTRAÍDO DAS PÁGINAS (via OCR/pdfplumber):\n"
                 "Use este texto como referência auxiliar para valores numéricos, nomes, CPFs, CNPJs e códigos "
                 "que possam estar ilegíveis ou ambíguos nas imagens. "
-                "Em caso de divergência entre o texto e a imagem, priorize a imagem, "
-                "mas use o texto para confirmar valores e evitar erros de leitura.\n\n"
+                "Mas use as imagens para confirmar layout e resolver ambiguidades e complementar informações incompletas no texto.\n\n"
                 f"{text}"
             )})
 
@@ -218,24 +217,81 @@ class LLMProvider(ABC):
 
         return response
 
-    def _call_pdf_chunked(
+    async def _call_chunk(
+        self,
+        chunk_idx: int,
+        start: int,
+        end: int,
+        user_prompt: str,
+        images: list[bytes],
+        pages_text: Optional[list[str]],
+    ) -> Optional[dict]:
+        """Process a single chunk asynchronously."""
+        import asyncio
+
+        chunk_images = images[start:end]
+        logger.info("pdf_chunk_start", chunk_idx=chunk_idx, page_start=start, page_end=end, images=len(chunk_images))
+
+        chunk_text = "\n\n".join(pages_text[start:end]) if pages_text else None
+        content = self._build_content(user_prompt, chunk_images, text=chunk_text)
+
+        logger.debug(
+            "pdf_chunk_content_built",
+            chunk_idx=chunk_idx,
+            content_blocks=len(content),
+            text_blocks=sum(1 for c in content if c.get('type') == 'text'),
+            image_blocks=sum(1 for c in content if c.get('type') == 'image_url'),
+        )
+
+        system_prompt = self._get_system_prompt()
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": content},
+        ]
+
+        try:
+            response = await asyncio.to_thread(self._call_openai_with_retry, messages)
+        except (RateLimitError, APITimeoutError, APIError) as e:
+            logger.warning(
+                "pdf_chunk_failed",
+                chunk_idx=chunk_idx,
+                pages=f"{start + 1}-{end}",
+                error=str(e),
+            )
+            return None
+
+        finish_reason = response.choices[0].finish_reason
+        raw_text = response.choices[0].message.content or ""
+        logger.info(
+            "pdf_chunk_response",
+            chunk_idx=chunk_idx,
+            pages=f"{start + 1}-{end}",
+            finish_reason=finish_reason,
+            raw_length=len(raw_text),
+        )
+        logger.debug("pdf_chunk_raw_response", chunk_idx=chunk_idx, raw_text=raw_text)
+
+        parsed = self._parse_response(raw_text)
+        logger.debug("pdf_chunk_parsed", chunk_idx=chunk_idx, parsed_keys=list(parsed.keys()) if isinstance(parsed, dict) else "NOT_A_DICT")
+        return parsed
+
+    async def _call_pdf_chunked(
         self,
         user_prompt: str,
         images: list[bytes],
         pages_text: Optional[list[str]] = None,
     ) -> list[dict]:
-        """Split images into chunks and call the LLM once per chunk.
+        """Split images into chunks and call the LLM for all chunks in parallel.
 
-        Handles output truncation automatically: if finish_reason == \"length\",
-        the chunk is split in half and both halves are retried.
-
-        Returns a list of parsed dicts, one per successful chunk.
-        The caller is responsible for merging them.
+        Returns a list of parsed dicts (one per successful chunk), ordered by
+        chunk index. The caller is responsible for merging them.
         """
+        import asyncio
+
         max_per_call = self._get_max_images_per_call()
         overlap = 1  # páginas sobrepostas entre chunks consecutivos
         total_pages = len(images)
-        # Calcular chunks com sliding window
+
         if total_pages <= max_per_call:
             num_chunks = 1
         else:
@@ -250,67 +306,23 @@ class LLMProvider(ABC):
             prompt_length=len(user_prompt),
         )
 
-        chunks_data: list[dict] = []
-
-        for chunk_idx in range(num_chunks):
-            stride = max_per_call - overlap
-            start = chunk_idx * stride
-            end = min(start + max_per_call, total_pages)
-            chunk_images = images[start:end]
-
-            logger.info("pdf_chunk_start", chunk_idx=chunk_idx, page_start=start, page_end=end, images=len(chunk_images))
-
-            chunk_prompt = user_prompt
-
-            chunk_text = "\n\n".join(pages_text[start:end]) if pages_text else None
-
-            content = self._build_content(
-                chunk_prompt, chunk_images, text=chunk_text,
+        stride = max_per_call - overlap
+        tasks = [
+            self._call_chunk(
+                chunk_idx=i,
+                start=i * stride,
+                end=min(i * stride + max_per_call, total_pages),
+                user_prompt=user_prompt,
+                images=images,
+                pages_text=pages_text,
             )
+            for i in range(num_chunks)
+        ]
 
-            logger.debug(
-                "pdf_chunk_content_built",
-                chunk_idx=chunk_idx,
-                content_blocks=len(content),
-                text_blocks=sum(1 for c in content if c.get('type') == 'text'),
-                image_blocks=sum(1 for c in content if c.get('type') == 'image_url'),
-            )
+        results = await asyncio.gather(*tasks)
 
-            system_prompt = self._get_system_prompt()
-
-            try:
-                response = self._call_openai_with_retry(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": content},
-                    ]
-                )
-            except (RateLimitError, APITimeoutError, APIError) as e:
-                logger.warning(
-                    "pdf_chunk_failed",
-                    chunk_idx=chunk_idx,
-                    pages=f"{start + 1}-{end}",
-                    error=str(e),
-                )
-                continue
-
-            finish_reason = response.choices[0].finish_reason
-            raw_text = response.choices[0].message.content or ""
-            logger.info(
-                "pdf_chunk_response",
-                chunk_idx=chunk_idx,
-                pages=f"{start + 1}-{end}",
-                finish_reason=finish_reason,
-                raw_length=len(raw_text),
-            )
-            logger.debug("pdf_chunk_raw_response", chunk_idx=chunk_idx, raw_text=raw_text)
-
-            parsed = self._parse_response(raw_text)
-            logger.debug("pdf_chunk_parsed", chunk_idx=chunk_idx, parsed_keys=list(parsed.keys()) if isinstance(parsed, dict) else "NOT_A_DICT")
-            chunks_data.append(parsed)
-
+        chunks_data = [r for r in results if r is not None]
         logger.info("pdf_chunked_extraction_complete", successful_chunks=len(chunks_data))
-
         return chunks_data
 
     async def extract(
@@ -359,7 +371,7 @@ class LLMProvider(ABC):
         t_api_start = time.time()
         try:
             if method == "pdf_images_chunked":
-                chunks = self._call_pdf_chunked(user_prompt, images, pages_text=pages_text)
+                chunks = await self._call_pdf_chunked(user_prompt, images, pages_text=pages_text)
                 logger.info("llm_extract_chunked_complete", chunks=len(chunks))
                 return chunks
 
