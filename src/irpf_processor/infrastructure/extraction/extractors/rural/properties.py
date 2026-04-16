@@ -1,10 +1,16 @@
 """Extrator de imoveis rurais explorados."""
 
+import os
 import re
+import json
+import asyncio
 from typing import Any, Optional
 
 from ..base import ExtractionContext, ISectionExtractor
 from ...table_extractor import parse_currency, generate_item_id
+from irpf_processor.shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Pattern de área: aceita BR (800,0 / 1.200,0) e US (800.0 / 1200.5)
 _AREA_PATTERN = r"\d[\d.]*[.,]\d+"
@@ -42,6 +48,55 @@ class RuralPropertiesExtractor(ISectionExtractor):
         "APURACAO DO RESULTADO",
         "APURAGAO DO RESULTADO",  # OCR: Ç -> G
     ]
+
+    LLM_PROMPT = """
+================================================================
+SECAO - DADOS E IDENTIFICACAO DO IMOVEL EXPLORADO - BRASIL
+================================================================
+REGRA: liste TODOS os imoveis rurais explorados. Cada imovel = um objeto separado. Nao omita nenhum.
+
+{
+    "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
+    "items": [
+        {
+            "code": numero (codigo da atividade rural, ex: 10, 11),
+            "participation": numero (percentual de participacao, ex: 100.00, 15.00),
+            "exploration_condition": numero (condicao de exploracao: 1=Proprietario, 2=Arrendatario, 3=Condomino, 4=Parceiro),
+            "name_and_location": "string - nome e localizacao do imovel (ex: FAZENDA LAMBARI, CAMPOS DE JULIO/MT)",
+            "area": numero (area em hectares, ex: 1200.0. Converta formato BR '1.200,0' para 1200.0),
+            "cib": "string - numero CIB/NIRF (ex: 4.695.449-0) ou string vazia se ausente",
+            "participants": {
+                "items": [
+                    {
+                        "participant_name": "string - NOME (CPF ou CNPJ)",
+                        "cpf": "string - CPF com mascara (ex: 123.456.789-00) ou null",
+                        "cnpj": "string - CNPJ com mascara ou null",
+                        "foreigner": false
+                    }
+                ]
+            },
+            "page": numero (pagina onde o imovel aparece. Ex: Pagina 5 de 12 -> page=5)
+        }
+    ],
+    "total_properties": numero (total de imoveis listados),
+    "total_area": numero (soma total das areas em hectares)
+}
+
+REGRAS IMPORTANTES:
+- O campo "participation" e percentual (ex: 100,00 = 100%). Converta para numero decimal.
+- O campo "area" e em hectares. Converta "1.200,0" para 1200.0.
+- O campo "cib" pode estar rotulado como CIB ou NIRF no documento.
+- Participantes aparecem abaixo do imovel, com nome e CPF/CNPJ entre parenteses.
+- Se nao houver participantes para um imovel, retorne "participants": null.
+- Copie nomes, CPFs, CNPJs e codigos caractere por caractere — nao corrija nem reformate.
+
+Extraia TODOS os imoveis rurais explorados e seus participantes.
+"""
+
+    def __init__(self):
+        """Inicializa o extractor com rastreamento de estado da seção."""
+        self._section_started = False
+        self._section_start_page = -1
 
     @property
     def section_name(self) -> str:
@@ -122,6 +177,178 @@ class RuralPropertiesExtractor(ISectionExtractor):
             "total_area": round(total_area, 2),
         }
 
+    async def extract_with_llm(
+        self,
+        context: ExtractionContext,
+        custom_prompt: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Extract rural properties section using LLM.
+
+        Follows the same pipeline as AssetsExtractor.extract_with_llm():
+        1. Calls get_llm_extraction_data() from the base class
+        2. Merges chunks with page-based overlap removal
+        3. Normalizes each item via _normalize_llm_item()
+        4. Returns dict in the same format as extract()
+        """
+        try:
+            # Step 1: Get LLM extraction chunks
+            extraction_result = await self.get_llm_extraction_data(context, custom_prompt)
+
+            if not extraction_result:
+                context.add_warning("LLM extraction returned no chunks for rural properties")
+                return None
+
+            # Debug: save each chunk to disk
+            debug_base = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(
+                    os.path.dirname(os.path.abspath(__file__))
+                ))),
+                "tmp",
+                context.document_id or "unknown",
+            )
+            debug_chunks_dir = os.path.join(debug_base, "chunks", "rural_properties")
+            debug_result_dir = os.path.join(debug_base, "result", "rural_properties")
+            os.makedirs(debug_chunks_dir, exist_ok=True)
+            os.makedirs(debug_result_dir, exist_ok=True)
+
+            for idx, chunk in enumerate(extraction_result):
+                chunk_path = os.path.join(debug_chunks_dir, f"chunk_{idx}.txt")
+                with open(chunk_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(chunk, indent=2, ensure_ascii=False))
+                logger.info("debug_chunk_saved", path=chunk_path)
+
+            # Step 2: Merge chunks with page-based overlap removal
+            chunks = extraction_result
+            logger.info("llm_rural_props_chunks_received", chunks_count=len(chunks))
+
+            items = []
+            for chunk_idx, chunk in enumerate(chunks):
+                if not isinstance(chunk, dict):
+                    continue
+                chunk_items = chunk.get("items", [])
+                if not isinstance(chunk_items, list):
+                    continue
+
+                # Overlap removal: first page of this chunk = last page of previous
+                if chunk_idx > 0 and chunk_items:
+                    overlap_page = chunk_items[0].get("page")
+                    if overlap_page is not None:
+                        overlap_count = sum(
+                            1 for it in chunk_items if it.get("page") == overlap_page
+                        )
+                        removed = 0
+                        while removed < overlap_count and items:
+                            if items[-1].get("page") == overlap_page:
+                                items.pop()
+                                removed += 1
+                            else:
+                                break
+                        logger.info(
+                            "llm_rural_props_chunk_overlap",
+                            chunk_idx=chunk_idx,
+                            overlap_page=overlap_page,
+                            overlap_count=overlap_count,
+                            removed=removed,
+                        )
+
+                for item in chunk_items:
+                    normalized_item = self._normalize_llm_item(item)
+                    items.append(normalized_item)
+
+            logger.info(
+                "llm_rural_props_merge_complete",
+                items_count=len(items),
+                chunks_count=len(chunks),
+            )
+
+            # Debug: save merged result
+            merged_result_path = os.path.join(debug_result_dir, "merged_result.txt")
+            with open(merged_result_path, "w", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "items": items,
+                    "total_properties": len(items),
+                    "total_area": round(sum(it.get("area", 0) for it in items), 2),
+                    "chunks_count": len(chunks),
+                }, indent=2, ensure_ascii=False))
+            logger.info("debug_merged_result_saved", path=merged_result_path)
+
+            if not items:
+                context.add_warning("LLM extraction returned no items for rural properties")
+                return None
+
+            # Step 3: Calculate totals
+            total_area = sum(item.get("area", 0) for item in items)
+
+            return {
+                "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
+                "items": items,
+                "total_properties": len(items),
+                "total_area": round(total_area, 2),
+                "extraction_method": "llm",
+            }
+        except Exception as e:
+            context.add_warning(
+                f"LLM extraction failed for rural properties: {type(e).__name__}: {str(e)}"
+            )
+            return None
+
+    def _normalize_llm_item(self, item: dict) -> dict:
+        """Normalize LLM extracted item to match the regex extractor output format."""
+        code = item.get("code", 0)
+        if isinstance(code, str):
+            code = int(code) if code.isdigit() else 0
+
+        participation = self._parse_llm_currency(item.get("participation", 0))
+
+        exploration = item.get("exploration_condition", 0)
+        if isinstance(exploration, str):
+            exploration = int(exploration) if exploration.isdigit() else 0
+
+        name_location = str(item.get("name_and_location", "")).strip()
+        name_location = re.sub(r"\s+", " ", name_location)
+
+        area = self._parse_llm_currency(item.get("area", 0))
+
+        cib = str(item.get("cib") or "").strip()
+
+        # Normalize participants
+        participants = None
+        raw_participants = item.get("participants")
+        if raw_participants and isinstance(raw_participants, dict):
+            raw_items = raw_participants.get("items", [])
+            if isinstance(raw_items, list) and raw_items:
+                normalized_parts = []
+                for p in raw_items:
+                    if not isinstance(p, dict):
+                        continue
+                    doc_number = p.get("cpf") or p.get("cnpj") or ""
+                    part = {
+                        "participant_name": str(p.get("participant_name", "")).strip(),
+                        "foreigner": bool(p.get("foreigner", False)),
+                        "id": generate_item_id(doc_number),
+                    }
+                    if p.get("cnpj"):
+                        part["cnpj"] = p["cnpj"]
+                    elif p.get("cpf"):
+                        part["cpf"] = p["cpf"]
+                    normalized_parts.append(part)
+                if normalized_parts:
+                    participants = {"items": normalized_parts}
+
+        item_id = generate_item_id(f"{code}{name_location}{cib or area}")
+
+        return {
+            "code": code,
+            "participation": participation,
+            "exploration_condition": exploration,
+            "name_and_location": name_location,
+            "area": area,
+            "cib": cib,
+            "participants": participants,
+            "id": item_id,
+            "page": item.get("page", 0),
+        }
+
     def _is_definitive_section_end(self, page_text: str) -> bool:
         """Verifica se a página marca o fim definitivo da seção."""
         lines = page_text.split("\n")
@@ -133,6 +360,7 @@ class RuralPropertiesExtractor(ISectionExtractor):
             for marker in self.SECTION_END_MARKERS:
                 if stripped == marker or stripped.startswith(marker):
                     # Confirmar que é nova seção
+
                     next_lines = " ".join(lines[i + 1 : i + 5]).upper()
                     if "CÓDIGO" in next_lines or "DISCRIMINAÇÃO" in next_lines:
                         return True
