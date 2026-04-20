@@ -265,6 +265,35 @@ class TestNormalizePayerName:
     def test_no_change_clean_name(self, extractor):
         assert extractor._normalize_payer_name("ITAU UNIBANCO S/A") == "ITAU UNIBANCO S/A"
 
+    def test_strips_controle_footer(self, extractor):
+        """Bug #16887: Controle: number from PDF footer must be stripped."""
+        dirty = "BANCO DO BRASIL SA Controle: 581346937590242"
+        assert extractor._normalize_payer_name(dirty) == "BANCO DO BRASIL SA"
+
+    def test_strips_controle_with_pagina_and_data(self, extractor):
+        """Bug #16887: Full footer line concatenated to name."""
+        dirty = (
+            "BANCO DO BRASIL SA Controle: 581346937590242 "
+            "Página 2 de15 Data/Hora da Entrega: 15/05/2025 às 13:48:09"
+        )
+        assert extractor._normalize_payer_name(dirty) == "BANCO DO BRASIL SA"
+
+    def test_strips_pagina_only(self, extractor):
+        """Bug #16887: Only Página appended."""
+        dirty = "BANCO DO BRASIL SA Página 3 de 15"
+        assert extractor._normalize_payer_name(dirty) == "BANCO DO BRASIL SA"
+
+    def test_strips_data_hora_only(self, extractor):
+        """Bug #16887: Only Data/Hora appended."""
+        dirty = "BANCO DO BRASIL SA Data/Hora da Entrega: 15/05/2025 às 13:48:09"
+        assert extractor._normalize_payer_name(dirty) == "BANCO DO BRASIL SA"
+
+    def test_clean_name_unchanged(self, extractor):
+        """Regression: normal names stay intact."""
+        assert extractor._normalize_payer_name("BANCO BRADESCO S/A") == "BANCO BRADESCO S/A"
+        assert extractor._normalize_payer_name("ITAU UNIBANCO S.A.") == "ITAU UNIBANCO S.A."
+
+
 
 class TestCollectNameContinuation:
 
@@ -390,6 +419,36 @@ class TestCollectNameContinuation:
         )
         result = extractor._collect_name_continuation(lines, 0)
         assert result == ""
+
+    def test_stops_at_controle_footer(self, extractor):
+        """Bug #16887: Controle: must stop continuation."""
+        lines = self._lines(
+            "Titular 337.468.340-15 00.000.000/0001-91 BANCO DO BRASIL SA",
+            "Controle: 581346937590242",
+            "Página 2 de 15",
+        )
+        result = extractor._collect_name_continuation(lines, 0)
+        assert result == ""
+
+    def test_stops_at_data_hora_footer(self, extractor):
+        """Bug #16887: Data/Hora da Entrega must stop continuation."""
+        lines = self._lines(
+            "Titular 337.468.340-15 00.000.000/0001-91 BANCO DO BRASIL SA",
+            "Data/Hora da Entrega: 15/05/2025 às 13:48:09",
+        )
+        result = extractor._collect_name_continuation(lines, 0)
+        assert result == ""
+
+    def test_multiline_name_still_works_with_footer(self, extractor):
+        """Bug #16887 regression: real multiline name before footer."""
+        lines = self._lines(
+            "Titular 337.468.340-15 92.702.067/0001-96 BANCO DO ESTADO DO RIO GRANDE",
+            "DO SUL S. A.",
+            "Controle: 581346937590242",
+        )
+        result = extractor._collect_name_continuation(lines, 0)
+        assert result == "DO SUL S. A."
+
 
 
 class TestConsolidateNamesByCnpj:
