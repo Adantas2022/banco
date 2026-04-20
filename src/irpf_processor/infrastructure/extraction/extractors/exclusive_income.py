@@ -707,7 +707,8 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         r"|^\d{3}\.\d{3}\.\d{3}-\d{2}"
         r"|^\d{2}[.\s]+[A-Z]"
         r"|^TOTAL\s"
-        r"|^\s*[\d]{1,3}(?:[.,\s]?\d{3})*[.,]\d{2}\s*$",
+        r"|^\s*[\d]{1,3}(?:[.,\s]?\d{3})*[.,]\d{2}\s*$"
+        r"|^Controle\s*:",  # Bug #16887: rodapé do PDF digital
         re.IGNORECASE,
     )
 
@@ -720,17 +721,26 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
         r"|^Benefici[aá]rio\s+CPF"
         r"|^\(Valores\s+em\s+Reais\)"
         r"|^IMPOSTO\s+SOBRE\s+A\s+RENDA"
-        r"|^ANO\s*-?\s*CALEND",
+        r"|^ANO\s*-?\s*CALEND"
+        r"|^Controle\s*:"
+        r"|^Data\s*/?\s*Hora\s+d[ae]\s+Entrega"
+        r"|^Data\s+d[ae]\s+Entrega"
+        r"|^Hora\s+d[ae]\s+Entrega",
         re.IGNORECASE,
     )
 
     @staticmethod
     def _normalize_payer_name(name: str) -> str:
+        # Bug #16887: limpar rodapé/metadata do PDF digital concatenado ao nome
+        name = re.sub(r"\s*Controle\s*:\s*\d+.*$", "", name)
+        name = re.sub(r"\s*Data\s*/?\s*Hora\s+d[ae]\s+Entrega.*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"\s*P[aá]gina\s+\d+\s+de\s*\d+.*$", "", name, flags=re.IGNORECASE)
+        # Normalizações padrão
         name = re.sub(r"\bS\s*/\s*A\b", "S/A", name)
         name = re.sub(r"\(\s+", "(", name)
         name = re.sub(r"\s+\)", ")", name)
         name = re.sub(r"\s+,", ",", name)
-        return name
+        return name.strip()
 
     def _collect_name_continuation(
         self, lines: list[str], matched_idx: int, max_lookahead: int = 8
