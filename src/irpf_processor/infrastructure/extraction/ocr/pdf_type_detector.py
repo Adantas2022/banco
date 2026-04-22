@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-import pdfplumber
+import fitz  # pymupdf
 
 from irpf_processor.shared.logging import get_logger
 
@@ -26,19 +26,23 @@ class PdfTypeDetector:
             raise InvalidPdfError(f"PDF file not found: {pdf_path}")
 
         try:
-            with pdfplumber.open(pdf_path) as pdf:
-                return self._analyze_pdf(pdf)
+            doc = fitz.open(str(pdf_path))
         except Exception as e:
             if "password" in str(e).lower() or "encrypted" in str(e).lower():
                 raise ProtectedPdfError(f"PDF is password protected: {pdf_path}")
             raise InvalidPdfError(f"Failed to open PDF: {e}")
 
+        try:
+            return self._analyze_pdf(doc)
+        finally:
+            doc.close()
+
     def detect_per_page(self, pdf_path: Path) -> list[PdfType]:
         result = self.detect_with_confidence(pdf_path)
         return result.page_types
 
-    def _analyze_pdf(self, pdf: pdfplumber.PDF) -> DetectionResult:
-        total_pages = len(pdf.pages)
+    def _analyze_pdf(self, doc: fitz.Document) -> DetectionResult:
+        total_pages = doc.page_count
         if total_pages == 0:
             raise InvalidPdfError("PDF has no pages")
 
@@ -47,25 +51,27 @@ class PdfTypeDetector:
         total_image_coverage = 0.0
         warnings = []
 
-        # Optimization: analyze only a sample of pages for large PDFs
-        # Sample: first 3 pages, middle page, last 3 pages (max 10 pages)
-        pages_to_analyze = self._select_sample_pages(pdf.pages, total_pages)
-        
-        for page in pages_to_analyze:
-            page_type, chars, img_coverage = self._analyze_page(page)
+        pages_indices = list(range(total_pages))
+        if total_pages > self.MAX_PAGES_TO_ANALYZE:
+            sample = set()
+            for i in range(min(3, total_pages)):
+                sample.add(i)
+            sample.add(total_pages // 2)
+            for i in range(max(0, total_pages - 3), total_pages):
+                sample.add(i)
+            pages_indices = sorted(sample)
+            warnings.append(f"Sampled {len(pages_indices)}/{total_pages} pages for detection")
+
+        for idx in pages_indices:
+            page_type, chars, img_coverage = self._analyze_page(doc[idx])
             page_types.append(page_type)
             total_text_chars += chars
             total_image_coverage += img_coverage
 
-        analyzed_count = len(pages_to_analyze)
+        analyzed_count = len(pages_indices)
         digital_pages = sum(1 for pt in page_types if pt == PdfType.DIGITAL)
         image_pages = sum(1 for pt in page_types if pt == PdfType.IMAGE)
-        
-        # If we sampled, extrapolate the page types for the full document
-        if analyzed_count < total_pages:
-            warnings.append(f"Sampled {analyzed_count}/{total_pages} pages for detection")
 
-        # Calculate ratios based on analyzed pages
         text_ratio = digital_pages / analyzed_count
         image_ratio = image_pages / analyzed_count
 
@@ -110,47 +116,29 @@ class PdfTypeDetector:
         )
 
     def _select_sample_pages(self, pages: list, total_pages: int) -> list:
-        """Select a representative sample of pages for analysis.
-        
-        For small PDFs (<=10 pages): analyze all pages
-        For large PDFs: sample first 3, middle, and last 3 pages (max 10)
-        
-        This optimization significantly speeds up detection for large documents.
-        """
         if total_pages <= self.MAX_PAGES_TO_ANALYZE:
             return pages
-        
+
         sample_indices = set()
-        
-        # First 3 pages
         for i in range(min(3, total_pages)):
             sample_indices.add(i)
-        
-        # Middle page
-        middle = total_pages // 2
-        sample_indices.add(middle)
-        
-        # Last 3 pages
+        sample_indices.add(total_pages // 2)
         for i in range(max(0, total_pages - 3), total_pages):
             sample_indices.add(i)
-        
-        # Sort indices and get corresponding pages
-        sorted_indices = sorted(sample_indices)
-        return [pages[i] for i in sorted_indices]
 
-    def _analyze_page(self, page: pdfplumber.PDF) -> tuple[PdfType, int, float]:
-        text = page.extract_text() or ""
+        return [pages[i] for i in sorted(sample_indices)]
+
+    def _analyze_page(self, page: fitz.Page) -> tuple[PdfType, int, float]:
+        text = page.get_text() or ""
         char_count = len(text.strip())
 
-        images = page.images or []
-        page_area = page.width * page.height
+        page_area = page.rect.width * page.rect.height
         image_coverage = 0.0
-
-        if images and page_area > 0:
-            total_image_area = sum(
-                (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
-                for img in images
-            )
+        if page_area > 0:
+            total_image_area = 0.0
+            for img in page.get_images(full=True):
+                for rect in page.get_image_rects(img[0]):
+                    total_image_area += rect.width * rect.height
             image_coverage = min(total_image_area / page_area, 1.0)
 
         has_sufficient_text = char_count >= self.MIN_CHARS_PER_PAGE
@@ -169,28 +157,34 @@ class PdfTypeDetector:
 
     def _has_extractable_text(self, pdf_path: Path) -> bool:
         try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for page in pdf.pages[:3]:
-                    text = page.extract_text() or ""
-                    if len(text.strip()) >= self.MIN_CHARS_PER_PAGE:
-                        return True
+            doc = fitz.open(str(pdf_path))
+            for i in range(min(3, doc.page_count)):
+                text = doc[i].get_text() or ""
+                if len(text.strip()) >= self.MIN_CHARS_PER_PAGE:
+                    doc.close()
+                    return True
+            doc.close()
             return False
         except Exception:
             return False
 
     def _analyze_images(self, pdf_path: Path) -> bool:
         try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for page in pdf.pages[:3]:
-                    images = page.images or []
-                    if images:
-                        page_area = page.width * page.height
-                        total_image_area = sum(
-                            (img.get("width", 0) or 0) * (img.get("height", 0) or 0)
-                            for img in images
-                        )
-                        if page_area > 0 and total_image_area / page_area >= self.IMAGE_COVERAGE_THRESHOLD:
-                            return True
+            doc = fitz.open(str(pdf_path))
+            for i in range(min(3, doc.page_count)):
+                page = doc[i]
+                page_area = page.rect.width * page.rect.height
+                if page_area > 0:
+                    total_image_area = sum(
+                        rect.width * rect.height
+                        for img in page.get_images(full=True)
+                        for rect in page.get_image_rects(img[0])
+                    )
+                    if total_image_area / page_area >= self.IMAGE_COVERAGE_THRESHOLD:
+                        doc.close()
+                        return True
+            doc.close()
             return False
         except Exception:
             return False
+
