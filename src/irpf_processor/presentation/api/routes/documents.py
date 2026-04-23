@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -277,4 +278,130 @@ async def get_document_result(
     return Response(
         content=json.dumps(result, cls=MonetaryEncoder, ensure_ascii=False, default=str),
         media_type="application/json",
+    )
+
+
+@router.post(
+    "/{document_id}/reprocess",
+    response_model=UploadResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def reprocess_document(
+    document_id: str,
+    tenant_id: CurrentTenant,
+    file: Optional[UploadFile] = File(None),
+    _: Annotated[ApiKey, Depends(require_scope(AuthScope.DOCUMENTS_WRITE.value))] = None,
+    doc_repo: MongoDocumentRepository = Depends(get_document_repository),
+    storage=Depends(get_storage_service_dependency),
+) -> UploadResponse:
+    """Re-enqueue a document for processing regardless of its current status.
+
+    Optionally accepts a replacement PDF file. When provided, the file is
+    uploaded to storage (overwriting the existing blob) before re-queuing,
+    which is useful when the original file was lost or corrupted in storage.
+    When omitted, the existing storage_uri is reused.
+    """
+    document = await doc_repo.get_by_id(document_id, tenant_id)
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    previous_status = document.status.value
+
+    # --- optional file replacement ---
+    if file is not None:
+        if not file.filename or not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only PDF files are allowed",
+            )
+
+        content = await file.read()
+
+        if len(content) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Empty file",
+            )
+
+        storage_key = f"{tenant_id}/{document_id}/{file.filename}"
+        try:
+            storage_uri = await storage.upload(
+                content=content,
+                key=storage_key,
+                content_type=file.content_type or "application/pdf",
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to upload replacement file to storage",
+                document_id=document_id,
+                tenant_id=tenant_id,
+                error=str(e),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to upload replacement file to storage.",
+            )
+
+        logger.info(
+            "Replacement file uploaded for reprocessing",
+            document_id=document_id,
+            tenant_id=tenant_id,
+            storage_key=storage_key,
+            size_bytes=len(content),
+        )
+    else:
+        storage_uri = None  # keep existing
+
+    # --- reset document state ---
+    db = await get_database()
+    update_fields: dict = {
+        "status": DocumentStatus.RECEIVED.value,
+        "updated_at": datetime.now(timezone.utc),
+    }
+    if storage_uri is not None:
+        update_fields["storage_uri"] = storage_uri
+
+    await db["documents"].update_one(
+        {"document_id": document_id, "tenant_id": tenant_id},
+        {
+            "$set": update_fields,
+            "$unset": {
+                "error_message": "",
+                "confidence": "",
+                "ocr_engine": "",
+            },
+        },
+    )
+
+    logger.info(
+        "Document reset for reprocessing",
+        document_id=document_id,
+        tenant_id=tenant_id,
+        previous_status=previous_status,
+        file_replaced=file is not None,
+    )
+
+    try:
+        route_document.send(document_id, tenant_id)
+    except Exception as e:
+        logger.error(
+            "Failed to re-queue document for processing",
+            document_id=document_id,
+            tenant_id=tenant_id,
+            error=str(e),
+        )
+        record_queue_send_failure(tenant_id, "extraction-router")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Failed to re-queue document for processing. The message broker may be temporarily unavailable. Please try again later.",
+        )
+
+    return UploadResponse(
+        document_id=document_id,
+        status=DocumentStatus.RECEIVED.value,
+        message="Document reset and re-queued for processing",
     )
