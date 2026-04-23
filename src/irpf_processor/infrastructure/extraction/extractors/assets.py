@@ -455,14 +455,15 @@ class AssetsExtractor(ISectionExtractor):
                                 return True
             return False
         
-        # Para páginas posteriores, usar lógica original
         lines = page_text.split("\n")
         for i, line in enumerate(lines):
             stripped = line.strip().upper()
             if not stripped:
                 continue
             for marker in self.SECTION_END_MARKERS:
-                if stripped == marker or stripped.startswith(marker + " "):
+                if stripped == marker:
+                    return True
+                if stripped.startswith(marker + " "):
                     next_lines = " ".join(lines[i+1:i+4]).upper()
                     if "CÓDIGO" in next_lines or "DISCRIMINAÇÃO" in next_lines:
                         return True
