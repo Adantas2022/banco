@@ -207,7 +207,7 @@ class DebtsExtractor(ISectionExtractor):
             if debt_match:
                 code = debt_match.group(1)
                 if self._is_valid_debt_code(code):
-                    item = self._parse_debt(debt_match, lines, i, page_num)
+                    item = self._parse_debt(debt_match, lines, i, page_num, seen_ids)
                     if item:
                         next_i = item.pop("_next_index", i + 1)
                         if item["id"] not in seen_ids:
@@ -429,6 +429,7 @@ class DebtsExtractor(ISectionExtractor):
         v2 = parse_currency(values[2])
         id_content = f"{normalized_desc}|{v0}|{v1}|{v2}|{page_num}"
         item_id = generate_item_id(id_content)
+        item_id = self._resolve_duplicate_id(item_id, seen_ids)
         
         return {
             "debt_code": code,
@@ -481,9 +482,7 @@ class DebtsExtractor(ISectionExtractor):
             normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
             id_content = f"{normalized_desc}|{v0}|{v1}|{v2}|{h['page']}"
             item_id = generate_item_id(id_content)
-
-            if item_id in seen_ids:
-                continue
+            item_id = self._resolve_duplicate_id(item_id, seen_ids)
             seen_ids.add(item_id)
 
             items.append({
@@ -526,13 +525,34 @@ class DebtsExtractor(ISectionExtractor):
 
     def _is_valid_debt_code(self, code: str) -> bool:
         return code in self.VALID_DEBT_CODES
+
+    @staticmethod
+    def _resolve_duplicate_id(item_id: str, seen_ids: set) -> str:
+        """Resolve ID collisions for legitimate duplicate entries.
+
+        When two distinct debt entries produce the same hash (same description,
+        values, and page), append a counter suffix to make the ID unique
+        while remaining deterministic.
+
+        Bug #16728: Multiple loans to the same entity with identical amounts
+        are legitimate and must all be extracted.
+        """
+        if item_id not in seen_ids:
+            return item_id
+        counter = 1
+        while True:
+            new_id = generate_item_id(f"{item_id}|dup_{counter}")
+            if new_id not in seen_ids:
+                return new_id
+            counter += 1
     
     def _parse_debt(
         self, 
         match: re.Match, 
         lines: list[str], 
         idx: int,
-        page_num: int
+        page_num: int,
+        seen_ids: set | None = None
     ) -> dict:
         code = match.group(1)
         desc_start = match.group(2).strip()
@@ -571,6 +591,8 @@ class DebtsExtractor(ISectionExtractor):
         normalized_desc = re.sub(r"\(\s+", "(", normalized_desc)
         id_content = f"{normalized_desc}|{before_val}|{current_val}|{paid_val}|{page_num}"
         item_id = generate_item_id(id_content)
+        if seen_ids is not None:
+            item_id = self._resolve_duplicate_id(item_id, seen_ids)
         
         return {
             "debt_code": code,
