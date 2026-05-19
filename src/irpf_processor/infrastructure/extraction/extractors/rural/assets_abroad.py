@@ -177,7 +177,7 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
             # Padrão 1: CÓDIGO DESCRIÇÃO VALOR_ANT VALOR_ATUAL
             # Ex: "16 TRATORES NO EXTERIOR 149 CANADÁ 200.000,00 190.000,00"
             pattern = re.match(
-                r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$",
+                r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$",
                 line
             )
             
@@ -190,7 +190,7 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
             
             # Padrão 2: CÓDIGO DESCRIÇÃO em linhas separadas dos valores
             # BUG FIX: Alguns PDFs têm valores em linhas separadas
-            pattern_alt = re.match(r"^(\d{1,3})\s+(.+)$", line)
+            pattern_alt = re.match(r"^(\d{2})\s+(.+)$", line)
             if pattern_alt and "CÓDIGO" not in upper_line and "TOTAL" not in upper_line:
                 code = pattern_alt.group(1)
                 desc = pattern_alt.group(2).strip()
@@ -246,7 +246,7 @@ class RuralAssetsAbroadExtractor(ISectionExtractor):
                 break
             
             # Verificar se é novo item
-            is_new_item = re.match(r"^(\d+)\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
+            is_new_item = re.match(r"^(\d{2})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s*$", next_line)
             if is_new_item and "CÓDIGO" not in next_line.upper():
                 break
             

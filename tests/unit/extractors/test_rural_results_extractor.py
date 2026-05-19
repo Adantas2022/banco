@@ -109,4 +109,18 @@ class TestParseResultLine:
         assert "Saldo de Prejuízos" in item['description']
         assert 0.0 == item['value']
 
+    def test_parse_result_line_preserves_negative_resultado(self, extractor):
+        line = "Resultado -15.432,10"
+        item = extractor._parse_result_line(line)
 
+        assert item is not None
+        assert item["description"] == "Resultado"
+        assert item["value"] == -15432.10
+
+    def test_parse_result_line_preserves_negative_resultado_tributavel(self, extractor):
+        line = "RESULTADO TRIBUTÁVEL -3.000,00"
+        item = extractor._parse_result_line(line)
+
+        assert item is not None
+        assert item["description"] == "RESULTADO TRIBUTÁVEL"
+        assert item["value"] == -3000.0

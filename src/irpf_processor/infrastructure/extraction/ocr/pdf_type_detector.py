@@ -1,5 +1,6 @@
+import random
 from pathlib import Path
-from typing import Optional
+from statistics import median
 
 import fitz  # pymupdf
 
@@ -12,10 +13,8 @@ logger = get_logger(__name__)
 
 class PdfTypeDetector:
 
-    TEXT_RATIO_THRESHOLD = 0.1
-    MIN_CHARS_PER_PAGE = 100
-    IMAGE_COVERAGE_THRESHOLD = 0.8
-    MAX_PAGES_TO_ANALYZE = 10  # Analyze max 10 pages for type detection (optimization)
+    MIN_CHARS_PER_PAGE = 500
+    MAX_PAGES_TO_ANALYZE = 10  # Sample up to 10 non-last pages for type detection
 
     def detect(self, pdf_path: Path) -> PdfType:
         result = self.detect_with_confidence(pdf_path)
@@ -46,54 +45,30 @@ class PdfTypeDetector:
         if total_pages == 0:
             raise InvalidPdfError("PDF has no pages")
 
-        page_types = []
-        total_text_chars = 0
-        total_image_coverage = 0.0
         warnings = []
+        page_char_counts = [self._count_page_chars(doc[index]) for index in range(total_pages)]
+        page_types = [self._classify_by_char_count(char_count) for char_count in page_char_counts]
 
-        pages_indices = list(range(total_pages))
-        if total_pages > self.MAX_PAGES_TO_ANALYZE:
-            sample = set()
-            for i in range(min(3, total_pages)):
-                sample.add(i)
-            sample.add(total_pages // 2)
-            for i in range(max(0, total_pages - 3), total_pages):
-                sample.add(i)
-            pages_indices = sorted(sample)
-            warnings.append(f"Sampled {len(pages_indices)}/{total_pages} pages for detection")
+        sample_indices = self._select_sample_page_indices(total_pages)
+        sampled_char_counts = [page_char_counts[index] for index in sample_indices]
+        median_char_count = median(sampled_char_counts)
 
-        for idx in pages_indices:
-            page_type, chars, img_coverage = self._analyze_page(doc[idx])
-            page_types.append(page_type)
-            total_text_chars += chars
-            total_image_coverage += img_coverage
+        if total_pages == 1:
+            warnings.append("Single-page PDF: analyzed the only page for detection")
+        elif len(sample_indices) < total_pages - 1:
+            warnings.append(
+                f"Sampled {len(sample_indices)}/{total_pages - 1} non-last pages for detection"
+            )
 
-        analyzed_count = len(pages_indices)
+        analyzed_count = len(sample_indices)
         digital_pages = sum(1 for pt in page_types if pt == PdfType.DIGITAL)
         image_pages = sum(1 for pt in page_types if pt == PdfType.IMAGE)
 
-        text_ratio = digital_pages / analyzed_count
-        image_ratio = image_pages / analyzed_count
+        text_ratio = digital_pages / total_pages
+        image_ratio = image_pages / total_pages
 
-        if digital_pages == analyzed_count:
-            pdf_type = PdfType.DIGITAL
-            confidence = 0.95
-        elif image_pages == analyzed_count:
-            pdf_type = PdfType.IMAGE
-            confidence = 0.90
-        elif digital_pages > 0 and image_pages > 0:
-            pdf_type = PdfType.MIXED
-            confidence = 0.75
-            warnings.append(f"Mixed PDF: {digital_pages} digital, {image_pages} scanned pages")
-        else:
-            pdf_type = PdfType.UNKNOWN
-            confidence = 0.5
-            warnings.append("Could not determine PDF type")
-
-        avg_chars_per_page = total_text_chars / analyzed_count
-        if avg_chars_per_page < self.MIN_CHARS_PER_PAGE and pdf_type == PdfType.DIGITAL:
-            confidence *= 0.8
-            warnings.append(f"Low text content: {avg_chars_per_page:.0f} chars/page average")
+        pdf_type = self._classify_by_char_count(median_char_count)
+        confidence = 0.95 if pdf_type == PdfType.DIGITAL else 0.90
 
         logger.info(
             "PDF type detected",
@@ -101,6 +76,8 @@ class PdfTypeDetector:
             confidence=confidence,
             total_pages=total_pages,
             analyzed_pages=analyzed_count,
+            median_char_count=median_char_count,
+            threshold=self.MIN_CHARS_PER_PAGE,
             digital_pages=digital_pages,
             image_pages=image_pages,
         )
@@ -115,76 +92,22 @@ class PdfTypeDetector:
             warnings=warnings,
         )
 
-    def _select_sample_pages(self, pages: list, total_pages: int) -> list:
-        if total_pages <= self.MAX_PAGES_TO_ANALYZE:
-            return pages
+    def _select_sample_page_indices(self, total_pages: int) -> list[int]:
+        if total_pages == 1:
+            return [0]
 
-        sample_indices = set()
-        for i in range(min(3, total_pages)):
-            sample_indices.add(i)
-        sample_indices.add(total_pages // 2)
-        for i in range(max(0, total_pages - 3), total_pages):
-            sample_indices.add(i)
+        eligible_indices = list(range(total_pages - 1))
+        if len(eligible_indices) <= self.MAX_PAGES_TO_ANALYZE:
+            return eligible_indices
 
-        return [pages[i] for i in sorted(sample_indices)]
+        return sorted(random.sample(eligible_indices, self.MAX_PAGES_TO_ANALYZE))
 
-    def _analyze_page(self, page: fitz.Page) -> tuple[PdfType, int, float]:
+    def _count_page_chars(self, page: fitz.Page) -> int:
         text = page.get_text() or ""
-        char_count = len(text.strip())
+        return len(text.strip())
 
-        page_area = page.rect.width * page.rect.height
-        image_coverage = 0.0
-        if page_area > 0:
-            total_image_area = 0.0
-            for img in page.get_images(full=True):
-                for rect in page.get_image_rects(img[0]):
-                    total_image_area += rect.width * rect.height
-            image_coverage = min(total_image_area / page_area, 1.0)
-
-        has_sufficient_text = char_count >= self.MIN_CHARS_PER_PAGE
-        has_large_images = image_coverage >= self.IMAGE_COVERAGE_THRESHOLD
-
-        if has_sufficient_text and not has_large_images:
-            return PdfType.DIGITAL, char_count, image_coverage
-        elif has_large_images and not has_sufficient_text:
-            return PdfType.IMAGE, char_count, image_coverage
-        elif has_sufficient_text and has_large_images:
-            return PdfType.DIGITAL, char_count, image_coverage
-        else:
-            if char_count > 50:
-                return PdfType.DIGITAL, char_count, image_coverage
-            return PdfType.IMAGE, char_count, image_coverage
-
-    def _has_extractable_text(self, pdf_path: Path) -> bool:
-        try:
-            doc = fitz.open(str(pdf_path))
-            for i in range(min(3, doc.page_count)):
-                text = doc[i].get_text() or ""
-                if len(text.strip()) >= self.MIN_CHARS_PER_PAGE:
-                    doc.close()
-                    return True
-            doc.close()
-            return False
-        except Exception:
-            return False
-
-    def _analyze_images(self, pdf_path: Path) -> bool:
-        try:
-            doc = fitz.open(str(pdf_path))
-            for i in range(min(3, doc.page_count)):
-                page = doc[i]
-                page_area = page.rect.width * page.rect.height
-                if page_area > 0:
-                    total_image_area = sum(
-                        rect.width * rect.height
-                        for img in page.get_images(full=True)
-                        for rect in page.get_image_rects(img[0])
-                    )
-                    if total_image_area / page_area >= self.IMAGE_COVERAGE_THRESHOLD:
-                        doc.close()
-                        return True
-            doc.close()
-            return False
-        except Exception:
-            return False
+    def _classify_by_char_count(self, char_count: float) -> PdfType:
+        if char_count > self.MIN_CHARS_PER_PAGE:
+            return PdfType.DIGITAL
+        return PdfType.IMAGE
 

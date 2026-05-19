@@ -1,5 +1,7 @@
 """Extrator de dívidas e ônus reais."""
 
+import json
+import os
 import re
 from typing import Any, Optional
 
@@ -43,7 +45,39 @@ class DebtsExtractor(ISectionExtractor):
         "DEMONSTRATIVO DE ATIVIDADE RURAL",
     ]
     VALID_DEBT_CODES = {"11", "12", "13", "14", "15", "16", "17", "18", "19"}
-    
+
+    LLM_PROMPT = """
+================================================================
+SECAO - DIVIDAS E ONUS REAIS
+================================================================
+REGRA: liste TODAS as dividas e onus reais da declaracao. Cada linha da
+tabela = um objeto separado. Nao omita nenhum item.
+
+{
+    "items": [
+        {
+            "debt_code": "string (codigo da divida, 2 digitos: '11','12','13','14','15','16','17','18','19')",
+            "debt_description": "string - copie o texto EXATO da coluna discriminacao (nome do credor + descricao)",
+            "year_before_last_value": numero (saldo do ano anterior; converta '1.234,56' para 1234.56),
+            "last_year_value": numero (saldo do exercicio anterior),
+            "current_year_value": numero (saldo atual / valor pago/quitado no ano-base),
+            "page": numero (pagina onde o item aparece no rodape 'Pagina X de Y' -> page=X)
+        }
+    ],
+    "year_before_last_total_value": numero (linha TOTAL ano-2),
+    "last_year_total_value": numero (linha TOTAL ano-1),
+    "current_year_total_value": numero (linha TOTAL atual)
+}
+
+REGRAS IMPORTANTES:
+- Extraia APENAS itens da secao "DIVIDAS E ONUS REAIS"
+- NAO inclua itens da secao "DIVIDAS VINCULADAS A ATIVIDADE RURAL"
+- O campo "debt_code" deve ser STRING de 2 digitos (apenas valores 11-19)
+- Valores monetarios devem ser NUMEROS (ex: 87624.85, nao "87.624,85")
+- Se a discriminacao de um item ocupa multiplas linhas, junte em uma unica string
+- Se um item nao tem valor para alguma coluna, retorne 0
+"""
+
     @property
     def section_name(self) -> str:
         return "debts_and_encumbrances"
@@ -623,9 +657,225 @@ class DebtsExtractor(ISectionExtractor):
             if in_debts_section and upper_line.startswith("TOTAL"):
                 if "DEDUÇÃO" in upper_line or "DEDUCAO" in upper_line:
                     continue
-                
+
                 matches = re.findall(num_pattern, line)
                 if len(matches) >= 2:
                     return [parse_currency(m) for m in matches]
-        
+
         return []
+
+    # ------------------------------------------------------------------
+    # LLM extraction (#19158) — mirrors the rural_properties.py pattern
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_llm_currency(value: Any) -> float:
+        """Parse LLM currency output (string BR/US or number)."""
+        if value is None:
+            return 0.0
+        if isinstance(value, (int, float)):
+            return float(value)
+        s = str(value).strip()
+        if not s:
+            return 0.0
+        try:
+            return float(parse_currency(s))
+        except Exception:
+            try:
+                return float(s.replace(",", "."))
+            except Exception:
+                return 0.0
+
+    def _normalize_llm_item(self, item: dict) -> Optional[dict]:
+        """Normalize an LLM-emitted debt item to the regex extractor's shape."""
+        if not isinstance(item, dict):
+            return None
+
+        raw_code = item.get("debt_code", "")
+        debt_code = str(raw_code).strip().zfill(2) if raw_code != "" else ""
+        if debt_code not in self.VALID_DEBT_CODES:
+            return None
+
+        description = re.sub(r"\s+", " ", str(item.get("debt_description", "") or "").strip())
+        if not description:
+            return None
+
+        v0 = self._parse_llm_currency(item.get("year_before_last_value", 0))
+        v1 = self._parse_llm_currency(item.get("last_year_value", 0))
+        v2 = self._parse_llm_currency(item.get("current_year_value", 0))
+
+        page = item.get("page", 0)
+        if isinstance(page, str):
+            page = int(page) if page.isdigit() else 0
+
+        item_id = generate_item_id(f"{description}|{v0}|{v1}|{v2}|{page}")
+
+        return {
+            "debt_code": debt_code,
+            "debt_description": description,
+            "year_before_last_value": v0,
+            "last_year_value": v1,
+            "current_year_value": v2,
+            "id": item_id,
+            "page": page,
+        }
+
+    async def extract_with_llm(
+        self,
+        context: ExtractionContext,
+        custom_prompt: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Extract debts_and_encumbrances section using LLM.
+
+        Mirrors RuralPropertiesExtractor.extract_with_llm():
+        1. Calls get_llm_extraction_data() from the base class.
+        2. Saves raw chunks under ``tmp/<doc_id>/chunks/debts_and_encumbrances/``.
+        3. Normalizes each item via ``_normalize_llm_item`` and dedups by id.
+        4. Returns the same dict shape as ``extract()`` with ``extraction_method='llm'``.
+        """
+        try:
+            extraction_result = await self.get_llm_extraction_data(context, custom_prompt)
+
+            if not extraction_result or not isinstance(extraction_result, list):
+                logger.warning(
+                    "llm_extraction_no_data",
+                    section_name=self.section_name,
+                    reason="no_chunks_returned",
+                    document_id=context.document_id,
+                )
+                context.add_warning(
+                    "LLM extraction returned no chunks for debts_and_encumbrances"
+                )
+                return None
+
+            debug_base = os.path.join(
+                os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                ),
+                "tmp",
+                context.document_id or "unknown",
+            )
+            debug_chunks_dir = os.path.join(debug_base, "chunks", "debts_and_encumbrances")
+            debug_result_dir = os.path.join(debug_base, "result", "debts_and_encumbrances")
+            os.makedirs(debug_chunks_dir, exist_ok=True)
+            os.makedirs(debug_result_dir, exist_ok=True)
+
+            for idx, chunk in enumerate(extraction_result):
+                chunk_path = os.path.join(debug_chunks_dir, f"chunk_{idx}.json")
+                try:
+                    with open(chunk_path, "w", encoding="utf-8") as f:
+                        f.write(json.dumps(chunk, indent=2, ensure_ascii=False))
+                except Exception:
+                    pass
+
+            logger.info(
+                "llm_debts_extraction_start",
+                section_name=self.section_name,
+                document_id=context.document_id,
+                chunk_count=len(extraction_result),
+            )
+
+            items: list[dict] = []
+            seen_ids: set[str] = set()
+            pdf_before = pdf_last = pdf_paid = 0.0
+
+            for chunk_idx, chunk in enumerate(extraction_result):
+                if not isinstance(chunk, dict):
+                    continue
+
+                if chunk.get("year_before_last_total_value") is not None and pdf_before == 0.0:
+                    pdf_before = self._parse_llm_currency(chunk["year_before_last_total_value"])
+                if chunk.get("last_year_total_value") is not None and pdf_last == 0.0:
+                    pdf_last = self._parse_llm_currency(chunk["last_year_total_value"])
+                if chunk.get("current_year_total_value") is not None and pdf_paid == 0.0:
+                    pdf_paid = self._parse_llm_currency(chunk["current_year_total_value"])
+
+                raw_items = chunk.get("items") or []
+                if not isinstance(raw_items, list):
+                    continue
+
+                for raw in raw_items:
+                    normalized = self._normalize_llm_item(raw)
+                    if not normalized:
+                        continue
+                    if normalized["id"] in seen_ids:
+                        continue
+                    seen_ids.add(normalized["id"])
+                    items.append(normalized)
+
+                logger.info(
+                    "llm_debts_chunk_processed",
+                    chunk_index=chunk_idx,
+                    chunk_item_count=len(raw_items),
+                )
+
+            if not items:
+                logger.warning(
+                    "llm_debts_extraction_empty_result",
+                    document_id=context.document_id,
+                )
+                context.add_warning(
+                    "LLM extraction returned no items for debts_and_encumbrances"
+                )
+                return None
+
+            year_before_last_total = sum_currency_values(
+                [i["year_before_last_value"] for i in items], as_int=False
+            )
+            last_year_total = sum_currency_values(
+                [i["last_year_value"] for i in items], as_int=False
+            )
+            paid_total = sum_currency_values(
+                [i.get("current_year_value", 0) for i in items], as_int=False
+            )
+
+            result = {
+                "section_name": "Dívidas e Ônus Reais",
+                "items": items,
+                "amount_of_codes_equal_to_amount_of_values": True,
+                "year_before_last_total_value": year_before_last_total,
+                "last_year_total_value": last_year_total,
+                "current_year_total_value": paid_total,
+                "total_values": {
+                    "year_before_last_value": create_validated_total(
+                        year_before_last_total, pdf_before or None
+                    ),
+                    "last_year_value": create_validated_total(
+                        last_year_total, pdf_last or None
+                    ),
+                    "current_year_value": create_validated_total(
+                        paid_total, pdf_paid or None
+                    ),
+                },
+                "pages_with_problems": [],
+                "extraction_method": "llm",
+            }
+
+            try:
+                with open(
+                    os.path.join(debug_result_dir, "merged_result.json"),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+            except Exception:
+                pass
+
+            logger.info(
+                "llm_debts_extraction_complete",
+                document_id=context.document_id,
+                items_count=len(items),
+            )
+
+            return result
+
+        except Exception as exc:
+            logger.exception(
+                "llm_debts_extraction_failed",
+                document_id=context.document_id,
+                error_type=type(exc).__name__,
+            )
+            context.add_warning(
+                f"LLM extraction failed for debts_and_encumbrances: {type(exc).__name__}: {exc}"
+            )
+            return None

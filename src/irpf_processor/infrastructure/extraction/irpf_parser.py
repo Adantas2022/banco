@@ -33,6 +33,7 @@ from .extractors import (
     AccumulatedIncomePJExtractor,
     ExemptIncomeExtractor,
     ExclusiveIncomeExtractor,
+    EquityEvolutionExtractor,
     RuralPropertiesExtractor,
     RuralIncomeExpenditureExtractor,
     RuralResultsExtractor,
@@ -104,6 +105,7 @@ class IRPFDeclarationResult:
     total_value: int = 0
     valid_total: bool = True
     equity_evolution: int = 0
+    equity_evolution_section: Optional[dict] = None
     assets_declaration: Optional[dict] = None
     debts_and_encumbrances: Optional[dict] = None
     exempt_income: Optional[dict] = None
@@ -140,6 +142,7 @@ class IRPFDeclarationResult:
             "total_value": self.total_value,
             "valid_total": self.valid_total,
             "equity_evolution": self.equity_evolution,
+            "equity_evolution_section": self.equity_evolution_section,
             "assets_declaration": self.assets_declaration,
             "debts_and_encumbrances": self.debts_and_encumbrances or {},
             "exempt_income": self.exempt_income,
@@ -198,6 +201,7 @@ class IRPFParser:
         "accumulated_income_from_legal_person_to_holder": AccumulatedIncomePJExtractor,
         "exempt_income": ExemptIncomeExtractor,
         "exclusive_taxation_income": ExclusiveIncomeExtractor,
+        "equity_evolution_section": EquityEvolutionExtractor,
         "exploited_rural_properties_in_brazil": RuralPropertiesExtractor,
         "rural_income_and_expenditure_in_brazil": RuralIncomeExpenditureExtractor,
         "calculation_of_rural_results_in_brazil": RuralResultsExtractor,

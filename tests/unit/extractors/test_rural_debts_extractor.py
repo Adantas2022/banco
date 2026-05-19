@@ -896,3 +896,52 @@ class TestDocumentAIRealOCRIntegration:
         assert item6["item"] == 6
         assert abs(item6["year_before_last_value"] - 731605.92) < 0.01
 
+
+class TestBug17033MultilineItem:
+    """Regressão #17033: item cuja descrição quebra antes dos valores (OCR wrap)
+    não era extraído, fazendo sumir itens 4+ quando vários itens em sequência
+    têm descrição longa."""
+
+    PAGE_TEXT = (
+        "DÍVIDAS VINCULADAS À ATIVIDADE RURAL - BRASIL (Valores em Reais)\n"
+        "ITEM DISCRIMINAÇÃO SITUAÇÃO EM SITUAÇÃO EM VALOR PAGO EM 2024\n"
+        "31/12/2023 31/12/2024\n"
+        "1 CEDULA RURAL 19000368 CONTRAIDA JUNTO AO BANCO SANTANDER 100.000,00 120.000,00 20.000,00\n"
+        "2 CONTRATOS BCO SANTANDER 50.000,00 30.000,00 10.000,00\n"
+        "3 16,66% CONTRATO C 106213047 COOP DE CREDITO SICREDI 40.000,00 20.000,00 5.000,00\n"
+        "4 CPR SANTANDER 23002357 03/23 C/VCTO FINAL 2025 TENDO\n"
+        "ASSUMIDO SALDO P/ FUTURA AQUISICAO 200.000,00 180.000,00 30.000,00\n"
+        "5 CREDITO RURAL SICREDI BNDS C10010219\n"
+        "60.000,00 45.000,00 8.000,00\n"
+        "6 BB CUSTEIO AGROP 7538 80.000,00 70.000,00 10.000,00\n"
+        "TOTAL 530.000,00 465.000,00 83.000,00\n"
+    )
+
+    def test_finds_all_6_items(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 1)
+        nums = [i["item"] for i in items]
+        assert nums == [1, 2, 3, 4, 5, 6]
+
+    def test_item4_desc_joined_across_lines(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 1)
+        item4 = next(i for i in items if i["item"] == 4)
+        assert "CPR SANTANDER" in item4["description"]
+        assert "ASSUMIDO SALDO" in item4["description"]
+        assert item4["year_before_last_value"] == 200000.0
+        assert item4["last_year_value"] == 180000.0
+        assert item4["paid_value_in_last_year"] == 30000.0
+
+    def test_item5_values_on_next_line(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 1)
+        item5 = next(i for i in items if i["item"] == 5)
+        assert "CREDITO RURAL SICREDI" in item5["description"]
+        assert item5["year_before_last_value"] == 60000.0
+        assert item5["last_year_value"] == 45000.0
+        assert item5["paid_value_in_last_year"] == 8000.0
+
+    def test_item6_still_parses_after_multiline(self, extractor):
+        items = extractor._extract_from_page(self.PAGE_TEXT, 1)
+        item6 = next(i for i in items if i["item"] == 6)
+        assert item6["year_before_last_value"] == 80000.0
+        assert item6["paid_value_in_last_year"] == 10000.0
+

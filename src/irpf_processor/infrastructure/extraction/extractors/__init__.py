@@ -10,6 +10,7 @@ from .income_pf import IncomePFExtractor
 from .accumulated_income_pj import AccumulatedIncomePJExtractor
 from .exempt_income import ExemptIncomeExtractor
 from .exclusive_income import ExclusiveIncomeExtractor
+from .equity_evolution import EquityEvolutionExtractor
 from .receipt import ReceiptExtractor, is_receipt_document
 from .payments import PaymentsExtractor
 from .donations import DonationsExtractor
@@ -47,6 +48,7 @@ __all__ = [
     "AccumulatedIncomePJExtractor",
     "ExemptIncomeExtractor",
     "ExclusiveIncomeExtractor",
+    "EquityEvolutionExtractor",
     "ReceiptExtractor",
     "is_receipt_document",
     "PaymentsExtractor",

@@ -21,6 +21,13 @@ _LINE_5VAL_RE = re.compile(
 _LINE_4VAL_RE = re.compile(
     rf"^({_NAME_CHAR}{_NAME_CONT}+?)\s+{_NUM}\s+{_NUM}\s+{_NUM}\s+{_NUM}\s*$"
 )
+_LINE_4VAL_ONLY_RE = re.compile(
+    rf"^{_NUM}\s+{_NUM}\s+{_NUM}\s+{_NUM}\s*$"
+)
+_LINE_NAME_1VAL_RE = re.compile(
+    rf"^({_NAME_CHAR}{_NAME_CONT}+?)\s+{_NUM}\s*$"
+)
+_MONEY_RE = re.compile(_NUM)
 
 
 def _find_cnpj(line: str) -> str:
@@ -79,15 +86,16 @@ class IncomePJExtractor(ISectionExtractor):
             if section_ended:
                 break
             
-            page_items = self._extract_from_page(page_text, page_num, seen_ids)
+            page_items = self._extract_from_page(
+                page_text=page_text,
+                page_num=page_num,
+                seen_ids=seen_ids,
+                assume_in_section=in_section,
+            )
             items.extend(page_items)
             
             if not pdf_totals:
-                page_totals = extract_section_total(
-                    page_text, 
-                    "TOTAL",
-                    skip_keywords=["TOTAL DE DEDUÇÃO", "TOTAL DO"]
-                )
+                page_totals = self._extract_totals_with_ocr_fallback(page_text)
                 if page_totals:
                     pdf_totals = page_totals
             
@@ -109,11 +117,17 @@ class IncomePJExtractor(ISectionExtractor):
         upper_text = page_text.upper()
         return any(marker in upper_text for marker in self.SECTION_END_MARKERS)
     
-    def _extract_from_page(self, page_text: str, page_num: int, seen_ids: set) -> list[dict]:
+    def _extract_from_page(
+        self,
+        page_text: str,
+        page_num: int,
+        seen_ids: set,
+        assume_in_section: bool = False,
+    ) -> list[dict]:
         items = []
         lines = page_text.split("\n")
         
-        in_section = False
+        in_section = assume_in_section
         
         for i, line in enumerate(lines):
             upper_line = line.upper()
@@ -155,8 +169,62 @@ class IncomePJExtractor(ISectionExtractor):
         m4 = _LINE_4VAL_RE.match(stripped)
         if m4:
             return self._build_item_4val(m4, lines, idx, page_num)
+
+        split_item = self._try_parse_split_row(lines, idx, page_num)
+        if split_item:
+            return split_item
         
         return None
+
+    def _try_parse_split_row(
+        self,
+        lines: list[str],
+        idx: int,
+        page_num: int,
+    ) -> Optional[dict]:
+        if idx + 1 >= len(lines):
+            return None
+
+        curr = lines[idx].strip()
+        nxt = lines[idx + 1].strip()
+
+        vals_match = _LINE_4VAL_ONLY_RE.match(curr)
+        name_val_match = _LINE_NAME_1VAL_RE.match(nxt)
+
+        if not vals_match or not name_val_match:
+            return None
+
+        payer_name = name_val_match.group(1).strip()
+        if self._should_skip_line(payer_name):
+            return None
+
+        name_parts = [payer_name]
+        cnpj = self._find_cnpj_nearby(lines, idx + 1, name_parts)
+        if not cnpj:
+            return None
+
+        full_name = " ".join(name_parts)
+        income = parse_currency(name_val_match.group(2))
+        contrib = parse_currency(vals_match.group(1))
+        irrf = parse_currency(vals_match.group(2))
+        thirteenth = parse_currency(vals_match.group(3))
+        irrf_thirteenth = parse_currency(vals_match.group(4))
+
+        item_id = generate_item_id(
+            f"{cnpj}{full_name}{income}{contrib}{irrf}{thirteenth}{irrf_thirteenth}{page_num}"
+        )
+
+        return {
+            "payer_name": full_name,
+            "income_from_legal_person": income,
+            "official_social_security_contribution": contrib,
+            "tax_withheld_at_source": irrf,
+            "thirteenth_salary": thirteenth,
+            "irrf_on_thirteenth_salary": irrf_thirteenth,
+            "cpf_cnpj": cnpj,
+            "id": item_id,
+            "page": page_num,
+        }
     
     def _build_item_5val(
         self, match: re.Match, lines: list[str], idx: int, page_num: int
@@ -264,3 +332,79 @@ class IncomePJExtractor(ISectionExtractor):
             "thirteenth_salary": create_validated_total(sum_13, pdf_13),
             "irrf_on_thirteenth_salary": create_validated_total(sum_irrf_13, pdf_irrf_13)
         }
+
+    def _extract_totals_with_ocr_fallback(self, page_text: str) -> list[float]:
+        totals = extract_section_total(
+            page_text,
+            "TOTAL",
+            skip_keywords=["TOTAL DE DEDUÇÃO", "TOTAL DO"],
+        )
+        if len(totals) >= 5:
+            return totals[:5]
+        if len(totals) != 1:
+            return totals
+
+        lines = page_text.split("\n")
+        total_line_idx = self._find_total_line_index(lines)
+        if total_line_idx is None:
+            return totals
+
+        neighbor_vals = self._find_neighbor_four_totals(lines, total_line_idx)
+        if len(neighbor_vals) != 4:
+            return totals
+
+        return [totals[0], *neighbor_vals]
+
+    def _find_total_line_index(self, lines: list[str]) -> Optional[int]:
+        for idx, line in enumerate(lines):
+            upper = line.strip().upper()
+            if not upper.startswith("TOTAL"):
+                continue
+            if "TOTAL DE DEDUÇÃO" in upper or "TOTAL DO" in upper:
+                continue
+            return idx
+        return None
+
+    def _find_neighbor_four_totals(self, lines: list[str], total_idx: int) -> list[float]:
+        for offset in range(1, 4):
+            prev_idx = total_idx - offset
+            if prev_idx >= 0:
+                prev_vals = self._parse_four_values_line(lines[prev_idx])
+                if prev_vals:
+                    return prev_vals
+
+            next_idx = total_idx + offset
+            if next_idx < len(lines):
+                next_vals = self._parse_four_values_line(lines[next_idx])
+                if next_vals:
+                    return next_vals
+        return []
+
+    def _parse_four_values_line(self, line: str) -> list[float]:
+        stripped = line.strip()
+        if not stripped:
+            return []
+        upper = stripped.upper()
+        invalid_markers = [
+            "CNPJ",
+            "CPF",
+            "TITULAR",
+            "DEPENDENTE",
+            "NOME",
+            "FONTE",
+            "PAGADORA",
+            "REND",
+            "JURIDICA",
+            "JURÍDICA",
+            "OFICIAL",
+            "NA FONTE",
+            "SALÁRIO",
+            "SALARIO",
+        ]
+        if any(marker in upper for marker in invalid_markers):
+            return []
+
+        matches = _MONEY_RE.findall(stripped)
+        if len(matches) != 4:
+            return []
+        return [parse_currency(v) for v in matches]

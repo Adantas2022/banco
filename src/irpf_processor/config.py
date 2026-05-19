@@ -140,6 +140,7 @@ class Settings(BaseSettings):
     llm_extraction_payments_made: bool = False
     llm_extraction_exempt_income: bool = False
     llm_extraction_exclusive_taxation_income: bool = False
+    llm_extraction_equity_evolution_section: bool = False
     llm_extraction_income_from_legal_person_to_holder: bool = False
     llm_extraction_income_from_legal_person_to_dependents: bool = False
     llm_extraction_income_from_individual_to_holder: bool = False

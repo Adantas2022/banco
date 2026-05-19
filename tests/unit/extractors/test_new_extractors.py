@@ -136,6 +136,46 @@ class TestIncomePJExtractorCpfSupport:
         assert item["page"] == 2
 
 
+class TestIncomePJExtractorOcrTotalsFallback:
+    @pytest.fixture
+    def extractor(self):
+        return IncomePJExtractor()
+
+    @pytest.fixture
+    def ocr_multiline_total_text(self):
+        return """
+        RENDIMENTOS TRIBUTÁVEIS RECEBIDOS DE PESSOA JURÍDICA PELO TITULAR
+
+        EMPRESA A LTDA                    18.600,00    2.046,00    0,00    0,00    0,00
+        CNPJ/CPF: 01.230.959/0001-86
+
+        EMPRESA B LTDA                    18.600,00    2.046,00    0,00    0,00    0,00
+        CNPJ/CPF: 68.647.700/0001-06
+
+        10.659,00    4.774,62    0,00    0,00
+        TOTAL                               128.730,80
+        """
+
+    def test_fills_pdf_totals_for_all_columns_when_total_line_has_single_value(
+        self, extractor, ocr_multiline_total_text
+    ):
+        context = ExtractionContext(
+            full_text=ocr_multiline_total_text,
+            pages_text={1: ocr_multiline_total_text},
+            total_pages=1,
+        )
+
+        result = extractor.extract(context)
+        assert result is not None
+        totals = result["total_values"]
+
+        assert totals["income_from_legal_person"]["pdf_total"] == 128730.8
+        assert totals["official_social_security_contribution"]["pdf_total"] == 10659.0
+        assert totals["tax_withheld_at_source"]["pdf_total"] == 4774.62
+        assert totals["thirteenth_salary"]["pdf_total"] == 0.0
+        assert totals["irrf_on_thirteenth_salary"]["pdf_total"] == 0.0
+
+
 class TestAccumulatedIncomePJExtractor:
     """Testes para AccumulatedIncomePJExtractor."""
     

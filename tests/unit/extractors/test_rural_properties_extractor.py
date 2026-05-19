@@ -287,3 +287,85 @@ class TestPhantomCodeOCR:
         assert items[0]["area"] == 36.7
         assert items[0]["cib"] == "4.149.803-8"
         assert "FAZENDA SAO VICENTE" in items[0]["name_and_location"]
+
+
+class TestBug17029AreaNoCib:
+    """Bug #17029: area absorvida no name_and_location quando não existe CIB.
+
+    O OCR intercala o valor da area entre as partes do nome quando a coluna
+    CIB está vazia. A regex _AREA_CIB_TAIL_RE falha e a area vira parte do nome.
+    """
+
+    def test_area_at_end_no_cib(self, extractor):
+        """Area no final do remaining, sem CIB."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 100,00 1 SAO BORJA - MATRICULA 10151, SAO BORJA 277,2\n"
+            "RECEITAS E DESPESAS - BRASIL\n"
+        )
+        items = extractor._extract_from_page(page, 28, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 277.2
+        assert "277" not in items[0]["name_and_location"]
+        assert "SAO BORJA" in items[0]["name_and_location"]
+
+    def test_area_mid_text_small(self, extractor):
+        """Area intercalada no meio do nome pelo OCR (valor pequeno)."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 100,00 1 SAO BORJA - MATRICULA 2042, SAO BORJA - 1,9 RS\n"
+            "RECEITAS E DESPESAS - BRASIL\n"
+        )
+        items = extractor._extract_from_page(page, 28, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 1.9
+        assert "1,9" not in items[0]["name_and_location"]
+        assert "SAO BORJA" in items[0]["name_and_location"]
+        assert "RS" in items[0]["name_and_location"]
+
+    def test_area_mid_text_large(self, extractor):
+        """Area intercalada no meio do nome pelo OCR (valor grande com milhar)."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 100,00 1 SAO NICOLAU - MATRICULA 978, SAO 4.696,0 NICOLAU -RS\n"
+            "RECEITAS E DESPESAS - BRASIL\n"
+        )
+        items = extractor._extract_from_page(page, 28, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 4696.0
+        assert "4.696" not in items[0]["name_and_location"]
+        assert "SAO NICOLAU" in items[0]["name_and_location"]
+        assert "NICOLAU -RS" in items[0]["name_and_location"]
+
+    def test_area_with_cib_still_works(self, extractor):
+        """Regressão: items COM CIB continuam funcionando normalmente."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 100,00 1 FAZENDA SOSSEGO, RODOVIA BR 163 540,9 6.231.817-9\n"
+            "RECEITAS E DESPESAS - BRASIL\n"
+        )
+        items = extractor._extract_from_page(page, 28, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 540.9
+        assert items[0]["cib"] == "6.231.817-9"
+        assert "540" not in items[0]["name_and_location"]
+
+    def test_area_mid_with_continuation_line(self, extractor):
+        """Area no meio + continuação do nome na próxima linha."""
+        page = (
+            "DADOS E IDENTIFICAÇÃO DO IMÓVEL EXPLORADO - BRASIL\n"
+            "CÓDIGO PARTICIPAÇÃO CONDIÇÃO NOME E LOCALIZAÇÃO ÁREA CIB\n"
+            "10 100,00 1 LINHA DO RIO - MATRICULA 489, GUARANI 3,9 DASMISSOES\n"
+            "RECEITAS E DESPESAS - BRASIL\n"
+        )
+        items = extractor._extract_from_page(page, 28, set())
+        assert len(items) == 1
+        assert items[0]["area"] == 3.9
+        assert "3,9" not in items[0]["name_and_location"]
+        assert "GUARANI" in items[0]["name_and_location"]
+        assert "DASMISSOES" in items[0]["name_and_location"]
+

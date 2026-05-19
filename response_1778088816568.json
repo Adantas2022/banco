@@ -1,0 +1,603 @@
+{
+  "document_id": "97c700a7-0213-419a-9215-d91cbf52bca4",
+  "tenant_id": "meu-tenant",
+  "confidence": 0.85,
+  "confidence_details": {
+    "overall": 0.85,
+    "level": "excellent",
+    "level_pt": "excelente",
+    "extraction_method": "ocr",
+    "coverage_score": 1,
+    "validation_score": 1,
+    "needs_review": true,
+    "field_scores": {
+      "taxpayer_identification.normalized_cpf": 1,
+      "taxpayer_identification.name": 1,
+      "taxpayer_identification.exercise_year": 1,
+      "taxpayer_identification.calendar_year": 1,
+      "assets_declaration": 1,
+      "income_from_legal_person_to_holder": 1,
+      "exempt_income": 1,
+      "exclusive_taxation_income": 1,
+      "debts_and_encumbrances": 0,
+      "payments_made": 0,
+      "donations_made": 0
+    },
+    "section_scores": {
+      "exempt_income": {
+        "section_name": "exempt_income",
+        "detected": true,
+        "extracted": true,
+        "field_count": 8,
+        "fields_valid": 7,
+        "confidence": 0.88,
+        "coverage": 1
+      },
+      "income_from_legal_person_to_holder": {
+        "section_name": "income_from_legal_person_to_holder",
+        "detected": true,
+        "extracted": true,
+        "field_count": 40,
+        "fields_valid": 40,
+        "confidence": 1,
+        "coverage": 1
+      },
+      "exclusive_taxation_income": {
+        "section_name": "exclusive_taxation_income",
+        "detected": true,
+        "extracted": true,
+        "field_count": 16,
+        "fields_valid": 16,
+        "confidence": 1,
+        "coverage": 1
+      },
+      "taxpayer_identification": {
+        "section_name": "taxpayer_identification",
+        "detected": true,
+        "extracted": true,
+        "field_count": 18,
+        "fields_valid": 11,
+        "confidence": 0.61,
+        "coverage": 1
+      },
+      "assets_declaration": {
+        "section_name": "assets_declaration",
+        "detected": true,
+        "extracted": true,
+        "field_count": 134,
+        "fields_valid": 120,
+        "confidence": 0.9,
+        "coverage": 1
+      }
+    },
+    "review_flags": [
+      {
+        "severity": "warning",
+        "message": "Secao 'Identificacao do Contribuinte' com confianca baixa (61%)",
+        "field_path": "taxpayer_identification",
+        "suggestion": "Verificar campos extraidos em 'Identificacao do Contribuinte'"
+      },
+      {
+        "severity": "warning",
+        "message": "Documento processado via OCR",
+        "field_path": null,
+        "suggestion": "Validar CPF, CNPJ e valores monetarios manualmente"
+      }
+    ],
+    "validation_results": [
+      {
+        "validation_name": "cpf_valid",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "year_consistency",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "assets_sum",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "debts_sum",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "income_pj_sum",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "positive_values",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      },
+      {
+        "validation_name": "income_pj_cnpjs",
+        "passed": true,
+        "penalty": 0,
+        "message": null,
+        "affected_fields": []
+      }
+    ],
+    "penalties": {
+      "ocr_extraction": 0.1
+    },
+    "bonuses": {},
+    "details": {
+      "field_score": 0.78,
+      "coverage_score": 1,
+      "validation_score": 1,
+      "method_factor": 1,
+      "fields_found": 8,
+      "fields_total": 11,
+      "sections_detected": 5,
+      "sections_extracted": 5,
+      "validations_passed": 7,
+      "validations_total": 7,
+      "review_flags_count": 1,
+      "critical_flags": 0,
+      "base_confidence": 0.95,
+      "ocr_confidence": 0.97,
+      "ocr_penalty_applied": 0.1
+    }
+  },
+  "created_at": "2026-05-06 17:31:00.954000",
+  "data": {
+    "ir_response": {
+      "receipt": {
+        "receipt_number": "10.18.83.42.71-09",
+        "transmission_datetime": "03/07/2025 17:01:40",
+        "transmission_date": "03/07/2025",
+        "transmission_time": "17:01:40",
+        "cpf": "765.714.167-00",
+        "normalized_cpf": "76571416700",
+        "taxpayer_name": "WILSON JUNIOR DA CRUZ",
+        "exercise_year": "2025",
+        "calendar_year": "",
+        "declaration_type": "DE AJUSTE ANUAL - OPÇÃO PELO DESCONTO SIMPLIFICADO",
+        "total_taxable_income": 128730.8,
+        "tax_due": 20052.54,
+        "tax_refund": 0,
+        "tax_to_pay": 15277.92,
+        "refund_bank_code": "001",
+        "refund_bank_name": "Banco do Brasil",
+        "refund_agency": "3820",
+        "refund_account": "63412-3",
+        "refund_pix": "",
+        "rectifying": true,
+        "rectified_receipt": "",
+        "control_line": "3072595685",
+        "total_pages": 14
+      },
+      "declaration": {
+        "taxpayer_identification": {
+          "cpf": "765.714.167-00",
+          "normalized_cpf": "76571416700",
+          "name": "WILSON JUNIOR DA CRUZ",
+          "exercise_year": "2025",
+          "calendar_year": "2024",
+          "occupation_nature": "",
+          "main_occupation": "",
+          "contact_and_address": {
+            "street_address": "",
+            "number": "111",
+            "complement": "RUA FRANCO ZAMPARI                                       111         BLOCO 6 APT . 204",
+            "neighborhood": "CEP",
+            "city": "",
+            "uf": "BA",
+            "zip_code": "22775-048",
+            "phone": "",
+            "email": "",
+            "cell_phone": ""
+          },
+          "type_ir": "DECLARAÇÃO RETIFICADORA"
+        },
+        "total_value": 8877998,
+        "valid_total": true,
+        "equity_evolution": 547272,
+        "assets_declaration": {
+          "section_name": "Declaração de Bens e Direitos",
+          "items": [
+            {
+              "id": "1f467c16b718afe365f7e067c11b09cf",
+              "asset_group_code": "01",
+              "asset_code": "12",
+              "asset_description": "CASA NA RUA , RIO . RJ SENDO PARTE COMPRADA DE BARRA DA TIJUCA ELIZABETE RAFAEL DA CRUZ EM PARCELAS No : 540 PROCURADOR MACHADO GUIMARAES , 0,00 16.982,08 CONSORCIO AQUISIÇÃO VEICULOS BRASIL",
+              "before_year_asset_value": 0,
+              "current_year_asset_value": 16982.08,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "municipal_registration": null,
+                "street_address": "RUA                                                                             DA TIJUCA",
+                "complement": "CASA",
+                "city": "RIO DE JANEIRO",
+                "area": "0,0",
+                "registered_at_registy_office": false,
+                "matriculation": null,
+                "number": null,
+                "neighborhood": "BARRA",
+                "state": "RJ",
+                "acquisition_date": "05/10/2007",
+                "registry_office_name": null,
+                "zipcode": null,
+                "cei_cno": null,
+                "cib_nirf": null
+              },
+              "country_valid": true,
+              "page": 6
+            },
+            {
+              "id": "fe96d015d0bd8d48b05afb23d4781fb1",
+              "asset_group_code": "04",
+              "asset_code": "02",
+              "asset_description": "RENDA FIXA ITAU ou direito pertencente ao : Titular CPF : 765.714.167-00 100.490,86 128.849,17",
+              "before_year_asset_value": 100490.86,
+              "current_year_asset_value": 128849.17,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": null,
+                "cpf": "765.714.167-00",
+                "cnpj": "60.701.190/0001-04"
+              },
+              "country_valid": true,
+              "page": 8
+            },
+            {
+              "id": "1d629d71d8995a4904ef27e8b5e158e9",
+              "asset_group_code": "04",
+              "asset_code": "02",
+              "asset_description": "RENDA FIXA BRASIL 47,84 47,84",
+              "before_year_asset_value": 47.84,
+              "current_year_asset_value": 47.84,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": "Titular",
+                "cpf": "765.714.167-00",
+                "cnpj": "00.000.000/0001-91"
+              },
+              "country_valid": true,
+              "page": 8
+            },
+            {
+              "id": "14cce6d79765cab4e65dfcc61a6bb3eb",
+              "asset_group_code": "04",
+              "asset_code": "02",
+              "asset_description": "APLICACAO EM LTN BRASIL ou direito pertencente ao : Titular CPF : 765.714.167-00 68.500,99 24.030,29",
+              "before_year_asset_value": 68500.99,
+              "current_year_asset_value": 24030.29,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": null,
+                "cpf": "765.714.167-00",
+                "cnpj": "00.000.000/0001-91"
+              },
+              "country_valid": true,
+              "page": 8
+            },
+            {
+              "id": "4f2e67e7c3635e734c6efb11ab0d6199",
+              "asset_group_code": "04",
+              "asset_code": "02",
+              "asset_description": "RENDA FIXA BRADESCO 836.597,63 836.597,63 DECORRENTE DE CONTRATO DE MUTUO COM",
+              "before_year_asset_value": 836597.63,
+              "current_year_asset_value": 836597.63,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": "Titular",
+                "cpf": "765.714.167-00",
+                "cnpj": "60.746.948/0001-12"
+              },
+              "country_valid": true,
+              "page": 8
+            },
+            {
+              "id": "9674bc2b2c56648f9d001688306ab1fe",
+              "asset_group_code": "05",
+              "asset_code": "01",
+              "asset_description": "CREDITO PARTICIPACOES LTDA . DE R $ 240.000,00 EM FARMAHALL 12/08/21 E R $ 596.597,63 EM 03/09/21 direito pertencente ao : Titular CPF : 765.714.167-00 8em ou 780.000,00 780.000,00 CREDITO DECORRENTE DE VENDA DAS QUOTAS DA BW",
+              "before_year_asset_value": 780000,
+              "current_year_asset_value": 780000,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": null,
+                "cpf": "765.714.167-00",
+                "cnpj": "40.166.942/0001-69"
+              },
+              "country_valid": true,
+              "page": 8
+            },
+            {
+              "id": "018c1a33d347aa510b2d6ef291fa9de7",
+              "asset_group_code": "06",
+              "asset_code": "01",
+              "asset_description": "SALDO C / C BRADESCO pertencente ao : Titular CPF : 765.714.167-00 8em ou direito 1,00 1,00",
+              "before_year_asset_value": 1,
+              "current_year_asset_value": 1,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": "N/A",
+                "cpf": "765.714.167-00",
+                "cnpj": "60.746.948/0001-12",
+                "bank": "237",
+                "agency": "7076",
+                "account": "4457-1",
+                "is_payment_account": false
+              },
+              "country_valid": true,
+              "page": 9
+            },
+            {
+              "id": "abb61215e6895027ba579da47e3cb765",
+              "asset_group_code": "06",
+              "asset_code": "01",
+              "asset_description": "SALDO C / C ITAU pertencente ao : Titular CPF : 765.714.167-00 8em ou direito 455.000,00 815.000,00",
+              "before_year_asset_value": 455000,
+              "current_year_asset_value": 815000,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": "N/A",
+                "cpf": "765.714.167-00",
+                "cnpj": "60.701.190/0001-04",
+                "bank": "341",
+                "agency": "3820",
+                "account": "63412-3",
+                "is_payment_account": false
+              },
+              "country_valid": true,
+              "page": 9
+            },
+            {
+              "id": "296333174be3b41d81fa2f8c6c2fd0db",
+              "asset_group_code": "06",
+              "asset_code": "10",
+              "asset_description": "DINHEIRO EM ESPECIE pertencente ao : Titular CPF : 765.714.167-00 8em ou direito 62.693,89 0,00",
+              "before_year_asset_value": 62693.89,
+              "current_year_asset_value": 0,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "beneficiary": "N/A",
+                "cpf": "765.714.167-00",
+                "is_payment_account": false
+              },
+              "country_valid": true,
+              "page": 9
+            },
+            {
+              "id": "2273847adb60dedb8ab75a092edcfe37",
+              "asset_group_code": "99",
+              "asset_code": "06",
+              "asset_description": "PREVIDENCIA VGBL - BRADESCO 6.027.393,64 6.276.490,82",
+              "before_year_asset_value": 6027393.64,
+              "current_year_asset_value": 6276490.82,
+              "country_code": "105",
+              "country_name": "BRASIL",
+              "additional_info": {
+                "cnpj": "51.990.695/0001-37"
+              },
+              "country_valid": true,
+              "page": 9
+            }
+          ],
+          "last_year_total_value": 8330725.85,
+          "current_year_total_value": 8877998.83,
+          "total_values": {
+            "before_year_asset_value": {
+              "amount": 8330725.85,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            },
+            "current_year_asset_value": {
+              "amount": 8877998.83,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            }
+          },
+          "pages_with_problems": [],
+          "extraction_method": "regex"
+        },
+        "debts_and_encumbrances": {},
+        "exempt_income": {
+          "section_name": "Rendimentos Isentos e Não Tributáveis",
+          "total_value": 600000,
+          "valid_total": true,
+          "subsections": {
+            "scholarships_and_grants_without_donor_compensation": {
+              "name": "01. Bolsas de estudo e de pesquisa caracterizadas como doação, exceto médico-residente ou Pronatec, exclusivamente para proceder a estudos ou pesquisas e desde que os resultados dessas atividades não representem vantagem para o doador, nem importem contraprestação de serviços",
+              "code": "01",
+              "total_value": 600000,
+              "valid_total": true,
+              "items": null
+            }
+          },
+          "items_count": 0
+        },
+        "exclusive_taxation_income": {
+          "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+          "total_value": 18543.35,
+          "valid_total": true,
+          "subsections": {
+            "income_from_financial_investments": {
+              "name": "06. Rendimentos de aplicações financeiras",
+              "code": "06",
+              "total_value": 18543.35,
+              "valid_total": true,
+              "items": [
+                {
+                  "beneficiary": "Titular",
+                  "cpf": "765.714.167-00",
+                  "payer_cnpj": "60.746.948/0001-04",
+                  "payer_name": "ITAU UNIBANCO",
+                  "value": 10832.52,
+                  "id": "019c3499544000b4a9176e296b7ffa06",
+                  "page": 4
+                },
+                {
+                  "beneficiary": "Titular",
+                  "cpf": "765.714.167-00",
+                  "payer_cnpj": "60.701.190/0001-91",
+                  "payer_name": "BANCO DO BRASIL",
+                  "value": 7710.83,
+                  "id": "c7ee6b9fd86718cc88e74937fea57528",
+                  "page": 4
+                }
+              ]
+            }
+          }
+        },
+        "income_from_individual_to_holder": null,
+        "income_from_individual_to_dependents": null,
+        "income_from_legal_person_to_holder": {
+          "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+          "items": [
+            {
+              "payer_name": "DROGARIA HUMAITA CENTER LTDA .",
+              "income_from_legal_person": 18600,
+              "official_social_security_contribution": 2046,
+              "tax_withheld_at_source": 0,
+              "thirteenth_salary": 0,
+              "irrf_on_thirteenth_salary": 0,
+              "cpf_cnpj": "01.230.959/0001-86",
+              "id": "dcae1ebcf4b806a0a50215140b949197",
+              "page": 3
+            },
+            {
+              "payer_name": "DROGARIA BARRA CENTER LTDA .",
+              "income_from_legal_person": 18600,
+              "official_social_security_contribution": 2046,
+              "tax_withheld_at_source": 0,
+              "thirteenth_salary": 0,
+              "irrf_on_thirteenth_salary": 0,
+              "cpf_cnpj": "68.647.700/0001-06",
+              "id": "079a86bf95847302e729d42e4ad4d594",
+              "page": 3
+            },
+            {
+              "payer_name": "DOGARIA MABEL LTDA .",
+              "income_from_legal_person": 18600,
+              "official_social_security_contribution": 2046,
+              "tax_withheld_at_source": 0,
+              "thirteenth_salary": 0,
+              "irrf_on_thirteenth_salary": 0,
+              "cpf_cnpj": "00.821.450/0001-45",
+              "id": "f398c9b288ae3c076f5f1b3fdff88d1c",
+              "page": 3
+            },
+            {
+              "payer_name": "FARMACIA VITORELEN CENTER LTDA ,",
+              "income_from_legal_person": 18600,
+              "official_social_security_contribution": 2046,
+              "tax_withheld_at_source": 0,
+              "thirteenth_salary": 0,
+              "irrf_on_thirteenth_salary": 0,
+              "cpf_cnpj": "07.781.754/0001-75",
+              "id": "73a31c2f45c2d094e20cbc6142a645de",
+              "page": 3
+            },
+            {
+              "payer_name": "FARMACIA SILVA JUNIOR LTDA .",
+              "income_from_legal_person": 18000,
+              "official_social_security_contribution": 1980,
+              "tax_withheld_at_source": 0,
+              "thirteenth_salary": 0,
+              "irrf_on_thirteenth_salary": 0,
+              "cpf_cnpj": "07.183.102/0001-39",
+              "id": "9611fd72612ea4156e8caf612c1ddf3f",
+              "page": 3
+            }
+          ],
+          "total_values": {
+            "income_from_legal_person": {
+              "amount": 92400,
+              "pdf_total": 128730.8,
+              "valid": false,
+              "difference": -36330.8
+            },
+            "official_social_security_contribution": {
+              "amount": 10164,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            },
+            "tax_withheld_at_source": {
+              "amount": 0,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            },
+            "thirteenth_salary": {
+              "amount": 0,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            },
+            "irrf_on_thirteenth_salary": {
+              "amount": 0,
+              "pdf_total": null,
+              "valid": null,
+              "difference": null
+            }
+          }
+        },
+        "income_from_legal_person_to_dependents": null,
+        "income_from_legal_person_to_holder_with_suspended_requirements": null,
+        "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+        "accumulated_income_from_legal_person_to_holder": null,
+        "accumulated_income_from_legal_person_to_dependents": null,
+        "exploited_rural_properties_in_brazil": null,
+        "rural_income_and_expenditure_in_brazil": null,
+        "calculation_of_rural_results_in_brazil": null,
+        "livestock_movement_in_brazil": null,
+        "rural_activity_assets_in_brazil": null,
+        "rural_activity_debts_in_brazil": null,
+        "exploited_rural_properties_abroad": null,
+        "rural_income_and_expenditure_abroad": null,
+        "calculation_of_rural_results_abroad": null,
+        "rural_activity_assets_abroad": null,
+        "rural_activity_debts_abroad": null,
+        "livestock_movement_abroad": null,
+        "payments_made": null,
+        "donations_made": null,
+        "total_pages": 14
+      }
+    }
+  },
+  "document_category": "DECLARACAO",
+  "extraction_method": "ocr",
+  "ocr_confidence": 0.97,
+  "ocr_engine": "documentai",
+  "template_version": "2025",
+  "total_pages": 14,
+  "updated_at": "2026-05-06 17:31:00.954000",
+  "warnings": [
+    "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+    "Texto extraido via OCR (estrutura por pagina preservada)",
+    "Documento detectado: IRPF 2025 (5 secoes encontradas)"
+  ]
+}

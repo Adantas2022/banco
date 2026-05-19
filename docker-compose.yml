@@ -36,43 +36,43 @@ services:
     networks:
       - irpf-processor-network
 
-  # minio:
-  #   image: minio/minio:latest
-  #   container_name: irpf-processor-minio
-  #   restart: unless-stopped
-  #   ports:
-  #     - "9000:9000"
-  #     - "9001:9001"
-  #   volumes:
-  #     - minio-data:/data
-  #   environment:
-  #     MINIO_ROOT_USER: minioadmin
-  #     MINIO_ROOT_PASSWORD: minioadmin
-  #   command: server /data --console-address ":9001"
-  #   healthcheck:
-  #     test: ["CMD", "mc", "ready", "local"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
-  #   networks:
-  #     - irpf-processor-network
+  minio:
+    image: minio/minio:latest
+    container_name: irpf-processor-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - irpf-processor-network
 
-  # minio-setup:
-  #   image: minio/mc:latest
-  #   container_name: irpf-processor-minio-setup
-  #   depends_on:
-  #     minio:
-  #       condition: service_healthy
-  #   entrypoint: >
-  #     /bin/sh -c "
-  #     mc alias set myminio http://minio:9000 minioadmin minioadmin;
-  #     mc mb myminio/documents --ignore-existing;
-  #     mc anonymous set download myminio/documents;
-  #     exit 0;
-  #     "
-  #   networks:
-  #     - irpf-processor-network
+  minio-setup:
+    image: minio/mc:latest
+    container_name: irpf-processor-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/documents --ignore-existing;
+      mc anonymous set download myminio/documents;
+      exit 0;
+      "
+    networks:
+      - irpf-processor-network
 
   fake-gcs:
     image: fsouza/fake-gcs-server:latest
@@ -112,9 +112,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: api
-      args:
-        JFROG_USER: ${JFROG_USER}
-        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-api
     restart: unless-stopped
     ports:
@@ -149,17 +146,13 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      # - ./src:/app/src:ro
-      - ./src:/app/src
+      - ./src:/app/src:ro
 
   worker-router:
     build:
       context: .
       dockerfile: Dockerfile
-      target: worker-router
-      args:
-        JFROG_USER: ${JFROG_USER}
-        JFROG_TOKEN: ${JFROG_TOKEN}
+      target: worker
     container_name: irpf-processor-worker-router
     restart: unless-stopped
     env_file:
@@ -193,10 +186,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: worker-digital
-      args:
-        JFROG_USER: ${JFROG_USER}
-        JFROG_TOKEN: ${JFROG_TOKEN}
+      target: worker
     container_name: irpf-processor-worker-digital
     restart: unless-stopped
     env_file:
@@ -211,7 +201,7 @@ services:
       - PUSHGATEWAY_URL=pushgateway:9091
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
-    command: dramatiq irpf_processor.presentation.workers --queues default --processes 6 --threads 12
+    command: dramatiq irpf_processor.presentation.workers --queues default --processes 2 --threads 4
     depends_on:
       mongo:
         condition: service_healthy
@@ -224,17 +214,13 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      # - ./src:/app/src:ro
-      - ./src:/app/src
+      - ./src:/app/src:ro
 
   worker-ocr:
     build:
       context: .
       dockerfile: Dockerfile
       target: worker-ocr
-      args:
-        JFROG_USER: ${JFROG_USER}
-        JFROG_TOKEN: ${JFROG_TOKEN}
     container_name: irpf-processor-worker-ocr
     restart: unless-stopped
     env_file:
@@ -251,7 +237,7 @@ services:
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_ENDPOINT=http://jaeger:4317
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/documentai-key.json
-    command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 3 --threads 6
+    command: dramatiq irpf_processor.presentation.workers.ocr_worker --queues extraction-ocr --processes 1 --threads 1
     depends_on:
       mongo:
         condition: service_healthy
@@ -264,8 +250,7 @@ services:
     networks:
       - irpf-processor-network
     volumes:
-      # - ./src:/app/src:ro
-      - ./src:/app/src
+      - ./src:/app/src:ro
       - ./credentials:/app/credentials:ro
 
   prometheus:

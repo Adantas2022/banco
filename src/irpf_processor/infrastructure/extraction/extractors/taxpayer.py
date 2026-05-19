@@ -70,6 +70,7 @@ class TaxpayerExtractor(ISectionExtractor):
     def extract(self, context: ExtractionContext) -> Optional[dict[str, Any]]:
         data = TaxpayerData()
         text = context.full_text
+        taxpayer_section = self._extract_taxpayer_section(text)
         
         cpf_match = re.search(self.PATTERNS["cpf"], text, re.IGNORECASE)
         if cpf_match:
@@ -89,13 +90,23 @@ class TaxpayerExtractor(ISectionExtractor):
             data.calendar_year = calendar_match.group(1)
         
         # Extração melhorada para OCR - trata labels e valores em linhas separadas
-        data.occupation_nature = self._extract_occupation_nature(text)
-        data.main_occupation = self._extract_main_occupation(text)
-        data.type_ir = self._extract_type_ir(text)
+        data.occupation_nature = self._extract_occupation_nature(taxpayer_section)
+        data.main_occupation = self._extract_main_occupation(taxpayer_section)
+        data.type_ir = self._extract_type_ir(taxpayer_section) or self._extract_type_ir(text)
         
-        data.contact_and_address = self._extract_address(text)
+        data.contact_and_address = self._extract_address(taxpayer_section)
         
         return data.to_dict()
+
+    def _extract_taxpayer_section(self, text: str) -> str:
+        match = re.search(
+            r"IDENTIFICA[ÇC][ÃA]O\s+DO\s+CONTRIBUINTE(.*?)(?:\nDEPENDENTES|\nALIMENTANDOS|\nRENDIMENTOS\s+TRIBUT[ÁA]VEIS)",
+            text,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            return match.group(1)
+        return text
     
     def _extract_occupation_nature(self, text: str) -> str:
         """Extrai natureza da ocupação lidando com formato OCR."""

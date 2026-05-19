@@ -57,6 +57,18 @@ class ExemptIncomeExtractor(ISectionExtractor):
             "has_items": False,
             "format": "total_only",
         },
+        "capital_gains_on_residential_sale_for_acquisition_within_180_days": {
+            "code": "07",
+            "name": "07. Ganho de capital na alienação de imóveis residenciais para aquisição, no prazo de 180 (cento e oitenta) dias, de outros imóveis residenciais situados no Brasil e redução sobre o ganho de capital",
+            "keywords": [
+                "ganho de capital",
+                "imóveis residenciais",
+                "180",
+                "aquisição",
+            ],
+            "has_items": False,
+            "format": "total_only",
+        },
         "profits_and_dividends": {
             "code": "09",
             "name": "09. Lucros e dividendos recebidos",
@@ -181,6 +193,9 @@ class ExemptIncomeExtractor(ISectionExtractor):
     def section_name(self) -> str:
         return "exempt_income"
 
+    def _is_subsection_header(self, line: str, code: str) -> bool:
+        return bool(re.match(rf"^\s*{re.escape(code)}\.\s+", line.strip()))
+
     def can_extract(self, context: ExtractionContext) -> bool:
         upper_text = context.full_text.upper()
         return any(marker in upper_text for marker in self.SECTION_MARKERS)
@@ -283,7 +298,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
         total_value = 0.0
 
         for idx, (_page_num, line) in enumerate(section_lines):
-            if line.strip().startswith(f"{code}."):
+            if self._is_subsection_header(line, code):
                 value_match = re.search(r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$", line)
                 if value_match:
                     total_value = parse_currency(value_match.group(1))
@@ -326,11 +341,11 @@ class ExemptIncomeExtractor(ISectionExtractor):
         in_subsection = False
 
         for idx, (page_num, line) in enumerate(section_lines):
-            if line.strip().startswith(f"{code}."):
+            if self._is_subsection_header(line, code):
                 in_subsection = True
                 continue
 
-            if re.match(r"^\d{2}\.", line.strip()) and not line.strip().startswith(f"{code}."):
+            if re.match(r"^\d{2}\.", line.strip()) and not self._is_subsection_header(line, code):
                 in_subsection = False
                 continue
 
@@ -368,7 +383,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
     ) -> float | None:
         """Extrai o total do cabeçalho da subsection."""
         for _, line in section_lines:
-            if line.strip().startswith(f"{code}."):
+            if self._is_subsection_header(line, code):
                 match = re.search(r"([\d]{1,3}(?:[.,][\d]{3})*[.,][\d]{2})\s*$", line)
                 if match:
                     return parse_currency(match.group(1))
@@ -437,7 +452,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 continue
 
             if in_subsection:
-                if re.match(r"^\d{2}\.", line.strip()) and not line.strip().startswith(f"{code}."):
+                if re.match(r"^\d{2}\.", line.strip()) and not self._is_subsection_header(line, code):
                     if current_item:
                         items.append(current_item)
                         current_item = None
@@ -534,7 +549,7 @@ class ExemptIncomeExtractor(ISectionExtractor):
                 continue
 
             if in_subsection:
-                if re.match(r"^\d{2}\.", line.strip()) and not line.strip().startswith(f"{code}."):
+                if re.match(r"^\d{2}\.", line.strip()) and not self._is_subsection_header(line, code):
                     in_subsection = False
                     continue
 
@@ -607,12 +622,12 @@ class ExemptIncomeExtractor(ISectionExtractor):
         in_subsection = False
 
         for _idx, (page_num, line) in enumerate(section_lines):
-            if line.strip().startswith(f"{code}."):
+            if self._is_subsection_header(line, code):
                 in_subsection = True
                 continue
 
             if in_subsection:
-                if re.match(r"^\d{2}\.", line.strip()) and not line.strip().startswith(f"{code}."):
+                if re.match(r"^\d{2}\.", line.strip()) and not self._is_subsection_header(line, code):
                     in_subsection = False
                     continue
 
@@ -886,11 +901,11 @@ class ExemptIncomeExtractor(ISectionExtractor):
         in_subsection = False
 
         for idx, (page_num, line) in enumerate(section_lines):
-            if line.strip().startswith(f"{code}."):
+            if self._is_subsection_header(line, code):
                 in_subsection = True
                 continue
 
-            if re.match(r"^\d{2}\.", line.strip()) and not line.strip().startswith(f"{code}."):
+            if re.match(r"^\d{2}\.", line.strip()) and not self._is_subsection_header(line, code):
                 in_subsection = False
                 continue
 

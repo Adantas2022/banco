@@ -217,9 +217,6 @@ class RuralResultsExtractor(ISectionExtractor):
         else:
             value = value_str
         
-        if description == "Resultado" and value_is_currency:
-            value = abs(value)
-        
         return {
             "description": description,
             "value": value,

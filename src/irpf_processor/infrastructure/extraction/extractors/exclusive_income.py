@@ -328,6 +328,14 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
                         seen_keys.add(key)
                         items.append(two_line_item)
 
+                loose_item = self._parse_cnpj_name_value_item(lines_list, i, page_num)
+                if loose_item:
+                    loose_item["payer_name"] = self._normalize_payer_name(loose_item.get("payer_name", ""))
+                    key = f"{loose_item.get('payer_cnpj', '')}{loose_item.get('cpf', '')}{loose_item.get('value', 0)}{page_num}_{i}"
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        items.append(loose_item)
+
         self._consolidate_names_by_cnpj(items)
 
         if total_value == 0 and items:
@@ -1078,6 +1086,49 @@ class ExclusiveIncomeExtractor(ISectionExtractor):
             }
         
         return None
+
+    def _parse_cnpj_name_value_item(
+        self,
+        lines: list[str],
+        start_idx: int,
+        page_num: int,
+    ) -> Optional[dict]:
+        line = lines[start_idx].strip()
+        match = re.match(
+            r"^(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+(.+?)\s+([\d]{1,3}(?:[.\s]?\d{3})*,\d{2})\s*$",
+            line,
+        )
+        if not match:
+            return None
+
+        cnpj = match.group(1)
+        payer_name = match.group(2).strip()
+        value = parse_currency(match.group(3))
+        if value <= 0:
+            return None
+
+        beneficiary = "Titular"
+        cpf = ""
+        for offset in range(1, 5):
+            if start_idx + offset >= len(lines):
+                break
+            nxt = lines[start_idx + offset].strip()
+            m = re.match(r"^(Titular|Dependente)\s+(\d{3}\.\d{3}\.\d{3}-\d{2})\s*$", nxt)
+            if m:
+                beneficiary = m.group(1)
+                cpf = m.group(2)
+                break
+
+        item_id = generate_item_id(f"{cnpj}{cpf}{value}{page_num}_{start_idx}")
+        return {
+            "beneficiary": beneficiary,
+            "cpf": cpf,
+            "payer_cnpj": cnpj,
+            "payer_name": payer_name,
+            "value": value,
+            "id": item_id,
+            "page": page_num,
+        }
     
     def _parse_5line_income_item(
         self,

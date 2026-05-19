@@ -134,6 +134,99 @@ class TestExemptIncomeCode15:
         assert "exempt_portion_from_rural_activity" not in result["subsections"]
 
 
+class TestExemptIncomeCode07:
+    @pytest.fixture
+    def extractor(self):
+        return ExemptIncomeExtractor()
+
+    @pytest.fixture
+    def text_with_code_07_and_25(self):
+        return (
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS\n"
+            "07. Ganho de capital na alienação de imóveis residenciais para aquisição, no prazo de 180 (cento e oitenta) dias, de outros imóveis residenciais situados no Brasil e redução sobre o ganho de capital 1.310.000,00\n"
+            "25. Restituição do imposto sobre a renda de anos-calendário anteriores 39,68\n"
+            "TOTAL 1.310.039,68\n"
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA\n"
+        )
+
+    @pytest.fixture
+    def context_with_code_07_and_25(self, text_with_code_07_and_25):
+        return ExtractionContext(
+            full_text=text_with_code_07_and_25,
+            pages_text={1: text_with_code_07_and_25},
+            total_pages=1,
+        )
+
+    def test_code_07_extracted_alongside_code_25(self, extractor, context_with_code_07_and_25):
+        result = extractor.extract(context_with_code_07_and_25)
+        assert result is not None
+        subs = result["subsections"]
+        key_07 = "capital_gains_on_residential_sale_for_acquisition_within_180_days"
+        assert key_07 in subs
+        assert subs[key_07]["code"] == "07"
+        assert subs[key_07]["total_value"] == 1310000.00
+        assert subs[key_07]["valid_total"] is True
+        assert subs[key_07]["items"] is None
+        assert "income_tax_refund_from_previous_years" in subs
+        assert subs["income_tax_refund_from_previous_years"]["total_value"] == 39.68
+        assert result["total_value"] == 1310039.68
+
+    def test_code_07_has_expected_name_prefix(self, extractor, context_with_code_07_and_25):
+        result = extractor.extract(context_with_code_07_and_25)
+        name = result["subsections"][
+            "capital_gains_on_residential_sale_for_acquisition_within_180_days"
+        ]["name"]
+        assert name.startswith("07.")
+
+    def test_code_07_value_on_next_line(self, extractor):
+        text = (
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS\n"
+            "07. Ganho de capital na alienação de imóveis residenciais para aquisição, no prazo de 180 (cento e oitenta) dias, de outros imóveis residenciais situados no Brasil e redução sobre o ganho de capital\n"
+            "1.310.000,00\n"
+            "25. Restituição do imposto sobre a renda de anos-calendário anteriores 39,68\n"
+            "TOTAL 1.310.039,68\n"
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA\n"
+        )
+        context = ExtractionContext(full_text=text, pages_text={1: text}, total_pages=1)
+        result = extractor.extract(context)
+        assert result is not None
+        key_07 = "capital_gains_on_residential_sale_for_acquisition_within_180_days"
+        assert key_07 in result["subsections"]
+        assert result["subsections"][key_07]["total_value"] == 1310000.00
+
+    def test_code_07_zero_value_not_included(self, extractor):
+        text = (
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS\n"
+            "07. Ganho de capital na alienação de imóveis residenciais para aquisição, no prazo de 180 (cento e oitenta) dias, de outros imóveis residenciais situados no Brasil e redução sobre o ganho de capital 0,00\n"
+            "25. Restituição do imposto sobre a renda de anos-calendário anteriores 39,68\n"
+            "TOTAL 39,68\n"
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA\n"
+        )
+        context = ExtractionContext(full_text=text, pages_text={1: text}, total_pages=1)
+        result = extractor.extract(context)
+        assert result is not None
+        assert (
+            "capital_gains_on_residential_sale_for_acquisition_within_180_days"
+            not in result["subsections"]
+        )
+
+    def test_code_07_absent_when_section_has_only_code_25(self, extractor):
+        text = (
+            "RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS\n"
+            "25. Restituição do imposto sobre a renda de anos-calendário anteriores 39,68\n"
+            "TOTAL 39,68\n"
+            "RENDIMENTOS SUJEITOS À TRIBUTAÇÃO EXCLUSIVA\n"
+        )
+        context = ExtractionContext(full_text=text, pages_text={1: text}, total_pages=1)
+        result = extractor.extract(context)
+        assert result is not None
+        assert (
+            "capital_gains_on_residential_sale_for_acquisition_within_180_days"
+            not in result["subsections"]
+        )
+        assert "income_tax_refund_from_previous_years" in result["subsections"]
+
+
 class TestRuralExemptFallback:
     def _make_result(self, exempt_income=None, rural_results=None):
         result = IRPFDeclarationResult(total_pages=1)

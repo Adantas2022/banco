@@ -293,6 +293,47 @@ class TestNormalizePayerName:
         assert extractor._normalize_payer_name("BANCO BRADESCO S/A") == "BANCO BRADESCO S/A"
         assert extractor._normalize_payer_name("ITAU UNIBANCO S.A.") == "ITAU UNIBANCO S.A."
 
+    def test_strips_subsection_08_header(self, extractor):
+        """Bug #16887v2: OCR inlined subsection 08 header."""
+        dirty = (
+            "COOPERATIVA DE CREDITO, POUPANCA E INVESTIMENTO SICREDI PION "
+            "08. 13º salário recebido pelos dependentes                   435,21"
+        )
+        assert extractor._normalize_payer_name(dirty) == (
+            "COOPERATIVA DE CREDITO, POUPANCA E INVESTIMENTO SICREDI PION"
+        )
+
+    def test_strips_subsection_06_header(self, extractor):
+        """Bug #16887v2: OCR inlined subsection 06 header."""
+        dirty = "BANCO XYZ 06. Rendimentos de aplicações financeiras 1.234,56"
+        assert extractor._normalize_payer_name(dirty) == "BANCO XYZ"
+
+    def test_strips_generic_subsection(self, extractor):
+        """Bug #16887v2: Generic NN. pattern."""
+        dirty = "FUNDO ABC 10. Juros sobre capital próprio"
+        assert extractor._normalize_payer_name(dirty) == "FUNDO ABC"
+
+    def test_strips_trailing_value(self, extractor):
+        """Bug #16887v2: Trailing monetary value from OCR."""
+        dirty = "COOPERATIVA SICREDI PION 435,21"
+        assert extractor._normalize_payer_name(dirty) == "COOPERATIVA SICREDI PION"
+
+    def test_full_ocr_dirty_name(self, extractor):
+        """Bug #16887v2: Exact reproduction of PAULO case."""
+        dirty = (
+            "COOPERATIVA DE CREDITO, POUPANCA E INVESTIMENTO SICREDI PION "
+            "08. 13º salário recebido pelos dependentes"
+            "                                                                         "
+            "435,21"
+        )
+        result = extractor._normalize_payer_name(dirty)
+        assert result == "COOPERATIVA DE CREDITO, POUPANCA E INVESTIMENTO SICREDI PION"
+
+    def test_name_with_numbers_not_stripped(self, extractor):
+        """Regression: names with numbers in the middle stay intact."""
+        assert extractor._normalize_payer_name("FUNDO 123 INVESTIMENTO") == "FUNDO 123 INVESTIMENTO"
+        assert extractor._normalize_payer_name("BB FIC RF LP 100") == "BB FIC RF LP 100"
+
 
 
 class TestCollectNameContinuation:

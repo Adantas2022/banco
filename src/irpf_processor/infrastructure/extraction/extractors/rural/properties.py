@@ -16,6 +16,13 @@ logger = get_logger(__name__)
 _AREA_PATTERN = r"\d[\d.]*[.,]\d+"
 _AREA_CIB_TAIL_RE = re.compile(rf"({_AREA_PATTERN})\s+([\d.-]+)$")
 _AREA_ONLY_RE = re.compile(rf"^{_AREA_PATTERN}$")
+# Bug #17029: area sem CIB no final da string (ex: "SAO BORJA 277,2")
+_AREA_ONLY_TAIL_RE = re.compile(rf"\s+({_AREA_PATTERN})\s*$")
+# Bug #17029: area no meio do texto entre letras (OCR intercalou colunas)
+# Ex: "SAO BORJA - 1,9 RS" → area=1.9, name="SAO BORJA - RS"
+_AREA_MID_TEXT_RE = re.compile(
+    rf"(\s+)({_AREA_PATTERN})(\s+)(?=[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ-])"
+)
 
 
 class RuralPropertiesExtractor(ISectionExtractor):
@@ -528,6 +535,55 @@ Extraia TODOS os imoveis rurais explorados e seus participantes.
                             marker in next_line.upper() for marker in self.SECTION_END_MARKERS
                         )
                         and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]", next_line)
+                        and len(next_line) < 40
+                    ):
+                        name_location = f"{name_location} {next_line}"
+            elif _AREA_ONLY_TAIL_RE.search(remaining):
+                # Bug #17029: area sozinha no final, sem CIB
+                # Ex: "SAO BORJA - MATRICULA 10151, SAO BORJA 277,2"
+                area_tail = _AREA_ONLY_TAIL_RE.search(remaining)
+                name_location = remaining[: area_tail.start()].strip()
+                area = parse_currency(self._normalize_area_value(area_tail.group(1)))
+                cib = ""
+
+                # Coletar continuação do nome na próxima linha
+                if idx + 1 < len(lines):
+                    next_line = lines[idx + 1].strip()
+                    if (
+                        next_line
+                        and not re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line)
+                        and not re.match(r"^\d{1,2}$", next_line)
+                        and not re.match(r"^[\d.,]+\s", next_line)
+                        and "PARTICIPANTE" not in next_line.upper()
+                        and not any(
+                            marker in next_line.upper() for marker in self.SECTION_END_MARKERS
+                        )
+                        and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ-]", next_line)
+                        and len(next_line) < 40
+                    ):
+                        name_location = f"{name_location} {next_line}"
+            elif _AREA_MID_TEXT_RE.search(remaining):
+                # Bug #17029: area intercalada no meio do nome pelo OCR
+                # Ex: "SAO BORJA - MATRICULA 2042, SAO BORJA - 1,9 RS"
+                area_mid = _AREA_MID_TEXT_RE.search(remaining)
+                area = parse_currency(self._normalize_area_value(area_mid.group(2)))
+                name_location = (remaining[:area_mid.start()] + " " + remaining[area_mid.end():]).strip()
+                name_location = re.sub(r"\s+", " ", name_location)
+                cib = ""
+
+                # Coletar continuação do nome na próxima linha
+                if idx + 1 < len(lines):
+                    next_line = lines[idx + 1].strip()
+                    if (
+                        next_line
+                        and not re.match(r"^\d{1,2}\s+[\d.,]+\s+\d\s+", next_line)
+                        and not re.match(r"^\d{1,2}$", next_line)
+                        and not re.match(r"^[\d.,]+\s", next_line)
+                        and "PARTICIPANTE" not in next_line.upper()
+                        and not any(
+                            marker in next_line.upper() for marker in self.SECTION_END_MARKERS
+                        )
+                        and re.match(r"^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ-]", next_line)
                         and len(next_line) < 40
                     ):
                         name_location = f"{name_location} {next_line}"

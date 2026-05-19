@@ -244,7 +244,42 @@ class RuralDebtsExtractor(ISectionExtractor):
                     items.append(item)
                     i = item.pop("_next_index", i + 1)
                     continue
-            
+
+            # Multi-line item: line starts with item-number but values wrap to
+            # the next line. Join with subsequent non-item-start lines until a
+            # currency value shows up, then retry 3VAL/2VAL.
+            if item_start:
+                joined = cleaned
+                k = i + 1
+                max_merge = min(i + 4, len(lines))
+                while k < max_merge:
+                    nxt = lines[k].strip()
+                    if not nxt:
+                        k += 1
+                        continue
+                    if self._line_starts_new_item(nxt) or self._is_section_total_line(nxt) or self._is_section_header_line(nxt):
+                        break
+                    joined = f"{joined} {nxt}"
+                    k += 1
+                    if _ITEM_3VAL_RE.match(joined) or _ITEM_2VAL_RE.match(joined):
+                        break
+                m3j = _ITEM_3VAL_RE.match(joined)
+                if m3j:
+                    item = self._parse_debt_3val(m3j, lines, i, page_num)
+                    if item:
+                        items.append(item)
+                        item["_next_index"] = max(k, item.get("_next_index", i + 1))
+                        i = item.pop("_next_index", i + 1)
+                        continue
+                m2j = _ITEM_2VAL_RE.match(joined)
+                if m2j:
+                    item = self._parse_debt_2val(m2j, lines, i, page_num)
+                    if item:
+                        items.append(item)
+                        item["_next_index"] = max(k, item.get("_next_index", i + 1))
+                        i = item.pop("_next_index", i + 1)
+                        continue
+
             i += 1
         
         return items
