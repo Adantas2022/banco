@@ -111,3 +111,12 @@
             )
         else:
             year_before_val = last_year_val = single_val
+
+
+
+
+
+
+_CURRENCY_VAL_RE = re.compile(r"\d[\d.,]*[.,]\d{2}")
+_THOUSAND_BR_RE = re.compile(r"\d{1,3}(?:\.\d{3})+,\d{2}")
+_VALUE_EPS = 0.005
