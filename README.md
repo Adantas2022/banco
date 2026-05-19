@@ -1,5 +1,3 @@
-# banco
-
 """Extrator de bens da atividade rural."""
 
 import json
