@@ -310,6 +310,61 @@ class TestBug16736PhantomItems:
         assert [i["code"] for i in result["items"]] == ["16", "17", "11", "99"]
 
 
+class TestZeroColumnValueRecovery:
+    def test_maybe_recover_from_line_with_trailing_zero_columns(self, extractor):
+        nb, nl, nd = extractor._maybe_recover_zero_columns(
+            "16 PRANCHA MARITIMA HYDRA 250.000,00 0,00 0,00",
+            "PRANCHA MARITIMA HYDRA 250.000,00",
+            0.0,
+            0.0,
+        )
+        assert nb == pytest.approx(250000.0)
+        assert nl == pytest.approx(250000.0)
+        assert "250.000,00" not in nd
+        assert "PRANCHA MARITIMA HYDRA" in nd
+
+    def test_maybe_recover_skips_when_columns_already_filled(self, extractor):
+        nb, nl, nd = extractor._maybe_recover_zero_columns(
+            "16 FAZENDA 100.000,00 200.000,00",
+            "FAZENDA",
+            100000.0,
+            200000.0,
+        )
+        assert nb == pytest.approx(100000.0)
+        assert nl == pytest.approx(200000.0)
+        assert nd == "FAZENDA"
+
+    def test_extract_last_item_recovers_value_stuck_in_description(self, extractor):
+        page_text = _make_section_text(
+            "16 PLANTADEIRA SEMEATO 90.000,00 90.000,00",
+            "16 CAMIONETE FORD 45.000,00 45.000,00",
+            "16 PRANCHA MARITIMA HYDRA 250.000,00 0,00 0,00",
+        )
+        ctx = _make_context({1: page_text})
+        result = extractor.extract(ctx)
+
+        assert result is not None
+        assert len(result["items"]) == 3
+        last = result["items"][-1]
+        assert last["code"] == "16"
+        assert last["year_before_last_value"] == pytest.approx(250000.0)
+        assert last["last_year_value"] == pytest.approx(250000.0)
+        assert "250.000,00" not in last["description"]
+        assert "PRANCHA MARITIMA HYDRA" in last["description"]
+
+    def test_extract_item_with_valid_columns_unchanged(self, extractor):
+        page_text = _make_section_text(
+            "16 FAZENDA SANTA RITA 100.000,00 200.000,00",
+        )
+        ctx = _make_context({1: page_text})
+        result = extractor.extract(ctx)
+
+        assert result is not None
+        item = result["items"][0]
+        assert item["year_before_last_value"] == pytest.approx(100000.0)
+        assert item["last_year_value"] == pytest.approx(200000.0)
+
+
 class TestEndMarkerCaseSensitivity:
     def test_end_marker_uppercase(self, extractor):
         page_text = (
