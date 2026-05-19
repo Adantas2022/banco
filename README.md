@@ -1,3 +1,9 @@
+_CURRENCY_VAL_RE = re.compile(r"\d[\d.,]*[.,]\d{2}")
+_THOUSAND_BR_RE = re.compile(r"\d{1,3}(?:\.\d{3})+,\d{2}")
+_VALUE_EPS = 0.005
+  
+  
+  
   @staticmethod
     def _collect_monetary_tokens_no_percent(text: str) -> list[str]:
         out: list[str] = []
