@@ -1,0 +1,2896 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": null,
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "988.846.620-87",
+                    "normalized_cpf": "98884662087",
+                    "name": "ROBERTO AZAMBUJA FERREIRA",
+                    "exercise_year": "2024",
+                    "calendar_year": "2023",
+                    "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                    "main_occupation": "120 - DIRIGENTE, PRESIDENTE E DIRETOR DE EMPRESA INDUSTRIAL, COMERCIAL OU PRESTADORA DE",
+                    "contact_and_address": {
+                        "street_address": "RUA DANIEL MARTINS BIZARRO",
+                        "number": "161",
+                        "complement": "CASA",
+                        "neighborhood": "CENTRO",
+                        "city": "TAQUARI",
+                        "uf": "RS",
+                        "zip_code": "95860-000",
+                        "phone": "",
+                        "email": "ROBERTO@OIW.COM.BR",
+                        "cell_phone": "(51) 98142-2031"
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL RETIFICADORA"
+                },
+                "total_value": 36288845,
+                "valid_total": true,
+                "equity_evolution": 410684,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "4f2bfeebeb4adc5a208a0f9bd48bff62",
+                            "asset_group_code": "01",
+                            "asset_code": "02",
+                            "asset_description": "50 % DO PREDIO DE ALVENARIA , SITUADO NA RUA PEDRO MICHEL , 555 , BAIRRO CENTRO , EM TAQUARI / RS , POR UM LAPSO NAO HAVIA SIDO LANCADO EM 2022 .",
+                            "before_year_asset_value": 167500.0,
+                            "current_year_asset_value": 167500.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA PEDRO MICHEL",
+                                "complement": "PREDIO",
+                                "city": "TAQUARI",
+                                "area": "281,7 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "R.12/14.286",
+                                "number": "555",
+                                "neighborhood": "CENTRO",
+                                "state": "RS",
+                                "acquisition_date": "04/03/2022",
+                                "registry_office_name": "RI DE TAQUARI/RS",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "46d0dfd4a9dabd4b70506c5a3108411e",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APARTAMENTO 302 E BOX 04 SIT . NO EDIF . SARAFANA NA RUA OSVALDO ARANHA , 2066 , BAIRRO CENTRO MUNICIPIO DE TAQUARI / RS , ADQ . EM 22/10/2009 DE ESPOLIO DE NAIR CARDOSO DE SOUZA VLR . R $ 120.000,00 VLR R $ 30.000,00 PGTO EM DINHEIRO E SALDO FINANC . SFH CAIXA E. FEDERAL NO . CONTRATO 1.0519.2009.022-2 . PREST . PAGAS EM 2012 R $ 15.113,06 SALDO DEV 31/12/2012 R $ 62.942,80 . IMOVEL QUITADO EM 2013 PELO VALOR R $ 60.826,17 .",
+                            "before_year_asset_value": 140704.24,
+                            "current_year_asset_value": 140704.24,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA OSVALDO ARANHA",
+                                "complement": "APTO 302",
+                                "city": "TAQUARI",
+                                "area": "111,6 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "5940",
+                                "number": "2066",
+                                "neighborhood": "CENTRO",
+                                "state": "RS",
+                                "acquisition_date": "22/10/2009",
+                                "registry_office_name": "RI DE TAQUARI/RS",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "fc53554b6a5c0198618941f7639590de",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APARTAMENTO 25 E BOX DE ESTACIONAMENTO 04 DO EDIFICIO RESIDENCIAL COSTA DOURADA , SITUDO NA RUA HELIO PINTO DE MELLO , 78 BALNEARIO PRAIA DOS INGLESES EM FLORIANOPOLIS / SC , ADQUIRIDO EM 04/04/2014 DE GREEN EMPREEND . IMOBIL . LTDA . EPP CNPJ 09.165.447 / 0001-95 PELO VLR R $ 360.000,00 - ESCRITURA MATRICULA 118763 ( APTO ) MATRICULA 118.770 ( BOX ) . VLR ATRIBUIDO APTO R $ 330.200,00 BOX R $ 29.800,00 - IMOVEL QUITADO .",
+                            "before_year_asset_value": 360000.0,
+                            "current_year_asset_value": 360000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA HELIO PINTO DE MELLO",
+                                "complement": "APTO 25 EDIF. RESID. COSTA DOURADA",
+                                "city": "FLORIANÓPOLIS",
+                                "area": "67,6 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "118.763/118770",
+                                "number": "78",
+                                "neighborhood": "PRAIA DE INGLESES",
+                                "state": "SC",
+                                "acquisition_date": "04/04/2014",
+                                "registry_office_name": "REG. DE IMOVEIS DE/SC",
+                                "zipcode": "88058-620"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "4a1e051194cf15f0222a0197fb49a2d7",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APARTAMENTO 902 E BOX DE GARAGEM SIT . NA AV . TANCREDO NEVES , 7140 ( RODOV . BA 001 KM 4 , BAIRRO NOSSA SENHORA DA VITORIA , CIDADE DE ILHEUS / BA , UNIQUE ADQUIRIDO DE SSN INCORP . E EMPREEND . LTDA CNPJ 02.110.152 / 0001-72 PELO VALOR DE R $ 850.000,00 . SALDO DE R $ 588.950,00 FINANCI.ELA CEF CONT . 178770203142-4 . SALDO DE R $ 181.000,00 + COMISSOES A SEREM PAGOS A PRAZO , CONSTA NA FICHA DE DIVIDAS . PG . PARCELAS DIRETO EM 2023 R $ 63.658,67 - PG . PARCELAS 2023 CEF R $ 11.548,47 SALDO DEV EM 2023 R $ 205.032,05 .",
+                            "before_year_asset_value": 111870.19,
+                            "current_year_asset_value": 187077.33,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "AV TANCREDO NEVES",
+                                "complement": "APTO 902",
+                                "city": "ILHÉUS",
+                                "area": "246,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "26.412",
+                                "number": "7140",
+                                "neighborhood": "NOSSA SENHORA DA VITORIA",
+                                "state": "BA",
+                                "acquisition_date": "16/12/2021",
+                                "registry_office_name": "RI DE ILHEUS/BA",
+                                "zipcode": null
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "101abdd0bc391c47ec6c2ca01401d62f",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "CASA C / RESPECTIVO TERRENO C / 208,55 M2 SIT . NA RUA OSVALDO ARANHA , 1654 BAIRRO CENTRO EM TAQUARI / RS . ADQ . EM 13/04/2012 DE JORGE SARAIVA CPF 007.713.410-91 MATRICULA IMOVEL NO 20.593 FL 01V LV 02 PELO VALOR R $ 255.000,00 . PGTOS EFETUADOS EM 2012 R $ 225.000,00 SALDO R $ 30.000,00 C / VENC . EM 2013. INDIVIDUALIZACAO MATRICULA TERRENO MEDINDO 312,20 M2 SITUADO NA RUA DANIEL MARTINS BIZARRO , 161 EM TAQUARI / RS MATRICULA 20.594 .",
+                            "before_year_asset_value": 135000.0,
+                            "current_year_asset_value": 135000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA OSVALDO ARANHA",
+                                "complement": null,
+                                "city": "TAQUARI",
+                                "area": "160,5 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "20.593 LV 2",
+                                "number": "1654",
+                                "neighborhood": "CENTRO",
+                                "state": "RS",
+                                "acquisition_date": "13/04/2012",
+                                "registry_office_name": "REG. DE IMOVEIS DE",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "37b251bcec67c1c88c619190a3f6eba7",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "CASA EM CONSTRUCAO UNIDADE 62 SITUADO NO CONDOMINIO RESIDENCIAL MURANO EM CAPÃO DA CANOA MATRICULA 99551 DO REG DE IMOVEIS DE CAPAO DA CANOA PELO VALOR R $ 609.000,00 SENDO QUE PARTE FOI PERMUTA PELO APTO 902 MAUI VALOR R $ 320.000,00 VALOR PAGO R $ 88.900,00 SALDO R $ 200.100,00 EM 39 PARCELAS DE R $ R $ 5.130,77 . VALOR CORRECAO DO PARCELAMENTO 31.786,26 . QUITADO .",
+                            "before_year_asset_value": 609000.0,
+                            "current_year_asset_value": 640786.26,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "CONDOMINIO RESIDENCIAL MURANO",
+                                "complement": null,
+                                "city": "CAPÃO DA CANOA",
+                                "area": "0,0",
+                                "registered_at_registy_office": false,
+                                "number": null,
+                                "neighborhood": null,
+                                "state": "RS",
+                                "acquisition_date": "14/08/2019",
+                                "zipcode": "95855-000"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "7ccfefb4318c58b8d7ac07cb17448f2b",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "CASA RESIDENCIAL CONSTRUIDA NO TERRENO COM AREA DE 492,89 M2 , SITUADO NA RUA DANIEL MARTINS BIZARRO , 161 TAQUARI - RS - INICIO DAS OBRAS 04/01/2016 - FOI UNIFICADO MATRICULA EM 10/08/2020 AV.01 / 20.594 . VLR . TERRENO R $ 120.000,00 VLR CONSTRUCAO R $ 1.261.335,11 .",
+                            "before_year_asset_value": 1381335.11,
+                            "current_year_asset_value": 1381335.11,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "26140",
+                                "street_address": "RUA DANIEL MARTINS BIZARRO",
+                                "complement": "CASA",
+                                "city": "TAQUARI",
+                                "area": "492,8 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "20.594",
+                                "number": "161",
+                                "neighborhood": "CENTRO",
+                                "state": "RS",
+                                "acquisition_date": "20/12/2016",
+                                "registry_office_name": "RI DE TAQUARI",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "ac76934ffec5a00d52feb04f5054d807",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "CASA SOBRADO C / 318,91 M2 CONSTRUIDO NO TERRENO LOTE 7 SITUADO NO CONDOMINIO ILHAS RESORT 2 KM 33 DA ESTRADA DO MAR EM CAPÃO DA CANOA / RS MATRICULA 81.536 DO RI DE CAPÃO DA CANOA / RS , ADQUIRIDO DE PAULO FRANCISCO SARMENTO ESTEVES FILHO CPF 984.017.850-49 , PELO VALOR DE R $ 1.684.000,00 . IMOVEL AGUARDA AVERBACAO NA MATRICULA . QUITADO .",
+                            "before_year_asset_value": 1684000.0,
+                            "current_year_asset_value": 1684000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "CONDOMINIO ILHAS RESORT 2 KM - 33",
+                                "complement": null,
+                                "city": "CAPÃO DA CANOA",
+                                "area": "318,9 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "81.536",
+                                "number": null,
+                                "neighborhood": "ESTRADA DO MAR",
+                                "state": "RS",
+                                "acquisition_date": "05/02/2021",
+                                "registry_office_name": "RI DE CAPÃO DA CANOA/RS",
+                                "zipcode": "95855-000"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "ae89a3e5fc08fd27077731e1bf4bdb94",
+                            "asset_group_code": "01",
+                            "asset_code": "13",
+                            "asset_description": "TERRENO URBANO LOTE 15 QUADRA A , SITUADO NO CONDOMINIO HORIZONTAL CAPÃO DA CANOA ILHAS RESORT I , LOCALIZDO NO KM 33 DA ESTRADA DO MAR , C / AREA DE 560,00 M2 . VALOR PAGO R $ 596.000,00 + VALOR DE CORRETAGEM R $ 54.000,00 TOTALIZANDO R $ 650.000,00 . ADQUIRIDO DE BERALV EMPREENDIMENTOS IMOBILIARIOS LTDA CNPJ 93.307.114 / 0001- 60. ENT . R $ 81.250,00 SALDO EM 58 PARCELAS DE R $ 8.405,00 E 1 PARCELA DE R $ 27.250,00 + CORRECAO PELO INCC . CORRECAO PG . EM 2023 R $ 2.395,92 .",
+                            "before_year_asset_value": 650000.0,
+                            "current_year_asset_value": 652395.92,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "CONDOMINIO HORIZONTAL ILHAS RESORT I",
+                                "complement": "KM 33",
+                                "city": "CAPÃO DA CANOA",
+                                "area": "560,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "72647 LV1",
+                                "number": null,
+                                "neighborhood": "ESTRADA DO MAR",
+                                "state": "RS",
+                                "acquisition_date": "01/09/2022",
+                                "registry_office_name": "RI DE CAPÃO DA CANOA",
+                                "zipcode": "95855-000"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "a36f4a42c431aba21110996371153cf2",
+                            "asset_group_code": "01",
+                            "asset_code": "13",
+                            "asset_description": "LOTE 06 DO TERRENO C / 360 M2 SIT . NA RUA 3 QUADRA E LOTEAMENTO RESIDENCIAL BELA VISTA , ADQ . EM 07/08/2013 CFE . MATRICULA 18.603 LV 02 DE HABITACOES VERDES NEGOCIOS IMOBILIARIOS LTDA . CNPJ 12.467.112 / 0001-36 PELO VALOR DE R $ 47.500,00 .",
+                            "before_year_asset_value": 47500.0,
+                            "current_year_asset_value": 47500.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA 3 QUADRA E",
+                                "complement": "LOTE 6 DO RESID. BELA VISTA",
+                                "city": "TAQUARI",
+                                "area": "360,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "18.603 LV 2",
+                                "number": null,
+                                "neighborhood": "BELA VISTA",
+                                "state": "RS",
+                                "acquisition_date": "07/08/2013",
+                                "registry_office_name": "REG. DE IMOVEIS DE",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "a0ba6fc257a45af9e490194ad7d2a528",
+                            "asset_group_code": "01",
+                            "asset_code": "13",
+                            "asset_description": "50 % DO TERRENO URBANO LOTE 18 , SITUADO NA RUA G LADO IMPAR S / N , LOTEAMENTO COQUEIROS , TAQUARI / RS . POR UM LAPSO NAO HAVIA SIDO LANCADO EM 2022 .",
+                            "before_year_asset_value": 31000.0,
+                            "current_year_asset_value": 31000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA G",
+                                "complement": "LOTE 18",
+                                "city": "TAQUARI",
+                                "area": "360,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "R.06/15.999",
+                                "number": "SN",
+                                "neighborhood": "COQUEIROS",
+                                "state": "RS",
+                                "acquisition_date": "04/03/2022",
+                                "registry_office_name": "RI DE TAQUARI/RS",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "e1f6d29a89e692ef8bd9b54c3a3d5243",
+                            "asset_group_code": "01",
+                            "asset_code": "13",
+                            "asset_description": "50 % DO TERRENO URBANO LOTE 02 SITUADO NA ESTRADA TK 36 , S / N , LADO PAR , RINCAO SAO JOSE EM TAQUARI / RS . POR UM LAPSO NAO HAVIA SIDO LANCADO EM 2022 .",
+                            "before_year_asset_value": 29000.0,
+                            "current_year_asset_value": 29000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "ESTRADA TK 36",
+                                "complement": "LOTE 02",
+                                "city": "TAQUARI",
+                                "area": "438,9 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "R.07/17.114",
+                                "number": "SN",
+                                "neighborhood": "RINCAO SAO JOSE",
+                                "state": "RS",
+                                "acquisition_date": "04/03/2022",
+                                "registry_office_name": "RI DE TAQUARI/RS",
+                                "zipcode": "95860-000"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "39f86b45c1ca8f3c4bab1b8ef6df6c69",
+                            "asset_group_code": "02",
+                            "asset_code": "01",
+                            "asset_description": "VEICULO MARCA CHEVROLET MODELO TRACKER LTZ COR PRETA ANO / MODELO 2022 PLACA JBK - 2E95 ADQUIRIDO EM 04/07/2022 P / JA SPOHR CNPJ 91.158.253 / 0001-43 NF 112888 . QUITADO .",
+                            "before_year_asset_value": 124000.0,
+                            "current_year_asset_value": 124000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "renavam": "01304300304"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "c5efa0be5dba4113ffff0fdefe22c0de",
+                            "asset_group_code": "02",
+                            "asset_code": "01",
+                            "asset_description": "VEICULO MARCA AUDI A6 AMBIENTE 2.0 16V TFSI QUATTRO ANO / MODELO 2016 COR PRETA PLACAS IXJ - 2078 - ADQUIRIDO EM 30/07/2016 - VALOR ENT R $ 105.000,00 SALDO R $ 70.000,00 C / FINANC . PELO BANCO VOLKSWAGEN S.A.",
+                            "before_year_asset_value": 175000.0,
+                            "current_year_asset_value": 175000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "renavam": "01093094335"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "b6573449334ea340f9bddebf07ca4f0f",
+                            "asset_group_code": "02",
+                            "asset_code": "99",
+                            "asset_description": "MOBILIA , MOVEIS , DECORACÕES E EQUIPAMENTOS ELETRONICOS DO IMOVEL NO ILHAS RESORT 2 EM CAPAO DA CANOA , ADQUIRIDO DE PAULO FRANCISCO SARMENTO ESTEVES FILHO CPF 984.017.850-49 ATRAVES DE CONTRATO DE PERMUTA CFE . ANEXO DO CONTRATO .",
+                            "before_year_asset_value": 300000.0,
+                            "current_year_asset_value": 300000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "d6494ec09311666d0781c1078fd29e10",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SICREDI OURO BRANCO CONTA CAPITAL - CONTA 71112-8",
+                            "before_year_asset_value": 2691.63,
+                            "current_year_asset_value": 2879.81,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "87.853.206/0001-42",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "545bf2640c3792219ac78a17625aa4c3",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SUA PARTICIPACAO NO CAPITAL DA R. FERREIRA HOLDING LTDA . DE 99.900 QUOTAS DE VALOR NOMINAL DE R $ 1,00 CADA , INSCRITA NO CNPJ SOB O NO 19.443.347 / 0001-37 COM REGISTRO EM 23/12/2013 .",
+                            "before_year_asset_value": 1265505.23,
+                            "current_year_asset_value": 1265505.23,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "19.443.347/0001-37",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "943fe3a687179c5c194c615110d48edf",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SUA PARTICIPACAO NO CAPITAL SOCIAL DA EMPRESA OIW PARTICIPACOES S.A. REG EM 18/07/2017 . AUMENTO DE CAPITAL SOCIAL R $ 156.170,92 , SUA PARTICIP . PASSA A SER DE R $ 156.420,92 DECORRENTE DA INCORP . DO SALDO REMANESCENTE DA CISAO CFE . REG . NA JUCERGS EM 12/04/2018 . SUA INTEGRALIZACAO VALOR R $ 9.215.000,00 ATRAVES DE AUMENTO DE CAPITAL SOCIAL NA EMPRESA OIW PARTICIPACOES S.A. EM 20/07/2018 CFE . REG . NA JUCERGS , TOTALIZANDO SUA PARTICIPACAO R $ 9.371.420,92 . INTEGRALIZACAO EM 2020 VALOR R $ 29.900,00",
+                            "before_year_asset_value": 9401320.92,
+                            "current_year_asset_value": 9401320.92,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "28.218.289/0001-39",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "d4740ed5c0df0138d64f7f98a22b9f4a",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SUA PARTICIPAÇÃO DO CAPITAL SOCIAL NA EMPRESA TÊNET TELECOM LTDA . CFE . ALTERACAO CONTRATUAL PELA AQUISICAO DE 6.714 COTAS DE VALOR DE R $ 1,00 CADA , TOTALIZANDO R $ 6.714,00 DA SOCIA BARBARA SILVA DE JESUS , SENDO QUE FOI INCORPORADO AO CAPITAL SOCIAL DA RESERVA DE LUCROS NO VALOR DE R $ 900.000,00 , TOTALIZANDO A PARTICIPACAO EM 906.714 COTAS DE R $ 1,00 CADA , TOTALIZANDO SUA PARTICIPACAO EM R $ 906.714,00.VENDA DAS COTAS DE PARTICIPAÇÃO EM 03/01/2023 PARA UNIFIQUE TELECOM S / A CNPJ 02.255.187 / 0001-08 .",
+                            "before_year_asset_value": 906714.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "04.551.447/0001-00",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "520e2cddf4dfe42190d621343e857304",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SUA PARTICIPAÇÃO NO CAPITAL DA OIW LOCACAO DE EQUIPAMENTOS LTDA REPRESENTADA POR 25.000 QUOTAS DE VALOR NOMINAL DE R $ 1,00 CADA , TOTALIZANDO R $ 25.000,00 , COM REGISTRO EM 06/11/2020 SOB NO 98013584 NA JUCEB .",
+                            "before_year_asset_value": 25000.0,
+                            "current_year_asset_value": 25000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "39.695.340/0001-10",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "9496395660d6503058572bd9f654f661",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. CDB FLU 1229BSFH - 08/02/2023 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 150000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "ecb75895273b4ccafef58a70689920e8",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. CDB PRE DU 1229BSG3 - 09/02/2023 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 150000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "0f3015863721d4c2a4dd8fc86231c4b0",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. LF FLU 0022007SA - 13/03/2024 .",
+                            "before_year_asset_value": 250000.0,
+                            "current_year_asset_value": 250000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "8adfa240faca576e9e286a2e7991cd81",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BRADESCO APLICACAO DE RENDA FIXA CDB - AG 3480 CONTA 3388-0",
+                            "before_year_asset_value": 434969.02,
+                            "current_year_asset_value": 912918.71,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "60.746.948/0001-12",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "f1efdccc25a8b9d8d6bb0b28dc6067f8",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "SICREDI APLICACAO CRED PRIV FIC FIRF LP",
+                            "before_year_asset_value": 104781.82,
+                            "current_year_asset_value": 142036.66,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "01.181.521/0001-55",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 13
+                        },
+                        {
+                            "id": "6767675b799a03d19535114c3c508fe8",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BANCO INTER APLICACAO EM RENDA FIXA",
+                            "before_year_asset_value": 17382.94,
+                            "current_year_asset_value": 15337.91,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.416.968/0001-01",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "67816b74c8f984509d5c2dc25cd320eb",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO DAYCOVAL S / A CDB FLU 122JLZML 18/03/2024 .",
+                            "before_year_asset_value": 85000.0,
+                            "current_year_asset_value": 85000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "17fbf9d625e345193ccb8f86781314d7",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO FACTA FINANCEIRA S / A CDB PRE DU 122JMOF3 - 18/03/2024 .",
+                            "before_year_asset_value": 85000.0,
+                            "current_year_asset_value": 85000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "9a2c81c8014ea72b826535a55333ac04",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO DIGIMAIS S / A CDB PRE DU 12215HPL 13/03/2025 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "dd46afdc8c5af3f3f6dfa83f15080d86",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BRB BANCO DE BRASILIA S / A 2200A1E - 13/08/2029 .",
+                            "before_year_asset_value": 300411.53,
+                            "current_year_asset_value": 300411.53,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 14
+                        },
+                        {
+                            "id": "283fe833a5528c8d7630be7f779f54a8",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BANCO BTG PACTUAL - TESOURO SELIC ( LFT )",
+                            "before_year_asset_value": 209329.78,
+                            "current_year_asset_value": 262657.13,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 15
+                        },
+                        {
+                            "id": "8628127c670d733f0e23dbac0f28c5ed",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "TERMELETRICA PERNAMBUCO III S.A. XP INVESTIMENTOS CONTA 45626. SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 3222.41,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 15
+                        },
+                        {
+                            "id": "00df8bab3d19acb37e7066cfa60f638d",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - APLICAÇÃO DE RENDA FIXA - BANCO BNP PARIBAS BR - VENC . 23/08/2023 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 15
+                        },
+                        {
+                            "id": "4031e165588f256e7e331c6970d3639c",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "NUBANK NU FINANCEIRA S.A.",
+                            "before_year_asset_value": 73.9,
+                            "current_year_asset_value": 76.6,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.680.829/0001-43",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 15
+                        },
+                        {
+                            "id": "f622df91130f7373fdc42ff4538e2cf0",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BANCO BTG PACTUAL S / A - APLICACAO",
+                            "before_year_asset_value": 297.28,
+                            "current_year_asset_value": 182.95,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 15
+                        },
+                        {
+                            "id": "9d1a9021931406e161b4f3b6a7a991f8",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BANCO BTG PACTUAL S / A LETRA FINANCEIRA",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 570000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 16
+                        },
+                        {
+                            "id": "360349681447d5067d429be19408700a",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BANCO BTG PACTUAL S / A CERTIFICADO DEPOSITO BANCARIO",
+                            "before_year_asset_value": 603000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 16
+                        },
+                        {
+                            "id": "837036e21d415f0d4aed79c30941c28c",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - SAXCFI CDB FLU 24/09/2023 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 16
+                        },
+                        {
+                            "id": "292c5f6bb0e7de020c3b6e9079086c72",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO ORIGINAL S / A CDB PRE 08/08/2024 .",
+                            "before_year_asset_value": 170000.0,
+                            "current_year_asset_value": 170000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 16
+                        },
+                        {
+                            "id": "bd20dc362ffbd6a954d1931e58843b7e",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO C6 CONSIGNADO S / A CDB PRE 23/09/2024 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 16
+                        },
+                        {
+                            "id": "7bf46eca494879c7a78f0b560fb1683a",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO XP S / A COE 18/06/2025 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 17
+                        },
+                        {
+                            "id": "12089399726e4a804dc33582de74d3ac",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO AGIBANK S / A CDB PRE 08/08/2025 .",
+                            "before_year_asset_value": 170000.0,
+                            "current_year_asset_value": 170000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 17
+                        },
+                        {
+                            "id": "dbcca3d8f5007307d5f93d66d8c56957",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - PERNAMBUCANAS FINANCIADORA S / A CDB FLU 23/09/2025 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 17
+                        },
+                        {
+                            "id": "f83f7b68f355a4ed63faf64cc49d627b",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - OMNI S / A CREDITO FINANCIAMENTO CDB FLU 23/09/2025 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 17
+                        },
+                        {
+                            "id": "d6d73125b1808500f391b4da0c48e61f",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO XP S / A COE 02/09/2026 .",
+                            "before_year_asset_value": 1000000.0,
+                            "current_year_asset_value": 1000000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 17
+                        },
+                        {
+                            "id": "08fe46f323953ac6d8ec00b64a43e3c4",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO MASTER S / A CDB PRE 23/09/2026 .",
+                            "before_year_asset_value": 120000.0,
+                            "current_year_asset_value": 120000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 18
+                        },
+                        {
+                            "id": "19fff9685a3c0aef4a55e76679da874b",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO DE DESENVOLVIMENTO DE MINAS CDB PRE 23/09/2026 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 18
+                        },
+                        {
+                            "id": "4a36a74d8a776be053f2483c4deed7fb",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO XP S / A COE 17/12/2026 . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 18
+                        },
+                        {
+                            "id": "734928d61d751e055db600024862e6cb",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - BANCO BRADESCO S / A LF FLU - 13/08/2031",
+                            "before_year_asset_value": 566113.41,
+                            "current_year_asset_value": 566113.41,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 18
+                        },
+                        {
+                            "id": "0d9999a373ea10bf2240936835f5c4c4",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTO - TESOURO NACIONAL 15/05/2055 .",
+                            "before_year_asset_value": 197472.05,
+                            "current_year_asset_value": 197472.05,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 18
+                        },
+                        {
+                            "id": "83eef1224f5b7d66f719e2d456ce1376",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - SIMPAR DEB FLU JSMLA5 - 15/01/2031 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 350031.16,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 19
+                        },
+                        {
+                            "id": "6e4a7f568b7cc81379d6bfbd036b2cbc",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. COE XP5323KA5AV - 03/02/2031 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 19
+                        },
+                        {
+                            "id": "81e4c1762dc3db4871771780e8575589",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. COE XP532319H80 - 18/02/2033 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 256000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 19
+                        },
+                        {
+                            "id": "05fad573c3147202916b3f21dd6a8280",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "XP INVESTIMENTOS - BANCO XP S.A. COE XP5323KA5AW - 20/06/2033 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 400000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 19
+                        },
+                        {
+                            "id": "ef6074b195aa63701741d408c62f2057",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL TESOURO PRE FIXADO ( LTN )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 19710.69,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 19
+                        },
+                        {
+                            "id": "5841c12830965963c85a7c1223cbc965",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL TESOURO IPCA ( NTN - B )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 207708.74,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 20
+                        },
+                        {
+                            "id": "cb83ff0fab29dcbbd5a5874d4dc386ad",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO SEMEAR S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 162000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.795.423/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 20
+                        },
+                        {
+                            "id": "b6c08c046f3af45bb9380e61e58e8131",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( CARUANA S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 180000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "09.313.766/0001-09",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 20
+                        },
+                        {
+                            "id": "0abd3992ef9ec395c7e6e0df0a0bdf1b",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( MIDWAY S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 160000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "09.464.032/0001-12",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 20
+                        },
+                        {
+                            "id": "d274bfa8d0957610262e3dc20f8c73b4",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BIORC FINANCEIRA )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 150000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "11.285.104/0001-06",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 20
+                        },
+                        {
+                            "id": "d5619605cf00103ce7f9a24cf784cfe1",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 20000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 21
+                        },
+                        {
+                            "id": "e9f2ef8c72ec45377442a9eb1c8b77b4",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO MASTER S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 101000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "33.923.798/0001-00",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 21
+                        },
+                        {
+                            "id": "7ef85fc3cb317eda31c34f02b25f180d",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( PERNAMBUCANAS FINANCIADORA S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 70000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "43.180.355/0001-12",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 21
+                        },
+                        {
+                            "id": "8b66e42f218ef5976351ab8831ce21aa",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO ARBI S.A )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 190000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "54.403.563/0001-50",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 21
+                        },
+                        {
+                            "id": "58dd54ff92bedd172db24c6aeda2ca78",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO BMG S.A )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 150000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "61.186.680/0001-74",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 21
+                        },
+                        {
+                            "id": "be24d86f3eb9f08f1deff2c8def9e1cc",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO PINE S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 120000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "62.144.175/0001-20",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 22
+                        },
+                        {
+                            "id": "b576f97f89d50bfaea4697437daa3e5b",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO ( BANCO DIGIMAIS S.A. )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 80000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "92.874.270/0001-40",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 22
+                        },
+                        {
+                            "id": "14c594a6f8adf38765ff9efaea43920c",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL CDB SALDO REMUNERADO",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 472.2,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 22
+                        },
+                        {
+                            "id": "5b0db30a8f519bf87d775995e4e96907",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "BTG PACTUAL DEBENTURE COMPANHIA SIDERURGICA NACIONAL",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 308974.2,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "33.042.730/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 22
+                        },
+                        {
+                            "id": "f6eeb0b9119108fa6935d2438bf59a0f",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "BRADESCO LIG - AGORA CORRETORA DE TIT E VALORES MOBILIARIOS .",
+                            "before_year_asset_value": 2200000.0,
+                            "current_year_asset_value": 2200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "74.014.747/0001-35",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 22
+                        },
+                        {
+                            "id": "7dc4687070d61ee4ef87e0d08969e08a",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - RB SECURITIZADORA CRI 1235206 - 27/04/2027 .",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 23
+                        },
+                        {
+                            "id": "176a873efdd406f7c2ebe05f427868f8",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - OLIVEIRA TRUST DTVM S / A CRA FLU 0220012X 15/01/2029 .",
+                            "before_year_asset_value": 47000.0,
+                            "current_year_asset_value": 47000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 23
+                        },
+                        {
+                            "id": "ba8b78b59cc1c5d75dd1d2eb5920d0e1",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - VIRGO COMPANHIA DE SECURITIZACAO CRI 0004808 - 16/02/2032 .",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 23
+                        },
+                        {
+                            "id": "7d5e3a2ecb147c100c365da1ca97af64",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - VIRGO COMPANHIA DE SECURITIZACAO CRA FLU 022002XN - 15/04/2037 .",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 23
+                        },
+                        {
+                            "id": "4c49a75162fe04ef4b1b0bd30b0ecc60",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "BANCO BTG PACTUAL S / A LETRA DE CREDITO DO AGRONEGOCIO",
+                            "before_year_asset_value": 400000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.306.294/0001-45",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 23
+                        },
+                        {
+                            "id": "3a1be07f27e623ec75caca90e4b46027",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - BANCO BTG PACTUAL LCA PRE 09/08/2028 .",
+                            "before_year_asset_value": 170000.0,
+                            "current_year_asset_value": 170000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 24
+                        },
+                        {
+                            "id": "a0db11154ecd03bbd6e9a3e8ac5c3ee9",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - ISEC SECURITIZADORA S / A CRA 15/04/2031 .",
+                            "before_year_asset_value": 74067.47,
+                            "current_year_asset_value": 74067.47,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 24
+                        },
+                        {
+                            "id": "79e857192ad5b081d40942191fafd09b",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - RB CAPITAL SECURITIZADORA S / A CRI 15/05/2036 .",
+                            "before_year_asset_value": 73592.22,
+                            "current_year_asset_value": 73592.22,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 24
+                        },
+                        {
+                            "id": "5d7a935d4af53808131ccdc3911fd09b",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - RB SECURITIZADORA CRI 15/12/2036 .",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 24
+                        },
+                        {
+                            "id": "ddf6ef9980cca9e1bd44862c4d5483e1",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - CAIXA ECONOMICA LCI 1242681 - 19/12/2024 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 504544.6,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 24
+                        },
+                        {
+                            "id": "c4f3a121b22264b79efd915d19c297d8",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - OPEA SECURITIZADORA CRA PRE - 16/11/2033 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 158000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 25
+                        },
+                        {
+                            "id": "9e749d1494d13c882a85e601a51f2fdf",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - TERMELETRICA PERNAMBUCO III DEB FLU TPER41- 31/12/2099 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 849.95,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 25
+                        },
+                        {
+                            "id": "67a97c5af0094cf34c82f76cbb9036b5",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - TERMELETRICA PERNAMBUCO III DEB FLU TPER11 - 31/12/2099 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 625.32,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 25
+                        },
+                        {
+                            "id": "b6c2ae40b4aa8e6941a63ca2edb312cf",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - TERMELETRICA PERNAMBUCO III DEB FLU TPER21 - 31/12/2099 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 882.13,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 25
+                        },
+                        {
+                            "id": "bfe11b202dbfcf3ac8d5349e668eeaec",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "XP INVESTIMENTOS - TERMELETRICA PERNAMBUCO III DEB FLU TPER31 - 31/12/2099 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 865.01,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 25
+                        },
+                        {
+                            "id": "10b0e0e54e0be62b940eb243b57470cb",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "CAIXA ECONOMICA FEDERAL LETRAS DE RENDA FIXA ( LCI E LCA )",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 70000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 26
+                        },
+                        {
+                            "id": "a23ec11c65e559e406c784666a46bfe3",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "BTG PACTUAL CRA OPEA SECURITIZADORA S.A.",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 500000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.773.542/0001-22",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 26
+                        },
+                        {
+                            "id": "2f547bba0e104a02144730ea46758b6f",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "BTG PACTUAL OPEA SECURITIZADORA S.A.",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 290317.5,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.773.542/0001-22",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 26
+                        },
+                        {
+                            "id": "cb36f31a0e9ca86386cef8d1968c20f5",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "BTG PACTUAL CRA TRUE SECURITIZADORA S.A.",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 250000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "12.130.744/0001-00",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 26
+                        },
+                        {
+                            "id": "ab734520c6a0d678f3997cf5698f7231",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMO CONCEDIDO EM 2022 A EMPRESA R. FERREIRA HOLDING . EMPRESTIMO CONCEDIDO EM 2023 VALOR R $ 345.000,00 .",
+                            "before_year_asset_value": 79500.0,
+                            "current_year_asset_value": 424500.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "19.443.347/0001-37",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 26
+                        },
+                        {
+                            "id": "7d551e4d4e462cb9cf75caaec35bee06",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMO A RECEBER DE SERGIO ANTONIO SILVEIRA KERN , CONCEDIDO EM 05/10/2021 VALOR R $ 120.000,00 C / VENCIMENTO EM 05/10/2024 .",
+                            "before_year_asset_value": 120000.0,
+                            "current_year_asset_value": 120000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "51976986087",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 27
+                        },
+                        {
+                            "id": "f045d1c8264c1edbece983b31115594b",
+                            "asset_group_code": "05",
+                            "asset_code": "02",
+                            "asset_description": "SALDO A RECEBER DA VENDA / ALIENACAO DAS QUOTAS DE PARTICIPACOES SOCIETARIAS PARA UNIFIQUE TELECOMUNICACOES S / A . TOTAL ALIENACOES TKNET SERVICOS R $ 5.427.659,91 , TKNET HOLDING R $ 2.713.659,91 , TKNET TECNOLOGIA DA INFORMACAO R $ 2.422.259,75 . RECEBIDO TKNET SERVICOS EM 2023 R $ 3.321.285,76 . RECEBIDO DA TKNET TECNOLOGIA DA INFORMACAO EM 2023 R $ 428.911,41 SALDO A RECEBER R $ 2.187.955,23 .",
+                            "before_year_asset_value": 5938152.4,
+                            "current_year_asset_value": 2187955.23,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.255.187/0001-08",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 27
+                        },
+                        {
+                            "id": "e07ae3625a85bbe6bdc9bfcb000a126e",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "CAIXA E. FEDERAL CONTA CORRENTE - CONTA 0005823150462 - RECUPERADO DA CONTA ANTIGA 00000026731-7",
+                            "before_year_asset_value": 14610.13,
+                            "current_year_asset_value": 4853.79,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "bank": "104",
+                                "cpf": "988.846.620-87",
+                                "agency": "0519",
+                                "account": "000582315046-2"
+                            },
+                            "country_valid": true,
+                            "page": 27
+                        },
+                        {
+                            "id": "3b86138f0a665ac551530128631ff4fe",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "SICREDI - CONTA CORRENTE - AG 0119 - CONTA 71.112-8 .",
+                            "before_year_asset_value": 9233.69,
+                            "current_year_asset_value": 707.26,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "87.853.206/0001-42",
+                                "bank": "748",
+                                "cpf": "988.846.620-87",
+                                "agency": "0119",
+                                "account": "71112-8"
+                            },
+                            "country_valid": true,
+                            "page": 27
+                        },
+                        {
+                            "id": "4f9475e23e068d1b837f2aef26150659",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "BANCO DO BRASIL CONTA CORRENTE",
+                            "before_year_asset_value": 17.6,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.000.000/0001-91",
+                                "bank": "001",
+                                "cpf": "988.846.620-87",
+                                "agency": "0671",
+                                "account": "8853-6"
+                            },
+                            "country_valid": true,
+                            "page": 28
+                        },
+                        {
+                            "id": "fa63a9373bf89f699e9ef832835a9007",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTOS CONTA CORRENTE 6039323",
+                            "before_year_asset_value": 731904.78,
+                            "current_year_asset_value": 23703.64,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "bank": "102",
+                                "cpf": "988.846.620-87",
+                                "agency": "0001",
+                                "account": "603932-3"
+                            },
+                            "country_valid": true,
+                            "page": 28
+                        },
+                        {
+                            "id": "f36d2b2b86c59d8e0184e5ec4f631879",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "BANCO INTER SALDO NA CONTA GLOBAL U $ 4,577.08 CONVERTIDO EM REAIS PELA COTAÇÃO DO DOLAR FIXADA PARA COMPRA PELO BANCO CENTRAL PTAX DE COMPRA ULT DIA UTIL DE 2023 CORRESPONDE A R $ 4,84 .",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 22156.27,
+                            "country_code": "249",
+                            "country_name": "ESTADOS UNIDOS",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 28
+                        },
+                        {
+                            "id": "d904c0d4829128d92318d66d9e49e78a",
+                            "asset_group_code": "06",
+                            "asset_code": "10",
+                            "asset_description": "DINHEIRO EM MAOS .",
+                            "before_year_asset_value": 130000.0,
+                            "current_year_asset_value": 95000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 28
+                        },
+                        {
+                            "id": "e782a075d6bbf31fbe39e0c480058afc",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTO - DAYCOVAL CLASSIC FIRF . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 93676.22,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "10.783.480/0001-68",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 28
+                        },
+                        {
+                            "id": "1e9ed79dd278ec0a24e72142c9d6fa8c",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTO - GAVEA MACRO PLUS II FIC FIM . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 119185.74,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.556.738/0001-09",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 29
+                        },
+                        {
+                            "id": "0c21da8155125408603496ef7429e5f5",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTO - SAFRA DI MASTER FIRF REFERENCIAD",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 244097.21,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.536.364/0001-16",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 29
+                        },
+                        {
+                            "id": "f014238ae8f27d6f4cd11c7b4a1b912a",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "XP FUNDO DE INVEST EQUITAS SELECTION FIC FIA . SALDO ENCERRADO EM 2023 .",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "12.004.203/0001-35",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 29
+                        },
+                        {
+                            "id": "feaec239e462846a7266ef9ddc1f54e4",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "XP INVESTIMENTO - TRIGONO FLAGSHIP 60 SMALL",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "35.471.498/0001-55",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 29
+                        },
+                        {
+                            "id": "cb3f15405938973e423f8ae41258ccc1",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "XP INVESTIMENTO - LM CLEARBRIDGE US LARGE CAP GROW",
+                            "before_year_asset_value": 150000.0,
+                            "current_year_asset_value": 150000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "28.320.600/0001-56",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 29
+                        },
+                        {
+                            "id": "fd6ca936f791c98e03542136063fd5b2",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "XP INVESTIMENTO - AXA WF DIGITAL ECONOMY",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "35.002.482/0001-01",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 30
+                        },
+                        {
+                            "id": "fbdd576c167213c0bf265fb3f592d79e",
+                            "asset_group_code": "07",
+                            "asset_code": "04",
+                            "asset_description": "XP INVESTIMENTO - EQUITAS SELECTION FIC FIA",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "12.004.203/0001-35",
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 30
+                        },
+                        {
+                            "id": "94ce70f6477fbc561051ab7338a35dd8",
+                            "asset_group_code": "07",
+                            "asset_code": "99",
+                            "asset_description": "FUNDO DE INVESTIMENTO IMOBILIARIO RBR OPORTUNIDADES EM CREDITO IMOBILIARIO",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 273308.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "50.352.284/0001-53",
+                                "traded_on_stock_market": false,
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 30
+                        },
+                        {
+                            "id": "20c4fb68147a42b1fc8cf1ff2f5eb5ea",
+                            "asset_group_code": "07",
+                            "asset_code": "99",
+                            "asset_description": "BTG PACTUAL CREDITO PARA INCORPORACAO FII FUNDO DE INVESTIMENTO IMOBILIARIO",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 604932.36,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "43.008.233/0001-43",
+                                "traded_on_stock_market": false,
+                                "cpf": "988.846.620-87"
+                            },
+                            "country_valid": true,
+                            "page": 30
+                        },
+                        {
+                            "id": "12cc2d0d84291d7444f801de33db7b15",
+                            "asset_group_code": "99",
+                            "asset_code": "02",
+                            "asset_description": "TITULO DE MEMBRO DO CLUBE IBEROSTAR - VLR PAGO EM 2020 U $ 12.094,44 DOLAR 5.1961 TOTAL R $ 62.770,14 . VLR.PAGO EM 2021 U $ 12.094,44 TOTAL EM R $ 67.613,46 . VLR.PAGO EM 2022 U $ 12.094,44 TOTAL EM R $ 62.295,74 . VLR . PAGO EM 2023 U $ 12.093,99 , CONVERTIDO EM REAIS PELA PTAX R $ 60.753,20 . QUITADO EM 2023 .",
+                            "before_year_asset_value": 242679.34,
+                            "current_year_asset_value": 303432.54,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 30
+                        },
+                        {
+                            "id": "82d842f91d000387014b137e4137b40f",
+                            "asset_group_code": "99",
+                            "asset_code": "02",
+                            "asset_description": "TITULO REMIDO PATRIMONIAL DO RENASCENCA TAQUARI TENIS CLUBE CNPJ 97.940.243 / 0001-70 - ADQUIRIDO EM 11/01/2018 VALOR R $ 10.000,00 .",
+                            "before_year_asset_value": 10000.0,
+                            "current_year_asset_value": 10000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 31
+                        },
+                        {
+                            "id": "fac49ee705106f62197b7adc83ca17f7",
+                            "asset_group_code": "99",
+                            "asset_code": "06",
+                            "asset_description": "BRADESCO VGBL",
+                            "before_year_asset_value": 104906.23,
+                            "current_year_asset_value": 104906.23,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "51.990.695/0001-37"
+                            },
+                            "country_valid": true,
+                            "page": 31
+                        },
+                        {
+                            "id": "341dbcbe6cc0c8ab88936db7f07cfa88",
+                            "asset_group_code": "99",
+                            "asset_code": "06",
+                            "asset_description": "VGBLICATU SEGUROS S.A. - PREMIOS ACUMULADOS EM VGBL",
+                            "before_year_asset_value": 263161.28,
+                            "current_year_asset_value": 182115.7,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "42.283.770/0001-39"
+                            },
+                            "country_valid": true,
+                            "page": 31
+                        },
+                        {
+                            "id": "8aead71981b76f843869d8c9c6a96324",
+                            "asset_group_code": "99",
+                            "asset_code": "06",
+                            "asset_description": "VGBL BRASILPREV",
+                            "before_year_asset_value": 75000.0,
+                            "current_year_asset_value": 75000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "27.665.207/0001-31"
+                            },
+                            "country_valid": true,
+                            "page": 31
+                        },
+                        {
+                            "id": "02131d0ea5f3f3c35e9f0eea71918552",
+                            "asset_group_code": "99",
+                            "asset_code": "06",
+                            "asset_description": "XP VIDA E PREVIDENCIA S / A VGBL",
+                            "before_year_asset_value": 337370.75,
+                            "current_year_asset_value": 418416.33,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "29.408.732/0001-05"
+                            },
+                            "country_valid": true,
+                            "page": 31
+                        },
+                        {
+                            "id": "656a888c39c1c6fc7383d38a0253bcb6",
+                            "asset_group_code": "99",
+                            "asset_code": "99",
+                            "asset_description": "RESERVA DE FUTURO AUMENTO DE CAPITAL NA EMPRESA R. FERREIRA HOLDING INSCRITA NO CNPJ SOB O NO 19.443.347 / 0001-37 . SALDO DE 1.1047.943,78 FOI INTEGRALIZADO CFE . ALT . CONTRATUAL EM 2021.EM 2021 SALDO DE APORTES P / RESERVA FUT . AUMENTO DE CAPITAL",
+                            "before_year_asset_value": 329908.0,
+                            "current_year_asset_value": 329908.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 31
+                        }
+                    ],
+                    "last_year_total_value": 35878161.31,
+                    "current_year_total_value": 36288845.52,
+                    "pages_with_problems": [
+                        12,
+                        30
+                    ]
+                },
+                "debts_and_encumbrances": {
+                    "section_name": "Dívidas e Ônus Reais",
+                    "items": [
+                        {
+                            "id": "ace99b5ad14ea15b6feb84cd60a3b776",
+                            "debt_code": "13",
+                            "debt_description": "EMPRESTIMO P/SOCIO NA EMPRESA - OIW INDUSTRIA ELETRONICA S.A. CNPJ 07.212.549/0001-99.",
+                            "year_before_last_value": 1813359.51,
+                            "last_year_value": 1813359.51,
+                            "current_year_value": 0.0,
+                            "page": 32
+                        },
+                        {
+                            "id": "c16df690d8870145bdf24e2055e60dce",
+                            "debt_code": "13",
+                            "debt_description": "PIONER & TEIXEIRA CONSTRUCOES LTDA CNPJ 15.458.651/0001-05 SALDO R$ 584.000,00 EM 23 PARCELAS DE R$ 3.000,00 E 25 PARCELAS DE R$ 14.714,28 PELA AQUIS. CASA 196 EM CONSTRUCAO NO RESIDENCIAL MURANO EM CAPÃO DA CANOA.",
+                            "year_before_last_value": 191285.64,
+                            "last_year_value": 20896.89,
+                            "current_year_value": 246635.55,
+                            "page": 32
+                        },
+                        {
+                            "id": "48ae452fa3e93c746b27aa444f17e893",
+                            "debt_code": "11",
+                            "debt_description": "SICREDI FINANCIAMENTO PARA ENERGIA SOLAR CONTRATO C004301702 DATA DA LIBERACAO 24/01/2020 VALOR LIBERADO R$ 66.100,00.",
+                            "year_before_last_value": 40420.64,
+                            "last_year_value": 30930.9,
+                            "current_year_value": 15783.37,
+                            "page": 32
+                        },
+                        {
+                            "id": "ab2bc39d7c0ba18fea8f75d5645a1ebd",
+                            "debt_code": "11",
+                            "debt_description": "BANCO XP S/A CNPJ 33.264.668/0001-03",
+                            "year_before_last_value": 1036883.52,
+                            "last_year_value": 1032502.29,
+                            "current_year_value": 135267.4,
+                            "page": 32
+                        },
+                        {
+                            "id": "78a77bae5e64e41b2fbd95cc7a808da5",
+                            "debt_code": "13",
+                            "debt_description": "TKNET TELECOM LTDA CNPJ 04.551.447/0001-00 SALDO DE ANTECIPACAO DE LUCROS DO PERIODO 2021.",
+                            "year_before_last_value": 408784.23,
+                            "last_year_value": 0.0,
+                            "current_year_value": 408784.23,
+                            "page": 32
+                        },
+                        {
+                            "id": "b65619ca9c24a928cb2ce1ac56848b5a",
+                            "debt_code": "13",
+                            "debt_description": "SSN INCORP. E EMPREEND. LTDA CNPJ 02.110.152/0001-72 - APTO. 902 ILHEUS/BA - PARCELAS R$ 5.000,00 16/01 E 16/02/2022, 36 PARCELAS R$ 2.250,00 1A PARCELA VENC 16/03/2022, 6 PARCELAS INTERMEDIARIAS DE R$ 15.000,00 VENC. 16/06/22, 16/12/2022, 16./06/2023, 16/12/2023, 16/06/2024 E 16/12/2024.",
+                            "year_before_last_value": 136196.01,
+                            "last_year_value": 72537.34,
+                            "current_year_value": 63658.67,
+                            "page": 32
+                        },
+                        {
+                            "id": "70472161c80672373dc28bdd12fc1f4a",
+                            "debt_code": "13",
+                            "debt_description": "BERALV EMPREENDIMENTOS IMOBILIARIOS LTDA CNPJ 93.307.114/0001-60 - SALDO REF. AQUISICAO DO TERRENO URBANO LOTE 15 QUADRA A, SITUADO NO CONDOMINIO HORIZONTAL CAPÃO DA CANOA ILHAS RESORT I, LOCALIZDO NO KM 33 DA ESTRADA DO MAR. SALDO EM 58 PARCELAS DE R$ 8.405,00 E 1 PARCELA DE R$ 27.250,00 + CORRECAO PELO INCC.",
+                            "year_before_last_value": 470690.0,
+                            "last_year_value": 369830.0,
+                            "current_year_value": 103255.92,
+                            "page": 32
+                        },
+                        {
+                            "id": "8358df151ed2c2f9e91c6b945fdd267e",
+                            "debt_code": "13",
+                            "debt_description": "EMPRESTIMO P/SOCIO NA EMPRESA OIW PAR CNPJ 28.218.289/0001-39.",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 865000.0,
+                            "current_year_value": 0.0,
+                            "page": 32
+                        }
+                    ],
+                    "amount_of_codes_equal_to_amount_of_values": true,
+                    "year_before_last_total_value": 4097619.55,
+                    "last_year_total_value": 4205056.93,
+                    "current_year_total_value": 973385.14,
+                    "pages_with_problems": []
+                },
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 447999.58,
+                    "valid_total": true,
+                    "subsections": {
+                        "profits_and_dividends": {
+                            "name": "09. Lucros e dividendos recebidos",
+                            "code": "09",
+                            "total_value": 3925.99,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "87.853.206/0001-42",
+                                    "payer_name": "CCPI OURO BRANCO",
+                                    "value": 1846.38,
+                                    "id": "bed592820e97b616c3cebf7763ed0aca",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CONTA 45626 DIVID.",
+                                    "value": 2069.07,
+                                    "id": "f2a43a5d187a6af52d10cc0930652109",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CONTA 6039323 DIVID",
+                                    "value": 10.54,
+                                    "id": "b7b950ee0775d205f60fe98f09b53314",
+                                    "page": 2
+                                }
+                            ]
+                        },
+                        "savings_accounts_mortgage_lci_lca_cra_cri": {
+                            "name": "12. Rendimentos de cadernetas de poupança, letras hipotecárias, letras de crédito do agronegócio e imobiliário (LCA e LCI) e certificados de recebíveis do agronegócio e imobiliários (CRA e CRI)",
+                            "code": "12",
+                            "total_value": 400956.84,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS ISEC SECURITIZADORA S/A",
+                                    "value": 4416.07,
+                                    "id": "39f6e4db996c60f2b6134049df0e0569",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS RB CAPITAL SECURITIZADORA S/A",
+                                    "value": 4107.63,
+                                    "id": "358a025f189e6499a5a9b7a06cf12c0c",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS RB SECURITIZADORA 0001807",
+                                    "value": 13254.06,
+                                    "id": "2f41b7a25717ec926d924a29a56ce0f4",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS RB CAPITAL SECURITIZADORA 1235206",
+                                    "value": 27900.04,
+                                    "id": "9fcfb1029bc342a32b15e809313bb13d",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "INVESTIMENTOS - OLIVEIRA DTVM S/A CRA FLU 0220012X",
+                                    "value": 3200.64,
+                                    "id": "439d5c2cf94361e971529ee8f1f5b258",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - VIRGO COMPANHIA DE SECURITIZACAO 4808",
+                                    "value": 6664.82,
+                                    "id": "f4265967ef917ea40fba9371efb80d16",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - VIRGO COMPANHIA DE SECURITIZACAO FLU",
+                                    "value": 12477.05,
+                                    "id": "f1fa54cd49739dbf7e3d1bccd1e98599",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "74.014.747/0001-35",
+                                    "payer_name": "BRADESCO LIG",
+                                    "value": 240479.7,
+                                    "id": "1fa5b19fe510631c4c8d55fcd11e13be",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.773.542/0001-22",
+                                    "payer_name": "PACTUAL OPEA S.A.",
+                                    "value": 18230.6,
+                                    "id": "a07351d1043b0cfb6e98d50a7cc4a31a",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "12.130.744/0001-00",
+                                    "payer_name": "PACTUAL TRUE S.A.",
+                                    "value": 983.3,
+                                    "id": "07b1adffc4ac2f9a1ccf03a9c8866bad",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BANCO BTG PACTUAL SA",
+                                    "value": 41301.37,
+                                    "id": "6469a80f4ef5214f0d330cb08ce920e7",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - CAIXA ECONOMICA LCI 01242681",
+                                    "value": 27185.21,
+                                    "id": "f1a675b32d488382d4f9aec1cd500d24",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - PERNAMBUCO III TPER41",
+                                    "value": 33.32,
+                                    "id": "9fae373071aabd0292a748395a329783",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - PERNAMBUCO III TPER11",
+                                    "value": 27.82,
+                                    "id": "5825e754ea8104791d2c7b0d169b88fb",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - PERNAMBUCO III TPER21",
+                                    "value": 34.84,
+                                    "id": "c9d87361fd12783ad844695f5a5e5d0a",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS - PERNAMBUCO III TPER31",
+                                    "value": 34.1,
+                                    "id": "f95f8cf4c71935d96e3e2e96f0cbbd8b",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CONTA 45626 TERMELETRICA PERNAMBUCO III",
+                                    "value": 626.27,
+                                    "id": "3531b621c942fb6f4e1fbc5bf1af6bd0",
+                                    "page": 3
+                                }
+                            ]
+                        },
+                        "others_99": {
+                            "name": "99. Outros",
+                            "code": "99",
+                            "total_value": 43116.75,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cpf_cnpj": "43.008.233/0001-43",
+                                    "payer_name": "FII BTG PACTUAL CREDITO PARA INCORPORACAO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 27284.0,
+                                    "id": "ee99a05b7905b03b6339f42843e973ea",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cpf_cnpj": "50.352.284/0001-53",
+                                    "payer_name": "FIIRBR OPORTUNIDADE",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 15832.75,
+                                    "id": "8cbe38c83feb8a7dcc2cd749aa8cedd5",
+                                    "page": 3
+                                }
+                            ]
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 303258.07,
+                    "valid_total": true,
+                    "subsections": {
+                        "income_from_financial_investments": {
+                            "name": "06. Rendimentos de aplicações financeiras",
+                            "code": "06",
+                            "total_value": 256394.64,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "60.746.948/0001-12",
+                                    "payer_name": "BANCO BRADESCO S A",
+                                    "value": 15784.32,
+                                    "id": "7567d52c9aae57e35f6c84fe73396ded",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "09.346.601/0001-25",
+                                    "payer_name": "B3 S.A. - BRASIL, BOLSA, BALCAO",
+                                    "value": 17.84,
+                                    "id": "8a7f1cf2bb1a6d33eb13b8668825aa71",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BANCO BTG PACTUAL SA",
+                                    "value": 48813.19,
+                                    "id": "fe60bd565beb5494ee46eb552e6d5240",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "00.416.968/0001-01",
+                                    "payer_name": "BANCO INTER SA",
+                                    "value": 270.82,
+                                    "id": "835e2f2f84849aa2a9fea420b533c38e",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS SAXCFI CDB FLU 24/09/2023",
+                                    "value": 28087.36,
+                                    "id": "859b1e5d8f573fac07143e62142ecf58",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "21.170.347/0001-52",
+                                    "payer_name": "SICREDI CRED PRIV FIC FIRF LP",
+                                    "value": 13254.84,
+                                    "id": "3544bc3771dd75cd5c8f3ed80fb1b1d7",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "07.667.259/0001-30",
+                                    "payer_name": "BRADESCO FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTI",
+                                    "value": 4.05,
+                                    "id": "ffdec2e2b8f38dd4a5d6691ab9ec5f2d",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "32.312.124/0001-07",
+                                    "payer_name": "BRADESCO FIC FI RF REFERENCIADO DI MAX",
+                                    "value": 602.9,
+                                    "id": "f71cddce19db84468ded105baae3f8a0",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "05.114.716/0001-33",
+                                    "payer_name": "CAIXA FIC FOME ZERO CP",
+                                    "value": 369.13,
+                                    "id": "d302464050b2cbb939c6aed40413dd89",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.536.364/0001-16",
+                                    "payer_name": "SAFRA DI MASTER FIRF REFERENCIADO DI LP",
+                                    "value": 6671.74,
+                                    "id": "9e6e2556664cbbbae21611696d25802c",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "10.783.480/0001-68",
+                                    "payer_name": "DAYCOVAL CLASSIC FIRF CREDITO PRIVADO",
+                                    "value": 5109.65,
+                                    "id": "ec8fe3db51a0420d5670078697c3cb0f",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "24.325.096/0001-26",
+                                    "payer_name": "SULAMERICA PREMIUM FIRF REFERENCIADO DI CP",
+                                    "value": 212.62,
+                                    "id": "fd7573dca53e05ec89958b45f55690fb",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.556.738/0001-09",
+                                    "payer_name": "GAVEA MACRO PLUS II FIC FIM",
+                                    "value": 11172.94,
+                                    "id": "ac19016bb3b67016e625af7c6ce19613",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.680.829/0001-43",
+                                    "payer_name": "NU FINANCEIRA S.A.",
+                                    "value": 3.76,
+                                    "id": "e5d28d56ff72c231d28cd111e2fe4f71",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BANCO BTG PACTUAL SA",
+                                    "value": 30.69,
+                                    "id": "1e5cb223c9d5cf92bb6eeaf2888a8f89",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BANCO BTG PACTUAL SA",
+                                    "value": 21696.96,
+                                    "id": "303572b52bff7bcbd1a07a352379a867",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BTG PACTUAL TESOURO SELIC LFT",
+                                    "value": 7449.76,
+                                    "id": "632b7e6577bea475452edd75cf751981",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BTG PACTUAL TESOURO IPCA NTN - B",
+                                    "value": 3769.87,
+                                    "id": "fac255d279d2765cf614ea08683c5427",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BTG PACTUAL CERTIFICADO DEPOSITO BANCARIO",
+                                    "value": 6419.5,
+                                    "id": "c5ffdeeeb4971aa89935b7c23bd250ad",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BTG PACTUAL CDB",
+                                    "value": 6.6,
+                                    "id": "8ae0d2e220807252bda109797d837734",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "33.042.730/0001-04",
+                                    "payer_name": "BTG PACTUAL DEBENTURE COMPANHIA SIDERURGICA NACIONAL",
+                                    "value": 9439.81,
+                                    "id": "8ac981bca81d858ad680895456127acc",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS TESOURO NACIONAL 15/05/2055",
+                                    "value": 8609.34,
+                                    "id": "7937e13b6c5c45889f2d16f4722b7365",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS BANCO XP 08/02/2023.",
+                                    "value": 16060.86,
+                                    "id": "6cdac560172bd45ed53c3898db67b856",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS BANCO XP 09/02/2023",
+                                    "value": 15409.53,
+                                    "id": "4e8335483d9135fbd23744f9600088f8",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS BANCO XP 11/05/2023",
+                                    "value": 9058.92,
+                                    "id": "44451e2121ce4a29632979d0ad6547a1",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS SIMPAR 15/01/2031",
+                                    "value": 27234.36,
+                                    "id": "b06f5c18f8bb57f95885b83d61f65d53",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS BANCO XP 20/06/2033",
+                                    "value": 833.28,
+                                    "id": "39f86e5d50e15639e780db0d0ea2288d",
+                                    "page": 4
+                                }
+                            ]
+                        },
+                        "interest_on_own_capital": {
+                            "name": "10. Juros sobre capital próprio",
+                            "code": "10",
+                            "total_value": 8529.33,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "07.206.816/0001-15",
+                                    "payer_name": "M DIAS BRANCO S.A. INDUSTRIA E COMERCIO DE ALIMENTOS",
+                                    "value": 7.14,
+                                    "id": "e3a8a1ec6523d34fa017f05ad60bfafa",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "03.342.704/0001-30",
+                                    "payer_name": "PETRORECONCAVO S/A",
+                                    "value": 136.44,
+                                    "id": "c6a2e6b6b124a7ed48775bd2c4295a64",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "33.592.510/0001-54",
+                                    "payer_name": "VALE S/A",
+                                    "value": 1630.7,
+                                    "id": "127890ad65b52b1fc3ac4aa03c0e1196",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "60.746.948/0001-12",
+                                    "payer_name": "BANCO BRADESCO S A",
+                                    "value": 877.74,
+                                    "id": "22c6b98323864a4e3a4735e18cf443b0",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "01.027.058/0001-91",
+                                    "payer_name": "CIELO S.A.- INSTITUICAO DE PAGAMENTO",
+                                    "value": 76.7,
+                                    "id": "2ab1be411b9fb7c62aadd1a2d383a2bd",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "07.594.978/0001-78",
+                                    "payer_name": "SMARTFIT ESCOLA DE GINASTICA E DANCA S.A.",
+                                    "value": 106.22,
+                                    "id": "ee2a42645affbd22b97b6dc54188e3e2",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.762.121/0001-04",
+                                    "payer_name": "SANTOS BRASIL PARTICIPACOES S.A.",
+                                    "value": 76.2,
+                                    "id": "683cc1c012573b69f461a54ce72c99d0",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "88.611.835/0001-29",
+                                    "payer_name": "MARCOPOLO SA",
+                                    "value": 81.69,
+                                    "id": "31293737176d42e57cb80a96b20913ce",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CONTA 45626 JCP",
+                                    "value": 5521.74,
+                                    "id": "5b927346e46b86e524615f0b8f35a8b7",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CONTA 6039323 JCP",
+                                    "value": 14.76,
+                                    "id": "630a738c924bcff347680ae56f2a0674",
+                                    "page": 4
+                                }
+                            ]
+                        },
+                        "others": {
+                            "name": "12. Outros",
+                            "code": "12",
+                            "total_value": 38334.1,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cpf_cnpj": "30.306.294/0001-45",
+                                    "payer_name": "BANCO BTG PACTUAL SA",
+                                    "description": "OPERACOES SWAP",
+                                    "value": 32713.65,
+                                    "id": "407445d17b4839eb822c7316a6499c27",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "988.846.620-87",
+                                    "payer_cpf_cnpj": "02.332.886/0001-04",
+                                    "payer_name": "XP INVESTIMENTOS CORRETORA DE CAMBIO, TITULOS E VALORES MOBI",
+                                    "description": "OPERACOES SWAP",
+                                    "value": 5620.45,
+                                    "id": "0470e5323424b1f13ec7bf29f6d81f4f",
+                                    "page": 4
+                                }
+                            ]
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": null,
+                "income_from_individual_to_dependents": null,
+                "income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "BRASILPREV SEGUROS E PREVIDENCIA SA",
+                            "income_from_legal_person": 10219.36,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 1532.9,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "27.665.207/0001-31",
+                            "id": "a5ad075fa844d0b2f09b9c0ca021e8fd",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "UNIFIQUE TELECOMUNICACOES S/A",
+                            "income_from_legal_person": 903166.93,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 234048.88,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "02.255.187/0001-08",
+                            "id": "69bd1198ebe46031f2f4f601a4555fba",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "COOPERATIVA DE CREDITO, POUPANCA E INVESTIMENTO OURO BRANCO",
+                            "income_from_legal_person": 188.18,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 0.0,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "87.853.206/0001-42",
+                            "id": "2b4e3abed36fd290bb2d8b3cd6cfc7d6",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "OIW INDUSTRIA ELETRONICA S A - FILIAL RS",
+                            "income_from_legal_person": 89669.61,
+                            "official_social_security_contribution": 9863.61,
+                            "tax_withheld_at_source": 10138.18,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "07.212.549/0001-99",
+                            "id": "68a8b32b93fd56129adf663ea42986d1",
+                            "page": 2
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 1003244.08,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 9863.61,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 245719.96,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents": null,
+                "income_from_legal_person_to_holder_with_suspended_requirements": null,
+                "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+                "accumulated_income_from_legal_person_to_holder": null,
+                "accumulated_income_from_legal_person_to_dependents": null,
+                "exploited_rural_properties_in_brazil": null,
+                "rural_income_and_expenditure_in_brazil": null,
+                "calculation_of_rural_results_in_brazil": null,
+                "livestock_movement_in_brazil": null,
+                "rural_activity_assets_in_brazil": null,
+                "rural_activity_debts_in_brazil": null,
+                "exploited_rural_properties_abroad": null,
+                "rural_income_and_expenditure_abroad": null,
+                "calculation_of_rural_results_abroad": null,
+                "rural_activity_assets_abroad": null,
+                "rural_activity_debts_abroad": null,
+                "livestock_movement_abroad": null,
+                "total_pages": 50
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": null,
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}

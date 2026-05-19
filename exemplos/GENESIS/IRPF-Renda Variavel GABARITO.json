@@ -1,0 +1,874 @@
+{
+    "ir_response": {
+        "receipt": null,
+        "declaration": {
+            "taxpayer_identification": {
+                "cpf": "886.978.040-60",
+                "normalized_cpf": "88697804060",
+                "name": "GENESIS LOPES",
+                "exercise_year": "2025",
+                "calendar_year": "2024",
+                "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                "main_occupation": "391 OUTROS TÉCNICOS DE NÍVEL MÉDIO",
+                "contact_and_address": {
+                    "street_address": "RUA RUA LUIZ ANTONIO MACHADO",
+                    "number": "702",
+                    "complement": "BLOCO 4 APTO 472",
+                    "neighborhood": "BONFIM PAULISTA",
+                    "city": "RIBEIRÃO PRETO",
+                    "uf": "SP",
+                    "zip_code": "14110-000",
+                    "phone": "(11) 98888-1111",
+                    "email": "GENESIS@TESTE.COM.BR",
+                    "cell_phone": "(11) 98886-6666"
+                },
+                "type_ir": "DECLARACAO DE AJUSTE ANUAL ORIGINAL"
+            },
+            "total_value": 44883026,
+            "valid_total": true,
+            "equity_evolution": 0,
+            "assets_declaration": {
+                "section_name": "Declaração de Bens e Direitos",
+                "items": [
+                    {
+                        "id": "093e32ae4f6d2f51d3bd99a56ddb15eb",
+                        "asset_group_code": "01",
+                        "asset_code": "01",
+                        "asset_description": "IMÓVEL RESIDENCIAL LOCALIZADO NO ENDEREÇO ABAIXO , ADQUIRIDO DA CONSTRUTORA EXEMPLO S.A. ( CNPJ 00.000.000 / 0001-00 ) , PELO VALOR TOTAL DE R $ 450.000,00 . FINANCIADO PELO BANCO X EM 360 MESES . TOTAL PAGO NO ANO : R $ 30.000,00 .",
+                        "before_year_asset_value": 120000.0,
+                        "current_year_asset_value": 120000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "municipal_registration": "123.456.78-9",
+                            "street_address": "RUA DAS ACÁCIAS",
+                            "complement": "APTO 42",
+                            "city": "SÃO PAULO",
+                            "area": "75,5 m²",
+                            "registered_at_registy_office": true,
+                            "matriculation": "55.123",
+                            "number": "100",
+                            "neighborhood": "CENTRO",
+                            "state": "SP",
+                            "acquisition_date": "15/05/2020",
+                            "registry_office_name": "1º OFÍCIO DE REGISTRO DE",
+                            "zipcode": "01001-000"
+                        },
+                        "country_valid": true,
+                        "page": 4
+                    },
+                    {
+                        "id": "877ad28022ba5d4c99c45ec0a4db34c8",
+                        "asset_group_code": "01",
+                        "asset_code": "11",
+                        "asset_description": "IMOVEL RESIDENCIAL SITO A RUA SHIRLEI CHIRIELEISON LANE NR . 100 APARTAMENTO 52 RIBEIRAO PRETO / SP ADQ . EM 23/11/2015 DE KSC 3 EMPREENDIMENTO IMOBILIARIO SPE LTDA CNPJ 34.335.468 / 0001-59 POR R $ 187.288,96 COM ANUENCIA E INTERVENIENCIA DE VITO DALPIAN CPF 730.704.090-59 CONF ESCRITURA DE 40 TABELIAO LIVRO 2278 PAG 381 DO 40 CARTORIO MATRICULA 142259 DO 20 CRI DE RIBEIRAO PRETO",
+                        "before_year_asset_value": 200000.0,
+                        "current_year_asset_value": 200000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "municipal_registration": null,
+                            "street_address": "RUA SHIRLEI CHIRIELEISON LANE",
+                            "complement": null,
+                            "city": "RIBEIRÃO PRETO",
+                            "area": "185,8 m²",
+                            "registered_at_registy_office": true,
+                            "matriculation": "142259",
+                            "number": "100",
+                            "neighborhood": null,
+                            "state": "SP",
+                            "acquisition_date": null,
+                            "registry_office_name": "20 CRI DE RIBEIRAO PRETO",
+                            "zipcode": null
+                        },
+                        "country_valid": true,
+                        "page": 4
+                    },
+                    {
+                        "id": "1fcfad84760e0fc0f0837abe3658d194",
+                        "asset_group_code": "01",
+                        "asset_code": "16",
+                        "asset_description": "GASTOS COM MATERIAIS E MÃO DE OBRA REFERENTES À CONSTRUÇÃO DE IMÓVEL RESIDENCIAL ( CNO 12.345.67890 / 88 ) , SITUADO NO ENDEREÇO ABAIXO . OBRA EM FASE DE ACABAMENTO .",
+                        "before_year_asset_value": 85000.0,
+                        "current_year_asset_value": 85000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "cei_cno": "12.345.67890/88",
+                            "street_address": "RUA DAS OBRAS",
+                            "complement": "LOTE 05",
+                            "city": "SÃO PAULO",
+                            "area": "120,0 m²",
+                            "number": "250",
+                            "neighborhood": "JARDIM DAS CONSTRUÇÕES",
+                            "state": "SP",
+                            "acquisition_date": null,
+                            "zipcode": "01002-000"
+                        },
+                        "country_valid": true,
+                        "page": 4
+                    },
+                    {
+                        "id": "1509e3539042bcf98be60e682b334fdb",
+                        "asset_group_code": "02",
+                        "asset_code": "01",
+                        "asset_description": "UMA CARRETA ; MARCA GUERRA ; MODELO AG / SR / CG / 3E 1997 PLACA AHF - 5541",
+                        "before_year_asset_value": 3823.86,
+                        "current_year_asset_value": 3823.86,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "renavam": "23423152385"
+                        },
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "302dbcbeeaa0d6ea09b79043744a3c05",
+                        "asset_group_code": "02",
+                        "asset_code": "03",
+                        "asset_description": "LANCHA ADQUIRIDA EM 04/11/2016 CONFORME NF 2232 EMBARCACAO POLPA NORTE II",
+                        "before_year_asset_value": 35000.0,
+                        "current_year_asset_value": 35000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "vessel_registration": "AGENCIANATAL - 667788"
+                        },
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "d03aa42c3466b1818473656b37287fac",
+                        "asset_group_code": "02",
+                        "asset_code": "03",
+                        "asset_description": "MOTO AQUATICA YAMAHA - MODELO FX CRUISER SVHO HP 250 - MOTOR 1812CC - CHASSI F3X - 801686 - ADQUIRIDO DE PORT BRAZIL COMERCIAL EXPORTADORA - NOTA FISCAL 177 DE 27/02/2019",
+                        "before_year_asset_value": 98850.0,
+                        "current_year_asset_value": 98850.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "vessel_registration": "CPRJ - 998877"
+                        },
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "0abf9c8b782af4243912c17d37d7323c",
+                        "asset_group_code": "02",
+                        "asset_code": "04",
+                        "asset_description": "COLEÇÃO DE RELÓGIOS ANTIGOS HERDADOS .",
+                        "before_year_asset_value": 15000.0,
+                        "current_year_asset_value": 15000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": null,
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "a1db70121f9cafa75183412adea534a0",
+                        "asset_group_code": "02",
+                        "asset_code": "05",
+                        "asset_description": "COLEÇÃO DE COLAR ANTIGOS HERDADOS .",
+                        "before_year_asset_value": 16000000.0,
+                        "current_year_asset_value": 16000000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": null,
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "88d4a5b571ec1137ec69a8aea7d3537a",
+                        "asset_group_code": "02",
+                        "asset_code": "06",
+                        "asset_description": "COLEÇÃO DE PULSEIRAS ANTIGOS HERDADOS .",
+                        "before_year_asset_value": 200000.0,
+                        "current_year_asset_value": 200000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": null,
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "3de27450095ac12ba9ac06235b8ae1c5",
+                        "asset_group_code": "02",
+                        "asset_code": "99",
+                        "asset_description": "COLEÇÃO DE ARTIGOS ANTIGOS HERDADOS .",
+                        "before_year_asset_value": 3000000.0,
+                        "current_year_asset_value": 3000000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": null,
+                        "country_valid": true,
+                        "page": 5
+                    },
+                    {
+                        "id": "b31103922cd631d37e27abd8cc268d87",
+                        "asset_group_code": "03",
+                        "asset_code": "01",
+                        "asset_description": "100 AÇÕES ORDINÁRIAS DA PETRÓLEO BRASILEIRO S.A. , CUSTODIADAS NA CORRETORA XP ( CNPJ 02.332.886 / 0001-04 ) . CUSTO MÉDIO DE AQUISIÇÃO DE R $ 30,00 .",
+                        "before_year_asset_value": 3000.0,
+                        "current_year_asset_value": 3000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "33.000.167/0001-01",
+                            "traded_on_stock_market": true,
+                            "cpf": "886.978.040-60",
+                            "trading_code": "PETR3"
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "2fb57c68137c5da2c6c097e9f2b91892",
+                        "asset_group_code": "03",
+                        "asset_code": "02",
+                        "asset_description": "SÓCIO DETENTOR DE 50 % DAS QUOTAS DE CAPITAL SOCIAL DA EMPRESA PADARIA TESTE LTDA , TOTALMENTE INTEGRALIZADAS .",
+                        "before_year_asset_value": 10000.0,
+                        "current_year_asset_value": 10000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "12.345.678/0001-90",
+                            "cpf": "886.978.040-60"
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "efc9d9593d28bc6215c57e9f5c7b230c",
+                        "asset_group_code": "03",
+                        "asset_code": "99",
+                        "asset_description": "QUOTAS PARTES DE CAPITAL NA COOPERATIVA DE CRÉDITO SICOOB TESTE",
+                        "before_year_asset_value": 500000.0,
+                        "current_year_asset_value": 500000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "33.520.594/0001-10",
+                            "cpf": "886.978.040-60"
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "ed36ed6a3ad6253e8a807cce985c6eef",
+                        "asset_group_code": "04",
+                        "asset_code": "01",
+                        "asset_description": "SALDO EM CONTA POUPANÇA Nº 1234-5 , MANTIDA NA CAIXA ECONÔMICA FEDERAL , AGÊNCIA 0001 .",
+                        "before_year_asset_value": 50000.0,
+                        "current_year_asset_value": 50000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": null,
+                            "cnpj": "00.360.305/0001-04",
+                            "bank": "644",
+                            "cpf": null,
+                            "agency": "0300",
+                            "account": "12221-3"
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "7bf27930922dc64654c50e7b7160c0dc",
+                        "asset_group_code": "04",
+                        "asset_code": "02",
+                        "asset_description": "SALDO EM CONTA POUPANÇA Nº 12345-6 , VARIAÇÃO 51 , MANTIDA NA CAIXA ECONÔMICA FEDERAL , AGÊNCIA 0002 .",
+                        "before_year_asset_value": 60000.0,
+                        "current_year_asset_value": 60000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": null,
+                            "cnpj": "00.360.305/0001-04",
+                            "cpf": null
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "eeea3428c4460ccdcd6892a112eb3c7a",
+                        "asset_group_code": "04",
+                        "asset_code": "03",
+                        "asset_description": "PAGAMENTO FORNECEDOR",
+                        "before_year_asset_value": 1000000.0,
+                        "current_year_asset_value": 1000000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "35.409.792/0001-37",
+                            "cpf": "886.978.040-60"
+                        },
+                        "country_valid": true,
+                        "page": 6
+                    },
+                    {
+                        "id": "e4a7fe3c822e448bce4c3ba3f97a2ee2",
+                        "asset_group_code": "05",
+                        "asset_code": "01",
+                        "asset_description": "EMPRESTIMO",
+                        "before_year_asset_value": 30000.0,
+                        "current_year_asset_value": 30000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Dependente",
+                            "cnpj": "96282514061",
+                            "cpf": "587.870.330-03"
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    },
+                    {
+                        "id": "4ece037d1becf663f7ecbd5791004240",
+                        "asset_group_code": "06",
+                        "asset_code": "01",
+                        "asset_description": "TESTE",
+                        "before_year_asset_value": 100000.0,
+                        "current_year_asset_value": 100000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "10.948.693/0001-00",
+                            "bank": "237",
+                            "cpf": "886.978.040-60",
+                            "agency": "0185",
+                            "account": "257021-1",
+                            "is_payment_account": false
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    },
+                    {
+                        "id": "5b38417b9c534efbe4f9839f28354b4a",
+                        "asset_group_code": "07",
+                        "asset_code": "01",
+                        "asset_description": "AGRO",
+                        "before_year_asset_value": 300000.0,
+                        "current_year_asset_value": 300000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "cnpj": "83.594.341/0001-60",
+                            "cpf": "886.978.040-60"
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    },
+                    {
+                        "id": "f3e7f863a046c9c44198501d954b1268",
+                        "asset_group_code": "07",
+                        "asset_code": "99",
+                        "asset_description": "DISTRIBUIÇÃO DE LUCROS",
+                        "before_year_asset_value": 20000000.0,
+                        "current_year_asset_value": 20000000.0,
+                        "country_code": "767",
+                        "country_name": "SUÍÇA",
+                        "additional_info": {
+                            "beneficiary": "Titular",
+                            "traded_on_stock_market": true,
+                            "financial_application": {
+                                "items": {
+                                    "profit_or_loss": 0.0,
+                                    "tax_paid_abroad": 0.0
+                                }
+                            },
+                            "cpf": "886.978.040-60",
+                            "profits_and_dividends": {
+                                "items": {
+                                    "value_received": 0.0,
+                                    "tax_paid_abroad_irrf": 0.0
+                                }
+                            },
+                            "trading_code": "PETR4"
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    },
+                    {
+                        "id": "134ed4c0818efbc56675a8d530455774",
+                        "asset_group_code": "08",
+                        "asset_code": "01",
+                        "asset_description": "BITOCOIN",
+                        "before_year_asset_value": 3000000.0,
+                        "current_year_asset_value": 3000000.0,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "beneficiary": "Dependente",
+                            "cnpj": null,
+                            "custodian_cnpj": "98.301.640/0001-36",
+                            "self_custodian": false,
+                            "cpf": "726.105.280-94"
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    },
+                    {
+                        "id": "0484bae48736e3e24ebdbbd6e1456043",
+                        "asset_group_code": "99",
+                        "asset_code": "05",
+                        "asset_description": "CONSORCIO XSS ADM CONSORCIO SA - CEF - GRUPO 040002 / 739-0",
+                        "before_year_asset_value": 72352.32,
+                        "current_year_asset_value": 72352.32,
+                        "country_code": "105",
+                        "country_name": "BRASIL",
+                        "additional_info": {
+                            "cnpj": "93.645.222/0001-42"
+                        },
+                        "country_valid": true,
+                        "page": 7
+                    }
+                ],
+                "last_year_total_value": 44883026.18,
+                "current_year_total_value": 44883026.18,
+                "pages_with_problems": []
+            },
+            "debts_and_encumbrances": {},
+            "exempt_income": {
+                "section_name": "Rendimentos Isentos e Não Tributáveis",
+                "total_value": 81060.49,
+                "valid_total": true,
+                "subsections": {
+                    "profits_and_dividends": {
+                        "name": "09. Lucros e dividendos recebidos",
+                        "code": "09",
+                        "total_value": 76560.49,
+                        "valid_total": true,
+                        "items": [
+                            {
+                                "beneficiary": "Titular",
+                                "cpf": "886.978.040-60",
+                                "payer_cnpj": "71.328.769/0001-81",
+                                "payer_name": "SICOOB COCRED COOPERATIVA DE CREDITO",
+                                "value": 16040.09,
+                                "id": "20408e273d7d3308c17da1b88200b7d0",
+                                "page": 2
+                            },
+                            {
+                                "beneficiary": "Titular",
+                                "cpf": "886.978.040-60",
+                                "payer_cnpj": "79.052.122/0001-81",
+                                "payer_name": "COOP DE CRED E POUP E INVESTIMENTOS ALIANCA",
+                                "value": 501.79,
+                                "id": "79103e5702f087e806d2e7918fe064fe",
+                                "page": 2
+                            },
+                            {
+                                "beneficiary": "Titular",
+                                "cpf": "886.978.040-60",
+                                "payer_cnpj": "07.244.521/0001-33",
+                                "payer_name": "PONTO COML DE PLASTIVOS SANTO ANDRE LTDA",
+                                "value": 60018.61,
+                                "id": "3fae775fc8f4d4bbd44d5614d02b8258",
+                                "page": 2
+                            }
+                        ]
+                    },
+                    "savings_accounts_mortgage_lci_lca_cra_cri": {
+                        "name": "12. Rendimentos de cadernetas de poupança, letras hipotecárias, letras de crédito do agronegócio e imobiliário (LCA e LCI) e certificados de recebíveis do agronegócio e imobiliários (CRA e CRI)",
+                        "code": "12",
+                        "total_value": 4500.0,
+                        "valid_total": true,
+                        "items": [
+                            {
+                                "beneficiary": "Titular",
+                                "cpf": "886.978.040-60",
+                                "payer_cnpj": "35.409.792/0001-37",
+                                "payer_name": "TECH SOLUTIONS BRASIL LTDA",
+                                "value": 4500.0,
+                                "id": "92b170e66959d82500e86c2d74d01d17",
+                                "page": 3
+                            }
+                        ]
+                    }
+                }
+            },
+            "exclusive_taxation_income": {
+                "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                "total_value": 106143.23,
+                "valid_total": true,
+                "subsections": {
+                    "net_gains_from_variable_income_stocks_futures_and_reits": {
+                        "name": "05. Ganhos líquidos em renda variável (bolsa de valores, de mercadorias, de futuros e assemelhados e fundos de investimento imobiliário)",
+                        "code": "05",
+                        "total_value": 104550.5,
+                        "valid_total": true,
+                        "items": null
+                    },
+                    "income_from_financial_investments": {
+                        "name": "06. Rendimentos de aplicações financeiras",
+                        "code": "06",
+                        "total_value": 1592.73,
+                        "valid_total": true,
+                        "items": [
+                            {
+                                "beneficiary": "Titular",
+                                "cpf": "886.978.040-60",
+                                "payer_cnpj": "00.360.305/0001-04",
+                                "payer_name": "CAIXA ECON FEDERAL - FI 6800 CEF",
+                                "value": 1592.73,
+                                "id": "a1c1ad1f804c7655cd60e1929b782d9b",
+                                "page": 3
+                            }
+                        ]
+                    }
+                }
+            },
+            "income_from_individual_to_holder": null,
+            "income_from_individual_to_dependents": null,
+            "income_from_legal_person_to_holder": {
+                "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                "items": [
+                    {
+                        "payer_name": "SICOOB COCRED COOPERATIVA DE CREDITO",
+                        "income_from_legal_person": 11857.56,
+                        "official_social_security_contribution": 0.0,
+                        "tax_withheld_at_source": 2375.87,
+                        "thirteenth_salary": 0.0,
+                        "irrf_on_thirteenth_salary": 0.0,
+                        "cpf_cnpj": "21.567.963/0001-41",
+                        "id": "2f511ae9b43f526c61d13bee97293bb9",
+                        "page": 2
+                    },
+                    {
+                        "payer_name": "PONTO COML DE PLASTIVOS SANTO ANDRE LTDA",
+                        "income_from_legal_person": 16768.0,
+                        "official_social_security_contribution": 1734.48,
+                        "tax_withheld_at_source": 0.0,
+                        "thirteenth_salary": 0.0,
+                        "irrf_on_thirteenth_salary": 0.0,
+                        "cpf_cnpj": "04.884.258/0001-59",
+                        "id": "bd0ced7267e2d959b241466fdd9a264d",
+                        "page": 2
+                    },
+                    {
+                        "payer_name": "COOP DE CRED E POUP E INVESTIMENTOS ALIANCA",
+                        "income_from_legal_person": 2178.97,
+                        "official_social_security_contribution": 0.0,
+                        "tax_withheld_at_source": 5.02,
+                        "thirteenth_salary": 0.0,
+                        "irrf_on_thirteenth_salary": 0.0,
+                        "cpf_cnpj": "91.839.744/0001-50",
+                        "id": "e77739eb7d96a32ddf02c4cc337da663",
+                        "page": 2
+                    }
+                ],
+                "total_values": {
+                    "income_from_legal_person": {
+                        "amount": 30804.53,
+                        "valid": true
+                    },
+                    "official_social_security_contribution": {
+                        "amount": 1734.48,
+                        "valid": true
+                    },
+                    "tax_withheld_at_source": {
+                        "amount": 2380.89,
+                        "valid": true
+                    },
+                    "thirteenth_salary": {
+                        "amount": 0.0,
+                        "valid": true
+                    },
+                    "irrf_on_thirteenth_salary": {
+                        "amount": 0.0,
+                        "valid": true
+                    }
+                }
+            },
+            "income_from_legal_person_to_dependents": null,
+            "income_from_legal_person_to_holder_with_suspended_requirements": null,
+            "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+            "accumulated_income_from_legal_person_to_holder": null,
+            "accumulated_income_from_legal_person_to_dependents": null,
+            "exploited_rural_properties_in_brazil": {
+                "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
+                "items": [
+                    {
+                        "code": 10,
+                        "participation": 50.0,
+                        "exploration_condition": 3,
+                        "name_and_location": "FAZENDA BELA VISTA, PRATA - MG",
+                        "area": 968.4,
+                        "cib": "2.405.831-9",
+                        "participants": {
+                            "items": [
+                                {
+                                    "participant_name": "LEONARDO LEAL LOPES (671.796.590-88)",
+                                    "foreigner": false,
+                                    "id": "e2f2f1da740017d5d574cf3a9d4c656c"
+                                }
+                            ]
+                        },
+                        "id": "283bb67c70ba84c38f43554ccd3b809e",
+                        "page": 8
+                    }
+                ]
+            },
+            "rural_income_and_expenditure_in_brazil": {
+                "section_name": "Receitas e Despesas - Brasil",
+                "items": [
+                    {
+                        "month": "Janeiro",
+                        "gross_revenue": 298729.8,
+                        "funding_expenses": 1070412.05,
+                        "id": "589a824ce11bf52c851fadb1fe2a344b",
+                        "page": 8
+                    },
+                    {
+                        "month": "Fevereiro",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "23288e9ffdcc3a38396be7260a127356",
+                        "page": 8
+                    },
+                    {
+                        "month": "Março",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "267b0fe8b0f81d2f9d9d3f14825b87b2",
+                        "page": 8
+                    },
+                    {
+                        "month": "Abril",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "c9ddc9b9c052d349cc90e849baaa05b7",
+                        "page": 8
+                    },
+                    {
+                        "month": "Maio",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "6223c17e1d85265b73e581de502bcb56",
+                        "page": 8
+                    },
+                    {
+                        "month": "Junho",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "a51bf6ea089613b36f651d33281d1f47",
+                        "page": 8
+                    },
+                    {
+                        "month": "Julho",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "461977814e97b0342f05d876e0f06fd8",
+                        "page": 8
+                    },
+                    {
+                        "month": "Agosto",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "d8299d9a192481125c5a364cc55dd7f1",
+                        "page": 8
+                    },
+                    {
+                        "month": "Setembro",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "832996cefcd7188db95a2d6bca82be18",
+                        "page": 8
+                    },
+                    {
+                        "month": "Outubro",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "c35de8ca44a9fb96a71556a99d735dd8",
+                        "page": 8
+                    },
+                    {
+                        "month": "Novembro",
+                        "gross_revenue": 0.0,
+                        "funding_expenses": 0.0,
+                        "id": "27b8f345f37e64b123bfe7f1a035d8d5",
+                        "page": 8
+                    },
+                    {
+                        "month": "Dezembro",
+                        "gross_revenue": 218807.95,
+                        "funding_expenses": 0.0,
+                        "id": "200cae2019f814641b4c6e527742e64e",
+                        "page": 8
+                    }
+                ],
+                "total_values": {
+                    "gross_revenue": {
+                        "amount": 517537.75,
+                        "valid": true
+                    },
+                    "funding_expenses": {
+                        "amount": 1070412.05,
+                        "valid": true
+                    }
+                }
+            },
+            "calculation_of_rural_results_in_brazil": {
+                "section_name": "Apuração do Resultado - Brasil",
+                "subsections": {
+                    "previous_exercise_info": {
+                        "subsection_name": "INFORMAÇÃO DO EXERCÍCIO ANTERIOR",
+                        "items": [
+                            {
+                                "description": "Saldo de prejuízo(s) a compensar de exercício(s) anterior(es)",
+                                "value": 14689335.93,
+                                "id": "330e760ae5acd378a79045ce1b598f5b"
+                            }
+                        ],
+                        "page": 8
+                    },
+                    "calculation_of_taxable_result": {
+                        "subsection_name": "APURAÇÃO DO RESULTADO TRIBUTÁVEL",
+                        "items": [
+                            {
+                                "description": "Receita bruta total",
+                                "value": 517537.75,
+                                "id": "e1866a0a82125013aeeaca2a7cb0e438"
+                            },
+                            {
+                                "description": "Despesa de custeio e investimento total",
+                                "value": 1070412.05,
+                                "id": "7fbd1cad0f2d522488bed5a77162a44b"
+                            },
+                            {
+                                "description": "Resultado",
+                                "value": 552874.3,
+                                "id": "059d35d4f0c61cb980d3c4bdcf1d2612"
+                            },
+                            {
+                                "description": "Limite de 20% sobre a receita bruta total",
+                                "value": 103507.55,
+                                "id": "7b861da32ee80eece6d4189ea88db058"
+                            },
+                            {
+                                "description": "Opção pela forma de apuração do resultado tributável",
+                                "value": "Pelo resultado",
+                                "id": "fa8509d81eb8aa9ccabba03df0a3fdae"
+                            },
+                            {
+                                "description": "Compensação de prejuízo(s) de exercício(s) anterior(es)",
+                                "value": 0.0,
+                                "id": "0d162d72fc0c6495b1e7858012343618"
+                            },
+                            {
+                                "description": "RESULTADO TRIBUTÁVEL",
+                                "value": 0.0,
+                                "id": "f7193c92a3e89138d037cedd72d28785"
+                            }
+                        ],
+                        "page": 8
+                    },
+                    "next_exercise_info": {
+                        "subsection_name": "INFORMAÇÕES PARA O EXERCÍCIO SEGUINTE",
+                        "items": [
+                            {
+                                "description": "Saldo de prejuízo(s) a compensar",
+                                "value": 15242210.23,
+                                "id": "1fb2ee5311ecaabe386579b491277cdd"
+                            }
+                        ],
+                        "page": 8
+                    },
+                    "calculation_of_exempt_result": {
+                        "subsection_name": "APURAÇÃO DO RESULTADO NÃO TRIBUTÁVEL",
+                        "items": [
+                            {
+                                "description": "Adiantamento(s) recebido(s) em 2024 por conta de venda para entrega futura",
+                                "value": 0.0,
+                                "id": "05f7669a96af60c83e2ab4423f798315"
+                            },
+                            {
+                                "description": "Adiantamento(s) recebido(s) até 2023 a ser(em) informado(s) como receita(s) de produto(s) entregue(s) em 2024",
+                                "value": 0.0,
+                                "id": "0aac1efdc7158afe2f3ce1aa1a3398d3"
+                            },
+                            {
+                                "description": "RESULTADO NÃO TRIBUTÁVEL",
+                                "value": 0.0,
+                                "id": "5da58289a8f12eb1d3bef306de45beb3"
+                            }
+                        ],
+                        "page": 8
+                    }
+                }
+            },
+            "livestock_movement_in_brazil": null,
+            "rural_activity_assets_in_brazil": {
+                "section_name": "Bens da Atividade Rural - Brasil",
+                "items": [
+                    {
+                        "code": "16",
+                        "description": "6 VEICULO MARCA FIAT MODELO STRADA ENRURANCE CD COR BRANCO BRANCHISTA ADQUIRIDA DE FCA FIAT CRYSLER AUTOMOVEIS BRASIL CFE NF 5208126 DE 25/05/2021 PELO VALOR DE R$ 75.463,09",
+                        "year_before_last_value": 0.0,
+                        "last_year_value": 0.0,
+                        "id": "a6c587092559c356978d81cbadffbb27",
+                        "page": 9
+                    }
+                ],
+                "total_values": {
+                    "year_before_last_value": {
+                        "amount": 0.0,
+                        "valid": true
+                    },
+                    "last_year_value": {
+                        "amount": 0.0,
+                        "valid": true
+                    }
+                }
+            },
+            "rural_activity_debts_in_brazil": {
+                "section_name": "Dívidas Vinculadas à Atividade Rural - Brasil",
+                "items": [
+                    {
+                        "item": 1,
+                        "description": "50% DO EMPRESTIMO RURAL OBTIDO JUNTO A COOP DE CRED POUP E INVESTIMENTOS ALIANCA CNPJ 79.052.122/0001-81 CONFORME CONTRATO C12216861",
+                        "year_before_last_value": 235237.54,
+                        "last_year_value": 0.0,
+                        "paid_value_in_last_year": 235237.54,
+                        "id": "80ee5310cd9d5dd736d2f0abf73fcb82",
+                        "page": 9
+                    }
+                ],
+                "total_values": {
+                    "year_before_last_value": {
+                        "amount": 235237.54,
+                        "valid": true
+                    },
+                    "last_year_value": {
+                        "amount": 0.0,
+                        "valid": true
+                    },
+                    "paid_value_in_last_year": {
+                        "amount": 235237.54,
+                        "valid": true
+                    }
+                }
+            },
+            "exploited_rural_properties_abroad": null,
+            "rural_income_and_expenditure_abroad": null,
+            "calculation_of_rural_results_abroad": null,
+            "rural_activity_assets_abroad": null,
+            "rural_activity_debts_abroad": null,
+            "livestock_movement_abroad": null,
+            "total_pages": 15
+        }
+    },
+    "dcbe_response": null,
+    "csv_export_url": "https://rpg-ir-analyzer-staging.s3.sa-east-1.amazonaws.com/temp/20fb47d2dc0dee19cdeeb381d7e440.csv",
+    "msg_infos": [],
+    "msg_errors": []
+}

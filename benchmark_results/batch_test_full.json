@@ -1,0 +1,758 @@
+{
+  "execution": {
+    "timestamp": "2026-01-23T08:57:28.166260+00:00",
+    "duration_seconds": 366.79,
+    "api_url": "http://localhost:8000",
+    "tenant_id": "batch-test",
+    "pdf_dir": "pdfs",
+    "min_confidence": 0.7
+  },
+  "summary": {
+    "total": 38,
+    "passed": 26,
+    "failed": 12,
+    "pass_rate": 68.42
+  },
+  "results": [
+    {
+      "filename": "0001_IRPF_Maria de Fa´tima] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "dba0baa9-f9e1-4838-842e-7c0852441d72",
+      "status": "READY",
+      "processing_time": 2.36,
+      "confidence": 0.9683908045977011,
+      "taxpayer": {
+        "cpf": "278.097.575-04",
+        "name": "MARIA DE FATIMA LAVIGNE SANTOS",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (6 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0002_IRPF_Myrthes] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "040d54c9-1e00-424e-aff9-ac91b898fb3d",
+      "status": "READY",
+      "processing_time": 2.11,
+      "confidence": 0.9856321839080459,
+      "taxpayer": {
+        "cpf": "014.550.765-38",
+        "name": "MYRTHES LAVIGNE SANTOS",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (8 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0003_IRPF_Paulo] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "8f1e1f29-e1e3-417e-97bc-ad5ddbbe8b46",
+      "status": "READY",
+      "processing_time": 4.12,
+      "confidence": 0.9683908045977011,
+      "taxpayer": {
+        "cpf": "009.442.915-46",
+        "name": "PAULO GERMANO SGARIONI",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (7 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0004_IRPF_1 IR Declaração - Luiz.pdf",
+      "document_id": "21abdf05-2160-4e9c-84dd-45cada3c019f",
+      "status": "READY",
+      "processing_time": 8.18,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": "524.768.129-00",
+        "name": "LUIZ OGAWA",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (12 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0005_IRPF_. IRPF 2025.2024 - Valdinei_compressed.pdf",
+      "document_id": "fd2fda8a-61ac-4950-b54e-36cf017757b6",
+      "status": "READY",
+      "processing_time": 2.09,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0006_IRPF_2 IRPF Declaração 2025 2024 - Gelson Pavoni.pdf",
+      "document_id": "08cf900d-0ed4-459d-bc01-c086ff4009ab",
+      "status": "READY",
+      "processing_time": 50.68,
+      "confidence": 0.8429153605015675,
+      "taxpayer": {
+        "cpf": "322.360.261-53",
+        "name": "GELSON PAVONI",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2025 (11 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0007_IRPF_2. IRPF Declaração 2025 2024 - Marli Pavoni.pdf",
+      "document_id": "f448eee6-2183-49f0-93bd-36219a2905d8",
+      "status": "READY",
+      "processing_time": 30.4,
+      "confidence": 0.8461983383161669,
+      "taxpayer": {
+        "cpf": "311.965.191-53",
+        "name": "MARLISILVA DE CAMPOS PAVONI",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2025 (6 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0008_IRPF_. IRPF 2025.2024 Sueli_compressed.pdf",
+      "document_id": "39454e3b-0b58-4261-973a-978d8ffaeead",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0009_IRPF_Elvis Vilhena I.R..pdf",
+      "document_id": "8874466a-eca4-4b87-839d-baad408faa9c",
+      "status": "READY",
+      "processing_time": 38.46,
+      "confidence": 0.8631221244927783,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0010_IRPF_3. IRPF Declaração 2025 2024 - Fabricio Luis Mohr.pdf",
+      "document_id": "40c76723-2694-436c-8a0c-58c1a3096896",
+      "status": "READY",
+      "processing_time": 30.45,
+      "confidence": 0.8498060535518965,
+      "taxpayer": {
+        "cpf": "608.068.341-53",
+        "name": "FABRICIO LUIS MOHR",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2025 (6 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0011_IRPF_. IRPF 2025.2024 Savio_compressed.pdf",
+      "document_id": "36e91a70-e427-4697-ba14-97d46ecd2a94",
+      "status": "READY",
+      "processing_time": 4.11,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0012_IRPF_. IRPF 2025.2024 Sedival_compressed.pdf",
+      "document_id": "c6ce6b88-8767-4770-a67f-79888812467c",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0013_IRPF_. IRPF 2025.2024 Sidnei_compressed.pdf",
+      "document_id": "28063ae0-87f3-402d-ae40-8f70e4eb881a",
+      "status": "READY",
+      "processing_time": 2.08,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0014_IRPF_. IRPF 2025.2024 Silvonei_compressed.pdf",
+      "document_id": "43a253b3-dd9d-4e3c-9189-1f63c5bafaf7",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0015_IRPF_. KLEBER JUNIOR COUTINHO_DIRPF_2025 REF 2024_Dec.pdf",
+      "document_id": "b3e4510a-39fa-4e46-9c99-a25c8b54a451",
+      "status": "READY",
+      "processing_time": 4.14,
+      "confidence": 0.9999999999999999,
+      "taxpayer": {
+        "cpf": "246.718.548-64",
+        "name": "KLEBER JUNIOR COUTINHO",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (8 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0016_IRPF_0. 2024- SANDRA - IRRF DECLARAÇÃO 2023.pdf",
+      "document_id": "a0295b39-75a1-42fe-a253-ae8d799481c9",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 0.9883908045977011,
+      "taxpayer": {
+        "cpf": "685.864.856-91",
+        "name": "SANDRA MARIA RODRIGUES",
+        "exercise_year": "2024"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023) (v2024)",
+        "Documento detectado: IRPF 2024 (6 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0017_IRPF_0. Paulo_Dec2023 _2024_IR.pdf",
+      "document_id": "04cace51-bfdb-4729-8a59-ff3d9bb3bfa0",
+      "status": "READY",
+      "processing_time": 18.27,
+      "confidence": 0.8519218166724711,
+      "taxpayer": {
+        "cpf": "746.081.691-49",
+        "name": "PAULO LUIS DE JESUS LOPES",
+        "exercise_year": "2024"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023) (v2024)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2024 (6 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0018_IRPF_1. Paulo_Rec2023_2024_IR.pdf",
+      "document_id": "71210cb3-8641-4c3d-aba6-1ab4a43e54ea",
+      "status": "READY",
+      "processing_time": 8.14,
+      "confidence": 0.8700432861910059,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0019_IRPF_1.2024 _SANDRA - 1-IRPF-A-2024-2023-RECIBO.pdf",
+      "document_id": "42be7ce5-4e5a-41cb-b061-f5e9a22299d7",
+      "status": "READY",
+      "processing_time": 2.09,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0020_IRPF_2. 2024_2023_Kelly-DEC.pdf",
+      "document_id": "e6119eda-5bdb-4347-b8cb-d086f02e8e7a",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 0.9454022988505747,
+      "taxpayer": {
+        "cpf": "034.593.581-06",
+        "name": "KELLY CRISTINA RODRIGUES DE LIMA",
+        "exercise_year": "2024"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023) (v2024)",
+        "Documento detectado: IRPF 2024 (5 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0021_IRPF_3. 2024_IRRF_2023-Kelly_REC.pdf",
+      "document_id": "b308d814-a9af-4bbf-9bc3-f0a32122da47",
+      "status": "READY",
+      "processing_time": 2.1,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0022_IRPF_024 - Declaração IRRF Alex 2025 (ok).pdf",
+      "document_id": "297e5462-0690-4e96-998b-825155bd399d",
+      "status": "READY",
+      "processing_time": 76.84,
+      "confidence": 0.8418314126042407,
+      "taxpayer": {
+        "cpf": "763.163.946-91",
+        "name": "ALEXANDER MARRA MOREIRA",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2025 (10 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0023_IRPF_024_IRPF_DECLARAÇÃO_HENRIQUE_PEROLA.pdf",
+      "document_id": "d3c8509a-ed85-4608-a84f-168aea976a85",
+      "status": "READY",
+      "processing_time": 2.09,
+      "confidence": 0.9856321839080459,
+      "taxpayer": {
+        "cpf": "772.890.991-68",
+        "name": "HENRIQUE PEROLA",
+        "exercise_year": "2024"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023) (v2024)",
+        "Documento detectado: IRPF 2024 (7 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0024_IRPF_024_IRPF_DECLARAÇÃO_JOEL L CALLEGARO.pdf",
+      "document_id": "5a0d5aa9-95fe-4352-8b25-a639c744d1ab",
+      "status": "READY",
+      "processing_time": 4.09,
+      "confidence": 0.9016522988505747,
+      "taxpayer": {
+        "cpf": "797.562.201-04",
+        "name": "JOEL LUCIANO CALLEGARO",
+        "exercise_year": "2024"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Template para Declaração de Ajuste Anual IRPF 2024 (Ano-Calendário 2023) (v2024)",
+        "Documento detectado: IRPF 2024 (8 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0025_IRPF_025 IRPF Ana Paula.pdf",
+      "document_id": "9b05584c-747e-4596-9883-9b1693931749",
+      "status": "READY",
+      "processing_time": 32.41,
+      "confidence": 0.8425215517241378,
+      "taxpayer": {
+        "cpf": "158.874.788-37",
+        "name": "ANA PAULA BULLER ALMEIDA GARCIA",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Texto extraido via OCR",
+        "Documento detectado: IRPF 2025 (8 secoes encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0026_IRPF_025-2024 IRPF-DECLARAC¸A~O MICHAEL.pdf",
+      "document_id": "84e8b26e-346d-428d-a9e4-894a9a1204e7",
+      "status": "READY",
+      "processing_time": 2.12,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": "997.921.845-20",
+        "name": "MICHEL DOS ANJOS SOBRAL",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (12 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0027_IRPF_0394557930-IRPF-2025-Fabio L do Vale-dec.pdf",
+      "document_id": "e9eee427-5f2a-4275-b6cf-efd8e55a6640",
+      "status": "READY",
+      "processing_time": 6.16,
+      "confidence": 0.9597701149425287,
+      "taxpayer": {
+        "cpf": "003.945.579-30",
+        "name": "FABIO LUIS DO VALE",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (11 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0028_IRPF_0394557930-IRPF-2025-Fabio L do Vale-rec.pdf",
+      "document_id": "b52999c0-b0af-468c-b807-bc5213589e55",
+      "status": "READY",
+      "processing_time": 2.09,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "0029_IRPF_0394558901-IRPF-2025-Keiti R do Vale-dec.pdf",
+      "document_id": "e227bee7-d281-4e47-adcf-4e1f8f02296a",
+      "status": "READY",
+      "processing_time": 6.15,
+      "confidence": 0.9856321839080459,
+      "taxpayer": {
+        "cpf": "003.945.589-01",
+        "name": "KEITI REGINA DO VALE",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (12 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "0030_IRPF_0394558901-IRPF-2025-Keiti R do Vale-rec.pdf",
+      "document_id": "c1e7ce37-7ebe-4cd3-ad33-361d79e04932",
+      "status": "READY",
+      "processing_time": 2.07,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "missing_cpf",
+        "missing_name",
+        "missing_exercise_year"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": null
+    },
+    {
+      "filename": "Geral-IRPF-2025-2024.pdf",
+      "document_id": "82b23610-36ee-4981-87e5-d41224436789",
+      "status": "READY",
+      "processing_time": 2.08,
+      "confidence": 0.9104022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "IRPF 2025 GENESIS LOPES DECLARAÇÃO-Teste.pdf",
+      "document_id": "e1eed260-767e-4800-ab19-c6072a82c14f",
+      "status": "READY",
+      "processing_time": 2.06,
+      "confidence": 0.9104022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "IRPF-ATIVIDADE RURAL.pdf",
+      "document_id": "7723038b-46c9-4300-818d-9bf0a9c7ef26",
+      "status": "READY",
+      "processing_time": 4.1,
+      "confidence": 0.9304022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "IRPF-Identificação do Contribuinte 1.pdf",
+      "document_id": "82b23610-36ee-4981-87e5-d41224436789",
+      "status": "READY",
+      "processing_time": 0.03,
+      "confidence": 0.9104022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "IRPF-Renda Variavel 2.pdf",
+      "document_id": "0a5a1974-30f1-4413-b527-55c9465bf0df",
+      "status": "READY",
+      "processing_time": 2.07,
+      "confidence": 0.9304022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "IRPF-Renda Variavel.pdf",
+      "document_id": "0a5a1974-30f1-4413-b527-55c9465bf0df",
+      "status": "READY",
+      "processing_time": 0.05,
+      "confidence": 0.9304022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "david.pdf",
+      "document_id": "8377e278-0e9f-401a-8545-98be763438d5",
+      "status": "READY",
+      "processing_time": 2.09,
+      "confidence": 1.0,
+      "taxpayer": {
+        "cpf": "022.491.845-18",
+        "name": "DAVID PEREIRA DE AZEVEDO",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (7 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    },
+    {
+      "filename": "receitaPDF.pdf",
+      "document_id": "e1eed260-767e-4800-ab19-c6072a82c14f",
+      "status": "READY",
+      "processing_time": 0.05,
+      "confidence": 0.9104022988505748,
+      "taxpayer": {
+        "cpf": "886.978.040-60",
+        "name": "GENESIS LOPES",
+        "exercise_year": "2025"
+      },
+      "validation_errors": [],
+      "warnings": [
+        "Template: Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024) (v2025)",
+        "Documento detectado: IRPF 2025 (10 seções encontradas)"
+      ],
+      "passed": true,
+      "error_message": null
+    }
+  ]
+}

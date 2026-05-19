@@ -1,0 +1,106 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+venv_*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage_html/
+reports/
+.tox/
+.nox/
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data
+*.db
+*.sqlite3
+data/
+
+# Temporary
+tmp/
+temp/
+
+# Internal docs (not for public repo)
+PLAN.md
+PLAN-TEST.md
+PLAN-TEST.pdf
+spec.md
+batch_results*.json
+docs/
+scripts/
+local_tests/
+
+# Business confidential
+business/
+
+# Agents (WIP - not ready for production)
+src/irpf_processor/infrastructure/agents/
+src/irpf_processor/templates/rules/
+tests/unit/agents/
+tests/unit/test_rules_loader.py
+docs/PROPOSTA_AGENTES_V1.md
+
+# Generated PDFs
+*.pdf
+
+# GCP credential files
+gcp-super-*.json
+credentials/
+asa-certificate.cer

@@ -1,0 +1,740 @@
+{
+  "execution": {
+    "timestamp": "2026-01-23T08:47:26.910958+00:00",
+    "duration_seconds": 66.96,
+    "api_url": "http://localhost:8000",
+    "tenant_id": "batch-test",
+    "pdf_dir": "pdfs",
+    "min_confidence": 0.7
+  },
+  "summary": {
+    "total": 38,
+    "passed": 0,
+    "failed": 38,
+    "pass_rate": 0.0
+  },
+  "results": [
+    {
+      "filename": "0001_IRPF_Maria de Fa´tima] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "c8560242-8003-4903-ac00-75e3affbcad6",
+      "status": "FAILED",
+      "processing_time": 2.29,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0002_IRPF_Myrthes] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "d4585d53-ee30-4caf-833b-bb7df5afe567",
+      "status": "FAILED",
+      "processing_time": 0.05,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0003_IRPF_Paulo] IRPF 2025 - Declarac¸a~o.pdf",
+      "document_id": "cdc63608-7222-4314-b9b0-c5f8a11ed7ce",
+      "status": "FAILED",
+      "processing_time": 2.06,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0004_IRPF_1 IR Declaração - Luiz.pdf",
+      "document_id": "174112f9-1a14-4e52-bc18-6c2749cfd59d",
+      "status": "FAILED",
+      "processing_time": 2.1,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0005_IRPF_. IRPF 2025.2024 - Valdinei_compressed.pdf",
+      "document_id": "31f5ad3a-6b63-4109-bbdf-be5d72e8401d",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0006_IRPF_2 IRPF Declaração 2025 2024 - Gelson Pavoni.pdf",
+      "document_id": "53916270-d4a9-45cf-8fce-c10895f4f85a",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0007_IRPF_2. IRPF Declaração 2025 2024 - Marli Pavoni.pdf",
+      "document_id": "787a1fd6-c6de-42a9-b92c-400eccf218e2",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0008_IRPF_. IRPF 2025.2024 Sueli_compressed.pdf",
+      "document_id": "8212d370-0404-42ee-babd-75b10ab1a2ae",
+      "status": "FAILED",
+      "processing_time": 2.06,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0009_IRPF_Elvis Vilhena I.R..pdf",
+      "document_id": "efe1505a-1f58-4605-bc68-4b92b6a44cc9",
+      "status": "FAILED",
+      "processing_time": 2.06,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0010_IRPF_3. IRPF Declaração 2025 2024 - Fabricio Luis Mohr.pdf",
+      "document_id": "01ed552a-a856-4376-9973-a197f5091f67",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0011_IRPF_. IRPF 2025.2024 Savio_compressed.pdf",
+      "document_id": "1705b22a-c374-4af2-a30b-9b250ef175a0",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0012_IRPF_. IRPF 2025.2024 Sedival_compressed.pdf",
+      "document_id": "e48677b3-f3ff-40bb-823e-77c9b3cb6639",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0013_IRPF_. IRPF 2025.2024 Sidnei_compressed.pdf",
+      "document_id": "8b771f6a-690f-47f6-ba6c-cff3e651f911",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0014_IRPF_. IRPF 2025.2024 Silvonei_compressed.pdf",
+      "document_id": "d45b4671-ba9c-4ad8-aa0d-04dba201604f",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0015_IRPF_. KLEBER JUNIOR COUTINHO_DIRPF_2025 REF 2024_Dec.pdf",
+      "document_id": "efd18a59-aa44-4728-8ecf-28665fe1802e",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0016_IRPF_0. 2024- SANDRA - IRRF DECLARAÇÃO 2023.pdf",
+      "document_id": "a4983d0c-6b4e-40ba-818f-d798f69b12c7",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0017_IRPF_0. Paulo_Dec2023 _2024_IR.pdf",
+      "document_id": "f6f31057-797a-43e1-93b9-2a0b11d5d5bd",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0018_IRPF_1. Paulo_Rec2023_2024_IR.pdf",
+      "document_id": "229df61c-6660-41ff-82ec-59c43f568892",
+      "status": "FAILED",
+      "processing_time": 2.11,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0019_IRPF_1.2024 _SANDRA - 1-IRPF-A-2024-2023-RECIBO.pdf",
+      "document_id": "a4ac7032-bb23-4715-8f45-e5e5d9ef9485",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0020_IRPF_2. 2024_2023_Kelly-DEC.pdf",
+      "document_id": "4fe51875-4e94-4aa6-8316-3f16239d485c",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0021_IRPF_3. 2024_IRRF_2023-Kelly_REC.pdf",
+      "document_id": "cdc055db-865a-42c3-8853-121a44be156b",
+      "status": "FAILED",
+      "processing_time": 0.04,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0022_IRPF_024 - Declaração IRRF Alex 2025 (ok).pdf",
+      "document_id": "6a4fd692-0aa9-48f9-bd47-903931e39e39",
+      "status": "FAILED",
+      "processing_time": 0.11,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0023_IRPF_024_IRPF_DECLARAÇÃO_HENRIQUE_PEROLA.pdf",
+      "document_id": "134b3451-c13d-4c9f-a9cf-9f303739d3e9",
+      "status": "FAILED",
+      "processing_time": 2.06,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0024_IRPF_024_IRPF_DECLARAÇÃO_JOEL L CALLEGARO.pdf",
+      "document_id": "4782952d-ac70-4a40-8271-3440b66f6f96",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0025_IRPF_025 IRPF Ana Paula.pdf",
+      "document_id": "9bcb4254-f248-4f13-9f02-0904749dc330",
+      "status": "FAILED",
+      "processing_time": 2.09,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0026_IRPF_025-2024 IRPF-DECLARAC¸A~O MICHAEL.pdf",
+      "document_id": "96441372-6e16-4750-9827-fa56b8f4d080",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0027_IRPF_0394557930-IRPF-2025-Fabio L do Vale-dec.pdf",
+      "document_id": "7ffe9aeb-9ae4-4e55-bef2-c0786d25bd12",
+      "status": "FAILED",
+      "processing_time": 2.09,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0028_IRPF_0394557930-IRPF-2025-Fabio L do Vale-rec.pdf",
+      "document_id": "af23d00d-9d14-48a0-8780-a31609cd77a0",
+      "status": "FAILED",
+      "processing_time": 2.06,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0029_IRPF_0394558901-IRPF-2025-Keiti R do Vale-dec.pdf",
+      "document_id": "4cabc7ea-7fed-40f1-8424-efb39227f84b",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "0030_IRPF_0394558901-IRPF-2025-Keiti R do Vale-rec.pdf",
+      "document_id": "7c47390b-30b8-47ca-83f1-246c38d3917e",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "Geral-IRPF-2025-2024.pdf",
+      "document_id": "31b625d3-81ff-4caa-aa72-f60c16db695a",
+      "status": "FAILED",
+      "processing_time": 2.09,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "IRPF 2025 GENESIS LOPES DECLARAÇÃO-Teste.pdf",
+      "document_id": "4bc0b7a1-534b-463b-8e4d-0a489bce1b25",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "IRPF-ATIVIDADE RURAL.pdf",
+      "document_id": "cd9fa42f-e426-4ab9-a856-f2cbab305e9e",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "IRPF-Identificação do Contribuinte 1.pdf",
+      "document_id": "31b625d3-81ff-4caa-aa72-f60c16db695a",
+      "status": "FAILED",
+      "processing_time": 0.04,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "IRPF-Renda Variavel 2.pdf",
+      "document_id": "feda6afb-6591-49c6-89c6-14fc720125d8",
+      "status": "FAILED",
+      "processing_time": 2.08,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "IRPF-Renda Variavel.pdf",
+      "document_id": "feda6afb-6591-49c6-89c6-14fc720125d8",
+      "status": "FAILED",
+      "processing_time": 0.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "david.pdf",
+      "document_id": "d9078538-73c1-4020-959d-09a2143131f3",
+      "status": "FAILED",
+      "processing_time": 2.07,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    },
+    {
+      "filename": "receitaPDF.pdf",
+      "document_id": "4bc0b7a1-534b-463b-8e4d-0a489bce1b25",
+      "status": "FAILED",
+      "processing_time": 0.04,
+      "confidence": null,
+      "taxpayer": {
+        "cpf": null,
+        "name": null,
+        "exercise_year": null
+      },
+      "validation_errors": [
+        "status_not_ready: FAILED",
+        "api_error: Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+      ],
+      "warnings": [],
+      "passed": false,
+      "error_message": "Routing failed: Parameter validation failed:\nInvalid length for parameter Key, value: 0, valid min length: 1"
+    }
+  ]
+}

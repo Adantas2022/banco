@@ -1,0 +1,1218 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": {
+                "cpf": "793.679.259-72",
+                "name": "RENATO PODESTA CASTILHO",
+                "exercise_year": "2025",
+                "calendar_year": "2024",
+                "type_receipt": "DECLARACAO DE AJUSTE ANUAL ORIGINAL",
+                "cpf_valid": true,
+                "name_valid": true,
+                "exercise_year_valid": true,
+                "calendar_year_valid": true,
+                "type_receipt_valid": true,
+                "valid": true
+            },
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "793.679.259-72",
+                    "normalized_cpf": "79367925972",
+                    "name": "RENATO PODESTA CASTILHO",
+                    "exercise_year": "2025",
+                    "calendar_year": "2024",
+                    "occupation_nature": "12 Proprietário de empresa ou de firma individual ou empregador - titular",
+                    "main_occupation": "130 - Gerente ou supervisor de empresa industrial, comercial ou prestadora de serviços",
+                    "contact_and_address": {
+                        "street_address": "RUA EMILIO CORNELSEN",
+                        "number": "500",
+                        "complement": "AP 604",
+                        "neighborhood": "AHU",
+                        "city": "CURITIBA",
+                        "uf": "PR",
+                        "zip_code": "80540-220",
+                        "phone": "(41) 9969-6585",
+                        "email": "",
+                        "cell_phone": ""
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL ORIGINAL"
+                },
+                "total_value": 2620574,
+                "valid_total": true,
+                "equity_evolution": 0,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "6063589f5e32ca464e1ed8b29333774b",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "APTO 604 EDIF THE ROYAL PARKS , C / AREA PRIVATIVA 130,69M , AREA BRUTA 158,31M , RUA EMILIO CORNELSEN , 500 , AHU , CURITIBA / PR . ADQ DE CONSTRUTORA TOMASI LTDA 77.698.983 / 0001-06 , EM 03/05/2013 . CONDICOES PGTO : SINAL DE NEGOCIO NO VALOR DE R $ 109.529,00 + DESPESAS R $ 14.205,47 , E O RESTANTE FINACIADO PELA CEF POR 410 MESES.QUITADO",
+                            "before_year_asset_value": 708795.89,
+                            "current_year_asset_value": 708795.89,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA EMILIO CORNELSEN",
+                                "complement": "AP 604",
+                                "city": "CURITIBA",
+                                "area": "126,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": null,
+                                "number": "500",
+                                "neighborhood": "AHU",
+                                "state": "PR",
+                                "acquisition_date": "03/05/2013",
+                                "registry_office_name": null,
+                                "zipcode": "80540-220"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "5cd47e135b7641d5925dd14eb24581e4",
+                            "asset_group_code": "01",
+                            "asset_code": "12",
+                            "asset_description": "IMOVEL URBANO CONSTITUIDO DE CONTRUCAO EM ALVENARIA DE APARTAMENTOS ACIMA E FUNDOS E LOJAS COMERCIAIS TERREAS NA RUA LODOVCO GERONAZO , 120 , BOA VISTA , CURITIBA - PR . RECEBIDO EM DOACAO DA EMPRESA CASTILHO CONSULTORIA EMPRESARIAL S / C LTDA . - CNPJ : 04.623.837 / 0001-48 , EM 01/11/2021 , CONFORME ESCRITURA PUBLICA DE DOACAO , FOLHAS 089 / 096 , DO LIVRO 1069 - N DO CRTORIO DISTRITAL DO TABOAO EM CURITI BA - PR .",
+                            "before_year_asset_value": 607500.0,
+                            "current_year_asset_value": 607500.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": "74.159.039000-2",
+                                "street_address": "RUA LODOVCO GERONAZO",
+                                "complement": null,
+                                "city": "CURITIBA",
+                                "area": "750,0 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "33.812",
+                                "number": "1210",
+                                "neighborhood": "BOA VISTA",
+                                "state": "PR",
+                                "acquisition_date": "01/11/2021",
+                                "registry_office_name": "REGISTRO DE IMOVEIS DA 9A DE CURITIBA - PR.",
+                                "zipcode": "82560-040"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "a4a3556e2b93b6b078a139f4fe0ab039",
+                            "asset_group_code": "01",
+                            "asset_code": "99",
+                            "asset_description": "GARAGEM 16 EDIF THE ROYAL PARKS , C / AREA PRIVATIVA 24,00M , RUA EMILIO CORNELSEN , 500 , AHU , CURITIBA / PR . ADQ DE CONSTRUTORA TOMASI LTDA 77.698.983 / 0001-06 , EM 03/05/2013 . CONDICOES PGTO : SINAL DE NEGOCIO NO VALOR DE R $ 20113,98 + DESPESAS R $ 2608,70 , E O RESTANTE FINACIADO PELA CEF POR 410 MESES . QUITADO",
+                            "before_year_asset_value": 41328.93,
+                            "current_year_asset_value": 41328.93,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA EMILIO CORNELSEN",
+                                "complement": "GARAGEM 16",
+                                "city": "CURITIBA",
+                                "area": "0,0",
+                                "registered_at_registy_office": null,
+                                "number": "500",
+                                "neighborhood": "AHU",
+                                "state": "PR",
+                                "acquisition_date": "03/05/2013",
+                                "zipcode": "80540-220"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "ec719670a725eca1e4ae5094d1859412",
+                            "asset_group_code": "01",
+                            "asset_code": "99",
+                            "asset_description": "GARAGEM 17 EDIF THE ROYAL PARKS , C / AREA PRIVATIVA 24,29M , RUA EMILIO CORNELSEN , 500 , AHU , CURITIBA / PR . ADQ DE CONSTRUTORA TOMASI LTDA 77.698.983 / 0001-06 , EM 03/05/2013 . CONDICOES PGTO : SINAL DE NEGOCIO NO VALOR DE R $ 20357,02 + DESPESAS R $ 2640,22 , E O RESTANTE FINACIADO PELA CEF POR 410 MESES.QUITADO",
+                            "before_year_asset_value": 41652.25,
+                            "current_year_asset_value": 41652.25,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA EMILIO CORNELSEN",
+                                "complement": "GARAGEM 17",
+                                "city": "CURITIBA",
+                                "area": "0,0",
+                                "registered_at_registy_office": null,
+                                "number": "500",
+                                "neighborhood": "AHU",
+                                "state": "PR",
+                                "acquisition_date": "03/05/2013",
+                                "zipcode": "80540-220"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "362423fbb76a5e7fbc36e1430180edd2",
+                            "asset_group_code": "02",
+                            "asset_code": "01",
+                            "asset_description": "AUTOMOVEL MARCA GM CRUZE LT , ANO FAB 2016 PLACA ACZ5088 . ADQ CCV CONF NF 530270 EM 28/01/2017 .",
+                            "before_year_asset_value": 86490.0,
+                            "current_year_asset_value": 86490.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "renavam": "01109471596"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "930b64985187ef244bf1b53f8d2d4bd1",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "10.000 QUOTAS DE CAPITAL , NO VALOR DE R $ 10.000,00 , EQUIVALENTE A 50,00 % DA PARTICIPAÇÃO NO CAPITAL SOCIAL DA EMPRESA DENOMINADA PLASCAMP COMERCIO DE PLASTICO LTDA . - CNPJ : 27.524.258 / 0001-43 . INTEGRALIZADAS EM 27/07/2017 .",
+                            "before_year_asset_value": 10000.0,
+                            "current_year_asset_value": 10000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "27.524.258/0001-43",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "1d60df406fd61e0d1baa116e7fe56d97",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "228.504 QUOTAS DE CAPITAL , NO VALOR DE R $ 228.504,00 , EQUIVALENTE A 25,00 % DE PARTICIPAÇÃO NO CAPITAL SOCIAL DA EMPRESA CASTILHO CONSULTORIA EMPRESARIAL S / C LTDA . - CNPJ : 04.623.837 / 0001-48 , COM INGRESSO NA SOCIEDADE EM 10/07/2015 PARA SUBSCRICAO E INTEGRALIZACAO NO CAPITAL DA SOCIEDADE , CONFORME SETIMA ALTERACAO CONTRATUAL DE 10/07/2015 , SOB NO 601590 DO 40 OFICIO DE REGISTRO DE TITULOS E DOCUMENTOS E REGISTRO CIVIL DE CURITIBA - PR .",
+                            "before_year_asset_value": 228504.0,
+                            "current_year_asset_value": 228504.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "04.623.837/0001-48",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "25ff011b440124b79c55b8abc7c915c6",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "50.000 QUOTAS DE CAPITAL , NO VALOR DE R $ 50.000,00 , EQUIVALENTE A 25,00 % DE PARTICIPACAO NO CAPITAL SOCIAL DA EMPRESA CGS EMBALAGENS PLASTICAS INDUSTRIA E COMERCIO LTDA . - CNPJ : 00.281.818 / 0001-20 , REGISTRADA SOB NIRE NO 41203174741 EM DATA DE 04/11/1994 , NA JUCEPAR . ADQUIRIDO PORESCRITURA PUBLICA DE INVENTARIO E PARTILHA DE SUA MAE DATADA DE 01/11/2021 , NO LIVRO1069 - N , FOLHAS 061/080 , NO SERVICO DISTRITAL DO TABOAO EM CURITIBA - PR . MATRICULANOTARIAL ELETRONICA NO 082404.2021.11.01.00000227-74 .",
+                            "before_year_asset_value": 50000.0,
+                            "current_year_asset_value": 50000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.281.818/0001-20",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 8
+                        },
+                        {
+                            "id": "47c52af22ecfe6c30f1a72507730e4bd",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "CAIXA ECONOMICA EFEDERAL - POUPANCA - INFORMADO POR CNPJ 00.360.305 / 0001-04",
+                            "before_year_asset_value": 4089.19,
+                            "current_year_asset_value": 4089.19,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "bank": "104",
+                                "cpf": "793.679.259-72",
+                                "agency": "0370",
+                                "account": "000827604963-8"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "77f5973eb109b6b792ba04a1f4c74207",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "NU BANK - NU FINANCEIRA S.A. - APLICACOES DE RENDA FIXA",
+                            "before_year_asset_value": 336.44,
+                            "current_year_asset_value": 336.44,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.680.829/0001-43",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "319be4adf16010b4e236504b9a556b1a",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMO CONCEDIDO A ZIVALPLAST IND E COM DE PLASTICOS LTDA CNPJ 02266944 / 0001-30",
+                            "before_year_asset_value": 13846.5,
+                            "current_year_asset_value": 13846.5,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.266.944/0001-30",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "39ad8e73eb2731cbe0c680f2f04f475e",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMO REFERENTE TRANSFERENCIA DE 90498 COTAS DA FIRMA CASTILHO CONSULTORIA CNPJ 04623837 / 0001-48 PELO VALOR UNIT DE R $ 1,00 A VALERIA CASTILHO MOREIRA CPF 599686729-04",
+                            "before_year_asset_value": 90498.0,
+                            "current_year_asset_value": 90498.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "59968672904",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "cee3a59f52af330302aeb0ce0d26b1d7",
+                            "asset_group_code": "05",
+                            "asset_code": "01",
+                            "asset_description": "EMPRESTIMO REFERENTE TRANSFERENCIA DE 90499 COTAS DA FIRMA CASTILHO CONSULTORIA CNPJ 04623837 / 0001-48 PELO VALOR UNIT DE R $ 1,00 A VIVIANE PODESTA CASTILHO CPF 635334139-34",
+                            "before_year_asset_value": 90499.0,
+                            "current_year_asset_value": 90499.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "63533413934",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "b9fccaa67014dbec17e6996634e32dcc",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "BANCO ITAU UNIBANCO S.A. - CONTA CORRENTE",
+                            "before_year_asset_value": 10.0,
+                            "current_year_asset_value": 10.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "60.701.190/0001-04",
+                                "bank": "341",
+                                "cpf": "793.679.259-72",
+                                "agency": "4079",
+                                "account": "10232-5",
+                                "is_payment_account": false
+                            },
+                            "country_valid": true,
+                            "page": 9
+                        },
+                        {
+                            "id": "6693206bced06276249cf3ff68b0e058",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "BANCO DO BRASIL S.A. - CONTA CORRENTE",
+                            "before_year_asset_value": 222.0,
+                            "current_year_asset_value": 222.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.000.000/0001-91",
+                                "bank": "001",
+                                "cpf": "793.679.259-72",
+                                "agency": "4818",
+                                "account": "5983-8",
+                                "is_payment_account": false
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "d7434096066db1a0913a8ff08270318a",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "BANCO INTER - CONTA CORRENTE",
+                            "before_year_asset_value": 7.12,
+                            "current_year_asset_value": 7.12,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.416.968/0001-01",
+                                "bank": "077",
+                                "cpf": "793.679.259-72",
+                                "agency": "0001",
+                                "account": "702067-8",
+                                "is_payment_account": false
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "57931a251ce91986b9da6389d4efae85",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTOS CCTVM S / A - SALDO EM CONTA",
+                            "before_year_asset_value": 435.46,
+                            "current_year_asset_value": 435.46,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "bank": "102",
+                                "cpf": "793.679.259-72",
+                                "agency": "0001",
+                                "account": "604611-5",
+                                "is_payment_account": false
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "72eb15f39ec3da9047af6d9a0dbe7949",
+                            "asset_group_code": "06",
+                            "asset_code": "10",
+                            "asset_description": "DISPONIBILIDADE EM MOEDA NACIONAL - REAIS",
+                            "before_year_asset_value": 55000.0,
+                            "current_year_asset_value": 55000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "fddccab55f9f9fdaabe0f999ded67ca0",
+                            "asset_group_code": "06",
+                            "asset_code": "11",
+                            "asset_description": "BANCO DO BRASIL S.A. - SALDO CARTÃO PRE PAGO BANCO DO BRASIL - REAL - CARTAO NO 486323 *** 1999",
+                            "before_year_asset_value": 0.31,
+                            "current_year_asset_value": 0.31,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "a084a8c52fd05ec1f88b03ddb16bd538",
+                            "asset_group_code": "06",
+                            "asset_code": "99",
+                            "asset_description": "NU INVEST - NUINVEST CORRETORA DE VALORES S.A. - SALDO EM CONTA AG / CONTA : 0001 / 7041686-0",
+                            "before_year_asset_value": 420.78,
+                            "current_year_asset_value": 420.78,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "62.169.875/0001-79",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "74de743e0f140d83c8f7bd4fad888921",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "XP INVESTIMENTOS CCTVM S / A - FUNDO / CLUBE DE INVESTIMENTO",
+                            "before_year_asset_value": 35430.8,
+                            "current_year_asset_value": 35430.8,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "02.332.886/0001-04",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 10
+                        },
+                        {
+                            "id": "d7b84b1886ce5afda0d26a19ebe16410",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "SUL AMERICA PREMIUM FUNDO DE INVESTIMENTO RENDA FIXA REFERENCIADO DI CREDITO PRIVADO - INFORMADO POR CNPJ 02.332.886 / 0001-04",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "24.325.096/0001-26",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "6022bd4bc3971d5b82d95f7a5068414f",
+                            "asset_group_code": "07",
+                            "asset_code": "01",
+                            "asset_description": "TREND INB FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO RENDA FIXA SIMPLES - INFORMADO POR CNPJ 02.332.886 / 0001-04",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "37.910.132/0001-60",
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "677e56e5e0902bd4c6736ba7dd493f2c",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "TEPP11 - TELLUS PROPETIES - SALDO EM COTAS EM 2021 : 20 , EM 2022 : 20",
+                            "before_year_asset_value": 1504.0,
+                            "current_year_asset_value": 1504.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "26.681.370/0001-25",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "4207059476472abaf69ad9059570ea14",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "RFOF11 - FDO . INVEST . IMOB . RB CAPITAL I FUNDO DE FUNDOS - SALDO EM COTAS EM 2021 : 20 , EM 2022 : 20",
+                            "before_year_asset_value": 1499.0,
+                            "current_year_asset_value": 1499.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "34.027.774/0001-28",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "754ab4d6c4f9aa8b63a374734a82b498",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "VIFI11 - VINCI INSTRUMENTOS FINANCEIROS - SALDO EM COTAS EM 2021 : 18 , EM 2022 : 18 .",
+                            "before_year_asset_value": 134.46,
+                            "current_year_asset_value": 134.46,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "31.547.855/0001-60",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "727096f0e508d280d1d7dc0cb8bf9f2c",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "RBFF11 RIO BRAVO FUNDO DE INVESTIMENTO IMOBILIARIO - COTAS EM 2021 : 25 , EM 2022 : 25 .",
+                            "before_year_asset_value": 1258.5,
+                            "current_year_asset_value": 1258.5,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "17.329.029/0001-14",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 11
+                        },
+                        {
+                            "id": "ecedf36add1a9f46937c1c39ee03c603",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "RECT11 - REC RENDA IMOBILIARIA - SALDO COTAS EM 2021 : 20 , EM 2022 : 20 .",
+                            "before_year_asset_value": 1470.2,
+                            "current_year_asset_value": 1470.2,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "32.274.163/0001-59",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "a45ff4f98189923aa67582fb76e3f933",
+                            "asset_group_code": "07",
+                            "asset_code": "03",
+                            "asset_description": "RBHG11 RIO BRAVO CREDITO IMOBILIARIO HIGH GRADE FUNDO DE INVESTIMENTO IMOBILIARIO FII - SALDO EM COTAS EM 2021 : 18 , EM 2022 : 18 .",
+                            "before_year_asset_value": 154.62,
+                            "current_year_asset_value": 154.62,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "30.647.758/0001-87",
+                                "traded_on_stock_market": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "65aedf5ec2ea860b5dfba39c6ca2bd75",
+                            "asset_group_code": "08",
+                            "asset_code": "01",
+                            "asset_description": "MERCADO BITCOIN - QUANTIDADE DE 0.0029502800 BTC EM 31/12/2022 - EM CUSTODIA DE MERCADO BITCOIN - INFORMADO POR CNPJ 18.213.434 / 0001-35 ( MERCADO BITCOIN ) .",
+                            "before_year_asset_value": 257.44,
+                            "current_year_asset_value": 257.44,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": null,
+                                "custodian_cnpj": "18.213.434/0001-35",
+                                "self_custodian": false,
+                                "cpf": "793.679.259-72"
+                            },
+                            "country_valid": true,
+                            "page": 12
+                        },
+                        {
+                            "id": "2ca2a86fa91a50e183868a7acc9cbade",
+                            "asset_group_code": "99",
+                            "asset_code": "99",
+                            "asset_description": "LANCAMANTO EFETUADO A TITULO DE MANUTENCAO DE SALDOS PARA FUTURA RETIFICAÇÃO DOS ITENS FINANCEIROS DESTA DECLARACAO DE BENS NA PRESENTE DECLARACAO DE AJUSTE ANUAL .",
+                            "before_year_asset_value": 549229.15,
+                            "current_year_asset_value": 549229.15,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": null,
+                            "country_valid": true,
+                            "page": 12
+                        }
+                    ],
+                    "last_year_total_value": 2620574.04,
+                    "current_year_total_value": 2620574.04,
+                    "pages_with_problems": []
+                },
+                "debts_and_encumbrances": {},
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 1941.56,
+                    "valid_total": true,
+                    "subsections": {
+                        "others_99": {
+                            "name": "99. Outros",
+                            "code": "99",
+                            "total_value": 1941.56,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "76.416.890/0001-89",
+                                    "payer_name": "GOVERNO DO PARANA SECRETARIA DA FAZENDA",
+                                    "description": "NOTA PARANA",
+                                    "value": 25.0,
+                                    "id": "05d8cd83467c7225f5c913098be50cdb",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "17.329.029/0001-14",
+                                    "payer_name": "RIO BRAVO IFIX FUNDO DE FII",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 13.5,
+                                    "id": "2508cc9437d25ac7b6b806d5672ee78c",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "35.864.448/0001-38",
+                                    "payer_name": "KINEA SECURITIES - KNSC11",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 31.6,
+                                    "id": "c28fe230a108a2be0726782fcbe87eeb",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "26.091.656/0001-50",
+                                    "payer_name": "OURINVEST JPP FUNDO DE INVESTIMENTO IMOBILIARIO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 110.16,
+                                    "id": "9137416f83d61ed32db9da8d7b8f0c88",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "08.924.783/0001-01",
+                                    "payer_name": "FI IMOBILIARIO FII BTG PACTUAL CORPORATE OFFICE FUND",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 9.84,
+                                    "id": "9327a136da99bb1b0eb5e98135d1f4d0",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "09.552.812/0001-14",
+                                    "payer_name": "FUNDO DE INVESTIMENTO IMOBILIARIO BTG PACTUAL CREDITO IMOBIL",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 16.07,
+                                    "id": "e52a65d94265b623e6cd80174cd4eaac",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "27.529.279/0001-51",
+                                    "payer_name": "FDO INV IMOB RBR ALPHA FUNDOS DE FUNDOS",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 49.37,
+                                    "id": "ee64c9d9d6c404aaf31ed5c2e6f1bcb1",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "28.830.325/0001-10",
+                                    "payer_name": "FII IRIDIUM RECEBIVEIS IMOBILIARIOS",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 145.52,
+                                    "id": "c35762f3250af224ac79a4ff2abf399c",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "29.852.732/0001-91",
+                                    "payer_name": "FII VALORA CRI CDI",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 281.72,
+                                    "id": "901d7675eabf5cb58c4c1770c3132a07",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "30.166.700/0001-11",
+                                    "payer_name": "FUNDO DE INVESTIMENTO IMOBILIARIO RBR CREDITO IMOBILIARIO HI",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 33.3,
+                                    "id": "e63d4441f01764c6fa8e7071c446820c",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "30.629.603/0001-18",
+                                    "payer_name": "FII VBI LOGISTICO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 162.24,
+                                    "id": "9442c287cb762e360f03076ae26b85d7",
+                                    "page": 3
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "34.197.811/0001-46",
+                                    "payer_name": "FII VALORA CRI INDICE DE PRECO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 189.28,
+                                    "id": "9d844547f9f26b7c2f49f97a94ae84f4",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "28.757.546/0001-00",
+                                    "payer_name": "FII XP MALLS",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 222.51,
+                                    "id": "7c0fe6453359f9c5a3f19bd1fca45c2a",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "51.472.985/0001-99",
+                                    "payer_name": "AJ MALLS FUNDO DE INVESTIMENTO IMOBILIARIO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 150.18,
+                                    "id": "38b312efc33f57ef7062ab4528f284a3",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "36.771.692/0001-19",
+                                    "payer_name": "VALORA HEDGE FUND F.I.I. FIL",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 19.22,
+                                    "id": "5b322d501a7afc19ef7689cafc3a472e",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "37.295.919/0001-60",
+                                    "payer_name": "FII GUARDIAN REAL STATE",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 165.4,
+                                    "id": "ff526e912316d7e8d9285639aca27acc",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "26.681.370/0001-25",
+                                    "payer_name": "TELLUS PROPERTIES FUNDO DE INVESTIMENTO IMOBILIARIO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 35.42,
+                                    "id": "b4605767cdcf1b2668b0ddc8fc5b971a",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "28.548.288/0001-52",
+                                    "payer_name": "TRX REAL ESTATE FDO INV IMOB FII",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 170.82,
+                                    "id": "14f8070555f73b32917817ae7954935a",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "30.647.758/0001-87",
+                                    "payer_name": "RIO BRAVO CREDITO IMOBILIARIO IV FI IMOBILIARIO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 35.1,
+                                    "id": "380bcd2ff9e3cdb6889fa89208577888",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "32.274.163/0001-59",
+                                    "payer_name": "FUNDO DE INVESTIMENTO IMOBILIARIO REC RENDA IMOBILIARIA",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 10.0,
+                                    "id": "f98f214ce807641d2cd7882a3e5e5a66",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "34.027.774/0001-28",
+                                    "payer_name": "FUNDO DE INVESTIMENTO IMOBILIARIO RB CAPITAL I FUNDO DE FUND",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 33.81,
+                                    "id": "0a89e856e9ec9edd55d8f915354590a1",
+                                    "page": 4
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "35.507.457/0001-71",
+                                    "payer_name": "VBI REITS FOF FUNDO DE INVESTIMENTO IMOBILIARIO",
+                                    "description": "APLICACOES FINANCEIRAS EM FUNDOS DE INVESTIMENTO IMOBILIARIO",
+                                    "value": 31.5,
+                                    "id": "9656b3a8e8b572d74c48bcca2018eff3",
+                                    "page": 4
+                                }
+                            ]
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 30174.38,
+                    "valid_total": true,
+                    "subsections": {
+                        "income_from_financial_investments": {
+                            "name": "06. Rendimentos de aplicações financeiras",
+                            "code": "06",
+                            "total_value": 30038.34,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "60.701.190/0001-04",
+                                    "payer_name": "ITAU UNIBANCO S.A.",
+                                    "value": 1132.89,
+                                    "id": "03e69b0dce3858b3e2c26bd52131b9e5",
+                                    "page": 5
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "00.416.968/0001-01",
+                                    "payer_name": "BANCO INTER SA",
+                                    "value": 0.51,
+                                    "id": "481ede5a75756d390b7afa862acbdfca",
+                                    "page": 5
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "26.199.519/0001-34",
+                                    "payer_name": "ITAU PRIVILEGE RF REF DI FIFCIC RL",
+                                    "value": 18494.76,
+                                    "id": "8e62fa043b46cbdc403f7b0b5f1a2480",
+                                    "page": 5
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "24.325.096/0001-26",
+                                    "payer_name": "SULAMERICA PREMIUM FIRF REFERENCIADO DI CP",
+                                    "value": 9899.87,
+                                    "id": "4174ba7ec7ebc3f22e010285a35a82a2",
+                                    "page": 5
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "37.910.132/0001-60",
+                                    "payer_name": "TREND INB FIC FIRF SIMPLES",
+                                    "value": 74.75,
+                                    "id": "a6066a93a01c643ef881980d91bd6cc5",
+                                    "page": 5
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cnpj": "29.216.463/0001-77",
+                                    "payer_name": "FUNDO DE INVESTIMENTO IMOBILIARIO MO",
+                                    "value": 435.56,
+                                    "id": "dd2da6ae27d3820777e8d84ed79f628c",
+                                    "page": 5
+                                }
+                            ]
+                        },
+                        "others_13": {
+                            "name": "13. Outros",
+                            "code": "13",
+                            "total_value": 136.04,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "793.679.259-72",
+                                    "payer_cpf_cnpj": "76.417.005/0001-86",
+                                    "payer_name": "PREFEITURA MUNICIPAL DE CURITIBA",
+                                    "description": "PREMIOS OBTIDOS EM CONCURSOS E SORTEIOS",
+                                    "value": 136.04,
+                                    "id": "45a23b67a33ada0096dbd453240c8abf",
+                                    "page": 5
+                                }
+                            ]
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular",
+                    "items": [
+                        {
+                            "nit_pis_pasep": "",
+                            "income": {
+                                "jan": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4165.75,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "fev": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4231.24,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mar": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4219.39,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "abr": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4219.39,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "mai": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4219.39,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jun": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4219.39,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "jul": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "ago": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "set": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "out": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "nov": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "dez": {
+                                    "unwaged_work": 0.0,
+                                    "rental": 4329.9,
+                                    "others": 0.0,
+                                    "income_from_abroad": 0.0
+                                },
+                                "total": {
+                                    "unwaged_work": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "rental": {
+                                        "amount": 51253.95,
+                                        "valid": true
+                                    },
+                                    "others": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "income_from_abroad": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "deductions": {
+                                "jan": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "fev": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mar": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "abr": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "mai": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jun": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "jul": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "ago": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "set": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "out": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "nov": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "dez": {
+                                    "official_social_security": 0.0,
+                                    "dependents_number": 0,
+                                    "alimony": 0.0,
+                                    "cashbook": 0.0
+                                },
+                                "total": {
+                                    "official_social_security": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "alimony": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    },
+                                    "cashbook": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "lion_carnet": {
+                                "jan": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "fev": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mar": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "abr": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "mai": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jun": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "jul": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "ago": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "set": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "out": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "nov": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "dez": {
+                                    "paid_darf_code_0190": 0.0
+                                },
+                                "total": {
+                                    "paid_darf_code_0190": {
+                                        "amount": 0.0,
+                                        "valid": true
+                                    }
+                                }
+                            },
+                            "page": 2
+                        }
+                    ]
+                },
+                "income_from_individual_to_dependents": null,
+                "income_from_legal_person_to_holder": null,
+                "income_from_legal_person_to_dependents": null,
+                "income_from_legal_person_to_holder_with_suspended_requirements": null,
+                "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+                "accumulated_income_from_legal_person_to_holder": null,
+                "accumulated_income_from_legal_person_to_dependents": null,
+                "exploited_rural_properties_in_brazil": null,
+                "rural_income_and_expenditure_in_brazil": null,
+                "calculation_of_rural_results_in_brazil": null,
+                "livestock_movement_in_brazil": null,
+                "rural_activity_assets_in_brazil": null,
+                "rural_activity_debts_in_brazil": null,
+                "exploited_rural_properties_abroad": null,
+                "rural_income_and_expenditure_abroad": null,
+                "calculation_of_rural_results_abroad": null,
+                "rural_activity_assets_abroad": null,
+                "rural_activity_debts_abroad": null,
+                "livestock_movement_abroad": null,
+                "total_pages": 17
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": "https://rpg-ir-analyzer-staging.s3.sa-east-1.amazonaws.com/temp/6bd2a43152aff005407ce791759825.csv",
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}

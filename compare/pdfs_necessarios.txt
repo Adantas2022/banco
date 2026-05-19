@@ -1,0 +1,19 @@
+PDFs Necessarios para Completar o Benchmark ASA Digital vs Dimensa
+===================================================================
+
+Os seguintes PDFs precisam ser colocados na pasta pdfs/ para executar
+o benchmark completo contra os gabaritos da Dimensa:
+
+1. 0132_IRPF_9750982991-IRPF-2025-2024-origi-imagem-declaracao.pdf
+2. 0242_IRPF_EC. IRPF 2025-2024 ROZANY.pdf
+3. 0276_IRPF_ECLARACAO 2025-2024 WIENFRIED.pdf
+4. 0779_IRPF_RPF Renato Declaracao 2024 2025.pdf
+5. 1052_IRPF_oberto98884662087-IRPF-2024-2023.pdf
+
+---
+
+Apos adicionar os PDFs, execute:
+
+    python scripts/benchmark_dimensa.py --pdf-dir ./pdfs
+
+O relatorio sera gerado em: compare/benchmark_results/

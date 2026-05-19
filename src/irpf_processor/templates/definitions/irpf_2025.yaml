@@ -1,0 +1,573 @@
+# Template de Declaração IRPF 2025 (Ano-Calendário 2024)
+# Baseado no formato oficial da Receita Federal
+
+metadata:
+  version: "2025"
+  exercise_year: "2025"
+  calendar_year: "2024"
+  description: "Declaração de Ajuste Anual IRPF 2025 (Ano-Calendário 2024)"
+
+detection:
+  patterns:
+    - "DECLARAÇÃO DE AJUSTE ANUAL"
+    - "Exercício 2025"
+    - "Ano-calendário 2024"
+  exercise_year_regex: "Exercício\\s+(\\d{4})"
+  calendar_year_regex: "Ano-calendário\\s+(\\d{4})"
+
+sections:
+  # ============================================
+  # IDENTIFICAÇÃO DO CONTRIBUINTE
+  # ============================================
+  taxpayer_identification:
+    name: "Identificação do Contribuinte"
+    required: true
+    fields:
+      - name: cpf
+        type: cpf
+        required: true
+        pattern: "\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}"
+        description: "CPF do contribuinte"
+
+      - name: normalized_cpf
+        type: string
+        required: true
+        pattern: "\\d{11}"
+        description: "CPF sem formatação"
+
+      - name: name
+        type: string
+        required: true
+        description: "Nome completo do contribuinte"
+
+      - name: exercise_year
+        type: string
+        required: true
+        description: "Ano-exercício da declaração"
+
+      - name: calendar_year
+        type: string
+        required: true
+        description: "Ano-calendário de referência"
+
+      - name: occupation_nature
+        type: string
+        required: false
+        description: "Natureza da ocupação"
+
+      - name: main_occupation
+        type: string
+        required: false
+        description: "Ocupação principal"
+
+      - name: type_ir
+        type: string
+        required: false
+        description: "Tipo de declaração (Original, Retificadora)"
+
+    subsections:
+      - name: "Contato e Endereço"
+        code: "contact_and_address"
+        fields:
+          - name: street_address
+            type: string
+          - name: number
+            type: string
+          - name: complement
+            type: string
+          - name: neighborhood
+            type: string
+          - name: city
+            type: string
+          - name: uf
+            type: string
+            pattern: "[A-Z]{2}"
+          - name: zip_code
+            type: string
+            pattern: "\\d{5}-\\d{3}"
+          - name: phone
+            type: string
+          - name: cell_phone
+            type: string
+          - name: email
+            type: string
+
+  # ============================================
+  # DECLARAÇÃO DE BENS E DIREITOS
+  # ============================================
+  assets_declaration:
+    name: "Declaração de Bens e Direitos"
+    required: false
+    repeatable: true
+    has_totals: true
+    description: "Bens e direitos do contribuinte e dependentes"
+    fields:
+      - name: asset_group_code
+        type: string
+        required: true
+        description: "Código do grupo (01-Imóveis, 02-Veículos, etc.)"
+
+      - name: asset_code
+        type: string
+        required: true
+        description: "Código do bem dentro do grupo"
+
+      - name: asset_description
+        type: text
+        required: true
+        description: "Descrição detalhada do bem"
+
+      - name: before_year_asset_value
+        type: currency
+        required: true
+        description: "Valor em 31/12 do ano anterior"
+
+      - name: current_year_asset_value
+        type: currency
+        required: true
+        description: "Valor em 31/12 do ano atual"
+
+      - name: country_code
+        type: string
+        required: true
+        description: "Código do país (105=Brasil)"
+
+      - name: country_name
+        type: string
+        required: true
+        description: "Nome do país"
+
+      - name: page
+        type: integer
+        required: false
+        description: "Página de origem no PDF"
+
+    subsections:
+      - name: "Informações Adicionais"
+        code: "additional_info"
+        description: "Campos específicos por tipo de bem"
+        fields:
+          - name: beneficiary
+            type: string
+            description: "Titular ou Dependente"
+          - name: cnpj
+            type: cnpj
+          - name: cpf
+            type: cpf
+          - name: bank
+            type: string
+          - name: agency
+            type: string
+          - name: account
+            type: string
+          - name: renavam
+            type: string
+          - name: matriculation
+            type: string
+          - name: registry_office_name
+            type: string
+          - name: municipal_registration
+            type: string
+          - name: street_address
+            type: string
+          - name: complement
+            type: string
+          - name: city
+            type: string
+          - name: neighborhood
+            type: string
+          - name: state
+            type: string
+          - name: zipcode
+            type: string
+          - name: area
+            type: string
+          - name: number
+            type: string
+          - name: acquisition_date
+            type: string
+          - name: registered_at_registy_office
+            type: boolean
+          - name: cei_cno
+            type: string
+          - name: vessel_registration
+            type: string
+          - name: traded_on_stock_market
+            type: boolean
+          - name: trading_code
+            type: string
+          - name: custodian_cnpj
+            type: cnpj
+          - name: self_custodian
+            type: boolean
+          - name: is_payment_account
+            type: boolean
+
+  # ============================================
+  # DÍVIDAS E ÔNUS REAIS
+  # ============================================
+  debts_and_encumbrances:
+    name: "Dívidas e Ônus Reais"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: item
+        type: integer
+      - name: description
+        type: text
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+      - name: paid_value_in_last_year
+        type: currency
+
+  # ============================================
+  # RENDIMENTOS ISENTOS E NÃO TRIBUTÁVEIS
+  # ============================================
+  exempt_income:
+    name: "Rendimentos Isentos e Não Tributáveis"
+    required: false
+    has_totals: true
+    has_subsections: true
+    subsections:
+      - name: "Lucros e dividendos recebidos"
+        code: "09"
+        repeatable: true
+        fields:
+          - name: beneficiary
+            type: string
+          - name: cpf
+            type: cpf
+          - name: payer_cnpj
+            type: cnpj
+          - name: payer_name
+            type: string
+          - name: value
+            type: currency
+
+      - name: "Rendimentos de poupança, LCI, LCA, CRA, CRI"
+        code: "12"
+        repeatable: true
+        fields:
+          - name: beneficiary
+            type: string
+          - name: cpf
+            type: cpf
+          - name: payer_cnpj
+            type: cnpj
+          - name: payer_name
+            type: string
+          - name: value
+            type: currency
+
+  # ============================================
+  # RENDIMENTOS TRIBUTAÇÃO EXCLUSIVA/DEFINITIVA
+  # ============================================
+  exclusive_taxation_income:
+    name: "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva"
+    required: false
+    has_totals: true
+    has_subsections: true
+    subsections:
+      - name: "Rendimentos de aplicações financeiras"
+        code: "06"
+        repeatable: true
+        fields:
+          - name: beneficiary
+            type: string
+          - name: cpf
+            type: cpf
+          - name: payer_cnpj
+            type: cnpj
+          - name: payer_name
+            type: string
+          - name: value
+            type: currency
+
+  # ============================================
+  # RENDIMENTOS DE PESSOA JURÍDICA
+  # ============================================
+  income_from_legal_person_to_holder:
+    name: "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+        required: true
+
+      - name: cpf_cnpj
+        type: string
+        required: true
+        description: "CNPJ da fonte pagadora"
+
+      - name: income_from_legal_person
+        type: currency
+        required: true
+        description: "Rendimentos recebidos"
+
+      - name: official_social_security_contribution
+        type: currency
+        description: "Contribuição previdenciária oficial"
+
+      - name: tax_withheld_at_source
+        type: currency
+        description: "Imposto retido na fonte"
+
+      - name: thirteenth_salary
+        type: currency
+        description: "13º salário"
+
+      - name: irrf_on_thirteenth_salary
+        type: currency
+        description: "IRRF sobre 13º"
+
+  income_from_legal_person_to_dependents:
+    name: "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelos Dependentes"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+      - name: cpf_cnpj
+        type: string
+      - name: income_from_legal_person
+        type: currency
+      - name: official_social_security_contribution
+        type: currency
+      - name: tax_withheld_at_source
+        type: currency
+
+  # ============================================
+  # ATIVIDADE RURAL - BRASIL
+  # ============================================
+  exploited_rural_properties_in_brazil:
+    name: "Dados e Identificação do Imóvel Explorado - Brasil"
+    required: false
+    repeatable: true
+    fields:
+      - name: code
+        type: integer
+      - name: participation
+        type: float
+        description: "Percentual de participação"
+      - name: exploration_condition
+        type: integer
+      - name: name_and_location
+        type: string
+      - name: area
+        type: float
+        description: "Área em hectares"
+      - name: cib
+        type: string
+        description: "Cadastro de Imóvel Rural"
+
+  rural_income_and_expenditure_in_brazil:
+    name: "Receitas e Despesas - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: month
+        type: string
+      - name: gross_revenue
+        type: currency
+      - name: funding_expenses
+        type: currency
+
+  calculation_of_rural_results_in_brazil:
+    name: "Apuração do Resultado - Brasil"
+    required: false
+    has_subsections: true
+    subsections:
+      - name: "Informação do Exercício Anterior"
+        code: "previous_exercise_info"
+      - name: "Apuração do Resultado Tributável"
+        code: "calculation_of_taxable_result"
+      - name: "Informações para o Exercício Seguinte"
+        code: "next_exercise_info"
+      - name: "Apuração do Resultado Não Tributável"
+        code: "calculation_of_exempt_result"
+
+  rural_activity_assets_in_brazil:
+    name: "Bens da Atividade Rural - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: code
+        type: string
+      - name: description
+        type: text
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+
+  rural_activity_debts_in_brazil:
+    name: "Dívidas Vinculadas à Atividade Rural - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: item
+        type: integer
+      - name: description
+        type: text
+      - name: year_before_last_value
+        type: currency
+      - name: last_year_value
+        type: currency
+      - name: paid_value_in_last_year
+        type: currency
+
+  livestock_movement_in_brazil:
+    name: "Movimentação do Rebanho - Brasil"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: code
+        type: string
+      - name: species
+        type: string
+        description: "Espécie do animal"
+      - name: initial_quantity
+        type: integer
+        description: "Quantidade em 01/01"
+      - name: births
+        type: integer
+        description: "Nascimentos"
+      - name: purchases
+        type: integer
+        description: "Compras"
+      - name: deaths
+        type: integer
+        description: "Mortes"
+      - name: sales
+        type: integer
+        description: "Vendas"
+      - name: final_quantity
+        type: integer
+        description: "Quantidade em 31/12"
+
+  # ============================================
+  # RENDIMENTOS DE PESSOA FÍSICA E EXTERIOR
+  # ============================================
+  income_from_individual_to_holder:
+    name: "Rendimentos Tributáveis Recebidos de Pessoa Física e do Exterior pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+        required: true
+      - name: cpf
+        type: cpf
+        description: "CPF do pagador"
+      - name: income_from_individual
+        type: currency
+        description: "Rendimentos recebidos"
+      - name: deductible_expenses
+        type: currency
+        description: "Despesas dedutíveis"
+      - name: tax_withheld_at_source
+        type: currency
+        description: "Imposto retido na fonte"
+      - name: alimony_paid
+        type: currency
+        description: "Pensão alimentícia paga"
+      - name: carnet_leao_tax
+        type: currency
+        description: "Imposto pago no carnê-leão"
+
+  # ============================================
+  # RENDIMENTOS PJ RECEBIDOS ACUMULADAMENTE
+  # ============================================
+  accumulated_income_from_legal_person_to_holder:
+    name: "Rendimentos Tributáveis de Pessoa Jurídica Recebidos Acumuladamente pelo Titular"
+    required: false
+    repeatable: true
+    has_totals: true
+    fields:
+      - name: payer_name
+        type: string
+        required: true
+      - name: cpf_cnpj
+        type: string
+        description: "CNPJ da fonte pagadora"
+      - name: accumulated_income
+        type: currency
+        description: "Rendimentos acumulados"
+      - name: social_security_contribution
+        type: currency
+        description: "Contribuição previdenciária"
+      - name: tax_withheld_at_source
+        type: currency
+        description: "Imposto retido na fonte"
+      - name: judicial_expenses
+        type: currency
+        description: "Despesas judiciais"
+      - name: months_count
+        type: integer
+        description: "Quantidade de meses"
+
+  # ============================================
+  # CRIPTOATIVOS (Novo em 2019+)
+  # ============================================
+  crypto_assets:
+    name: "Criptoativos"
+    required: false
+    repeatable: true
+    description: "Bitcoin, Ethereum e outros criptoativos"
+    fields:
+      - name: asset_type
+        type: string
+        description: "Tipo do criptoativo (Bitcoin, Stablecoin, etc.)"
+      - name: custodian_cnpj
+        type: cnpj
+        description: "CNPJ da custodiante (se houver)"
+      - name: self_custodian
+        type: boolean
+        description: "Se o contribuinte é auto-custodiante"
+      - name: before_year_asset_value
+        type: currency
+      - name: current_year_asset_value
+        type: currency
+
+# ============================================
+# VALIDAÇÕES
+# ============================================
+validations:
+  - type: sum_check
+    section: assets_declaration
+    field: current_year_asset_value
+    total_field: current_year_total_value
+    error_message: "Soma dos bens não confere com total declarado"
+
+  - type: sum_check
+    section: exempt_income
+    field: value
+    total_field: total_value
+    error_message: "Soma dos rendimentos isentos não confere"
+
+  - type: sum_check
+    section: income_from_legal_person_to_holder
+    field: income_from_legal_person
+    total_field: total_income_from_legal_person
+    error_message: "Soma dos rendimentos de PJ não confere"
+
+  - type: required_field
+    section: taxpayer_identification
+    field: cpf
+    error_message: "CPF do contribuinte é obrigatório"
+
+  - type: required_field
+    section: taxpayer_identification
+    field: name
+    error_message: "Nome do contribuinte é obrigatório"

@@ -1,0 +1,1300 @@
+{
+    "id": "ocr_income_tax_return_declaration_file",
+    "service_id": "ocr_income_tax_return_declaration_file",
+    "data": {
+        "ir_response": {
+            "receipt": null,
+            "declaration": {
+                "taxpayer_identification": {
+                    "cpf": "360.480.568-69",
+                    "normalized_cpf": "36048056869",
+                    "name": "NATALIA DALPIAN LOPES",
+                    "exercise_year": "2024",
+                    "calendar_year": "2023",
+                    "occupation_nature": "12 - PROPRIETÁRIO DE EMPRESA OU DE FIRMA INDIVIDUAL OU EMPREGADOR - TITULAR",
+                    "main_occupation": "120 DIRIGENTE, PRESIDENTE E DIRETOR DE EMPRESA INDUSTRIAL, COMERCIAL OU PRESTADORA DE",
+                    "contact_and_address": {
+                        "street_address": "RUA LUIZ ANTONIO MACHADO",
+                        "number": "270",
+                        "complement": "",
+                        "neighborhood": "BONFIM PAULISTA",
+                        "city": "RIBEIRÃO PRETO",
+                        "uf": "SP",
+                        "zip_code": "14110-000",
+                        "phone": "",
+                        "email": "",
+                        "cell_phone": ""
+                    },
+                    "type_ir": "DECLARACAO DE AJUSTE ANUAL ORIGINAL"
+                },
+                "total_value": 2136378,
+                "valid_total": true,
+                "equity_evolution": 492135,
+                "assets_declaration": {
+                    "section_name": "Declaração de Bens e Direitos",
+                    "items": [
+                        {
+                            "id": "016758318ebf1b3b732ab9f068f1336e",
+                            "asset_group_code": "01",
+                            "asset_code": "11",
+                            "asset_description": "IMOVEL RESIDENCIAL SITO A RUA SHIRLEI CHIRIELEISON LANE NR . 100 APARTAMENTO 52 RIBEIRAO PRETO / SP ADQ . EM 23/11/2015 DE KSC 3 EMPREENDIMENTO IMOBILIARIO SPE LTDA CNPJ 08.699.133 / 0001-29 POR R $ 187.288,96 COM ANUENCIA E INTERVENIENCIA DE VITO DALPIAN CPF 254.842.220-87 CONF ESCRITURA DE 40 TABELIAO LIVRO 2278 PAG 381 DO 40 CARTORIO MATRICULA 142259 DO 20 CRI DE RIBEIRAO PRETO",
+                            "before_year_asset_value": 200000.0,
+                            "current_year_asset_value": 200000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "municipal_registration": null,
+                                "street_address": "RUA SHIRLEI CHIRIELEISON LANE",
+                                "complement": null,
+                                "city": "RIBEIRÃO PRETO",
+                                "area": "185,8 m²",
+                                "registered_at_registy_office": true,
+                                "matriculation": "142259",
+                                "number": "100",
+                                "neighborhood": null,
+                                "state": "SP",
+                                "acquisition_date": null,
+                                "registry_office_name": "20 CRI DE RIBEIRAO PRETO",
+                                "zipcode": null
+                            },
+                            "country_valid": true,
+                            "page": 3
+                        },
+                        {
+                            "id": "563590dbc7e6d4ea289bcb61283077a0",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "100 % DAS QUOTAS DE CAPITAL DE UMA EMPRESA COM A RAZAO SOCIAL DE LL CULTIVAR AP DRONE - EIRELI",
+                            "before_year_asset_value": 100000.0,
+                            "current_year_asset_value": 100000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "14.808.716/0001-24",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "a975692a57961a5a492f2e40760fc422",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "PARTICIPAÇÃO SOCIETARIA NA EMPRESA PONTO COML . DE PLASTICOS SANTO ANDRE LTDA",
+                            "before_year_asset_value": 8000.0,
+                            "current_year_asset_value": 8000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "07.244.521/0001-33",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "176fda3de085790b336f06570a5520a0",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "SICOOB COCRED COOEPRATIVA DE CREDITO - CAPITAL SOCIAL .",
+                            "before_year_asset_value": 56384.67,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "71.328.769/0001-81",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "c4761e4ab3fd7f5c9bc9d9497fb83a95",
+                            "asset_group_code": "03",
+                            "asset_code": "02",
+                            "asset_description": "COOP DE CRED POUP E INVESTIMENTO ALIANCA - CAPITAL SOCIAL .",
+                            "before_year_asset_value": 17814.73,
+                            "current_year_asset_value": 20490.47,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "79.052.122/0001-81",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "9dac565574d024d95992c9b88ff7126c",
+                            "asset_group_code": "04",
+                            "asset_code": "01",
+                            "asset_description": "SALDO EM CADERNETA DE POUPANÇA",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 111043.5,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "bank": "104",
+                                "cpf": "360.480.568-69",
+                                "agency": "4620",
+                                "account": "000581936948-0"
+                            },
+                            "country_valid": true,
+                            "page": 4
+                        },
+                        {
+                            "id": "26a89cd132951581f3215b79818907a7",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "SICOOB COCRED COOPERATIVA DE CREDITO - APLICACAO DE RENDA FIXA .",
+                            "before_year_asset_value": 100.0,
+                            "current_year_asset_value": 0.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "71.328.769/0001-81",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "707a294fee4879f63e22d0bf6f54754b",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "APÇICAÇÃO DE RENDA FIXA - DEP A PRAZO 0 BCO SICOOB COCRED COOP DE CRETITO",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 670100.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "71.328.769/0001-81",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "b3924c78a0049a975246858b6231bb96",
+                            "asset_group_code": "04",
+                            "asset_code": "02",
+                            "asset_description": "CDB RDB",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 500000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "2b8be7d22a8f637610456ee4400b41af",
+                            "asset_group_code": "04",
+                            "asset_code": "03",
+                            "asset_description": "APLICAÇÃO EM LETRAS DE RENDA FIXA ( LCI LCA ) CEF",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 300000.0,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "cpf": "360.480.568-69"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "f8f97eb879c7fd4b0cd7035360f71d8d",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "SICOOB COCRED COOPERATIVA DE CREDITO - CONTA CORRENTE .",
+                            "before_year_asset_value": 1260398.63,
+                            "current_year_asset_value": 28689.24,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "71.328.769/0001-81",
+                                "bank": "756",
+                                "cpf": "360.480.568-69",
+                                "agency": "3214",
+                                "account": "54433-7"
+                            },
+                            "country_valid": true,
+                            "page": 5
+                        },
+                        {
+                            "id": "0432fd5056a4ce2b4529561e60696617",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "COOP DE CRED POUP E INVESTIMENTO ALIANCA",
+                            "before_year_asset_value": 1545.74,
+                            "current_year_asset_value": 8997.85,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "79.052.122/0001-81",
+                                "bank": "748",
+                                "cpf": "360.480.568-69",
+                                "agency": "0715",
+                                "account": "09803-9"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "1af98aa4b5b184a631e329341ee4abb3",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "SALDO EM CONTA CORRENTE",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 7212.26,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "60.746.948/0001-12",
+                                "bank": "237",
+                                "cpf": "360.480.568-69",
+                                "agency": "0185",
+                                "account": "257021-1"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "76b84ff8edfd08aead269f683164ffb5",
+                            "asset_group_code": "06",
+                            "asset_code": "01",
+                            "asset_description": "SALDO EM CONTA CORRENTE",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 1056.93,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "beneficiary": "Titular",
+                                "cnpj": "00.360.305/0001-04",
+                                "bank": "104",
+                                "cpf": "360.480.568-69",
+                                "agency": "4620",
+                                "account": "00100020139-1"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "235f52d449da7befaec853cf1ea3175f",
+                            "asset_group_code": "99",
+                            "asset_code": "05",
+                            "asset_description": "CONSORCIO BRADESCO GRUPO 003193 - COTA 00193 / 0497-00",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 13620.04,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "52.568.821/0001-22"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "e57eb3cc51935c1e291bc6b6fcfdaed3",
+                            "asset_group_code": "99",
+                            "asset_code": "05",
+                            "asset_description": "CONSORCIO BRADESCO - GRUPO 004299 COTA 0197-00",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 24693.45,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "52.568.821/0001-22"
+                            },
+                            "country_valid": true,
+                            "page": 6
+                        },
+                        {
+                            "id": "af6e5c10fa3b8aa215a242d3408009cc",
+                            "asset_group_code": "99",
+                            "asset_code": "05",
+                            "asset_description": "CONSORCIO XSS ADM CONSORCIO SA - CEF - GRUPO 040002/530",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 70122.82,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "40.011.095/0001-63"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        },
+                        {
+                            "id": "882a739a576f18bcf43497ffa464d209",
+                            "asset_group_code": "99",
+                            "asset_code": "05",
+                            "asset_description": "CONSORCIO XSS ADM CONSORCIO SA - CEF - GRUPO 040002 / 739-0",
+                            "before_year_asset_value": 0.0,
+                            "current_year_asset_value": 72352.32,
+                            "country_code": "105",
+                            "country_name": "BRASIL",
+                            "additional_info": {
+                                "cnpj": "40.011.095/0001-63"
+                            },
+                            "country_valid": true,
+                            "page": 7
+                        }
+                    ],
+                    "last_year_total_value": 1644243.77,
+                    "current_year_total_value": 2136378.88,
+                    "pages_with_problems": []
+                },
+                "debts_and_encumbrances": {},
+                "exempt_income": {
+                    "section_name": "Rendimentos Isentos e Não Tributáveis",
+                    "total_value": 4025482.07,
+                    "valid_total": true,
+                    "subsections": {
+                        "profits_and_dividends": {
+                            "name": "09. Lucros e dividendos recebidos",
+                            "code": "09",
+                            "total_value": 76560.49,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "360.480.568-69",
+                                    "payer_cnpj": "71.328.769/0001-81",
+                                    "payer_name": "SICOOB COCRED COOPERATIVA DE CREDITO",
+                                    "value": 16040.09,
+                                    "id": "41560bd373618044eb5eceed976d5efb",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "360.480.568-69",
+                                    "payer_cnpj": "79.052.122/0001-81",
+                                    "payer_name": "COOP DE CRED E POUP E INVESTIMENTOS ALIANCA",
+                                    "value": 501.79,
+                                    "id": "30e0b03a74bc3d8e03e21e76258abfa9",
+                                    "page": 2
+                                },
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "360.480.568-69",
+                                    "payer_cnpj": "07.244.521/0001-33",
+                                    "payer_name": "PONTO COML DE PLASTIVOS SANTO ANDRE LTDA",
+                                    "value": 60018.61,
+                                    "id": "abe05308c293cdc51462b1651c285c60",
+                                    "page": 2
+                                }
+                            ]
+                        },
+                        "savings_accounts_mortgage_lci_lca_cra_cri": {
+                            "name": "12. Rendimentos de cadernetas de poupança, letras hipotecárias, letras de crédito do agronegócio e imobiliário (LCA e LCI) e certificados de recebíveis do agronegócio e imobiliários (CRA e CRI)",
+                            "code": "12",
+                            "total_value": 8302.54,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "360.480.568-69",
+                                    "payer_cnpj": "00.360.305/0001-04",
+                                    "payer_name": "CAIXA ECON FEDERAL",
+                                    "value": 8302.54,
+                                    "id": "b987b117cc10409fca97bd2231566d76",
+                                    "page": 2
+                                }
+                            ]
+                        },
+                        "exempt_portion_from_rural_activity": {
+                            "name": "15. Parcela não tributável correspondente à atividade rural",
+                            "code": "15",
+                            "total_value": 3940619.04,
+                            "valid_total": true,
+                            "items": null
+                        }
+                    }
+                },
+                "exclusive_taxation_income": {
+                    "section_name": "Rendimentos Sujeitos à Tributação Exclusiva/Definitiva",
+                    "total_value": 1592.73,
+                    "valid_total": true,
+                    "subsections": {
+                        "income_from_financial_investments": {
+                            "name": "06. Rendimentos de aplicações financeiras",
+                            "code": "06",
+                            "total_value": 1592.73,
+                            "valid_total": true,
+                            "items": [
+                                {
+                                    "beneficiary": "Titular",
+                                    "cpf": "360.480.568-69",
+                                    "payer_cnpj": "00.360.305/0001-04",
+                                    "payer_name": "CAIXA ECON FEDERAL - FI 6800 CEF",
+                                    "value": 1592.73,
+                                    "id": "74b8d9e72d83664e38afa91f65408b3d",
+                                    "page": 2
+                                }
+                            ]
+                        }
+                    }
+                },
+                "income_from_individual_to_holder": null,
+                "income_from_individual_to_dependents": null,
+                "income_from_legal_person_to_holder": {
+                    "section_name": "Rendimentos Tributáveis Recebidos de Pessoa Jurídica pelo Titular",
+                    "items": [
+                        {
+                            "payer_name": "SICOOB COCRED COOPERATIVA DE CREDITO",
+                            "income_from_legal_person": 11857.56,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 2375.87,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "71.328.769/0001-81",
+                            "id": "e07aa4642401619b0392b07ef38faa28",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "PONTO COML DE PLASTIVOS SANTO ANDRE LTDA",
+                            "income_from_legal_person": 16768.0,
+                            "official_social_security_contribution": 1734.48,
+                            "tax_withheld_at_source": 0.0,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "07.244.521/0001-33",
+                            "id": "754b08c3de10bc155eb8e351ec575fd9",
+                            "page": 1
+                        },
+                        {
+                            "payer_name": "COOP DE CRED E POUP E INVESTIMENTOS ALIANCA",
+                            "income_from_legal_person": 2178.97,
+                            "official_social_security_contribution": 0.0,
+                            "tax_withheld_at_source": 5.02,
+                            "thirteenth_salary": 0.0,
+                            "irrf_on_thirteenth_salary": 0.0,
+                            "cpf_cnpj": "79.052.122/0001-81",
+                            "id": "983cfd4adea5905af96e462c626a1bfd",
+                            "page": 1
+                        }
+                    ],
+                    "total_values": {
+                        "income_from_legal_person": {
+                            "amount": 30804.53,
+                            "valid": true
+                        },
+                        "official_social_security_contribution": {
+                            "amount": 1734.48,
+                            "valid": true
+                        },
+                        "tax_withheld_at_source": {
+                            "amount": 2380.89,
+                            "valid": true
+                        },
+                        "thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "irrf_on_thirteenth_salary": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "income_from_legal_person_to_dependents": null,
+                "income_from_legal_person_to_holder_with_suspended_requirements": null,
+                "income_from_legal_person_to_dependents_with_suspended_requirements": null,
+                "accumulated_income_from_legal_person_to_holder": null,
+                "accumulated_income_from_legal_person_to_dependents": null,
+                "exploited_rural_properties_in_brazil": {
+                    "section_name": "Dados e Identificação do Imóvel Explorado - Brasil",
+                    "items": [
+                        {
+                            "code": 10,
+                            "participation": 50.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA BELA VISTA, PRATA - MG",
+                            "area": 968.4,
+                            "cib": "2.405.831-9",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "bf1631d6c589883d15d34f8057d7549f"
+                                    }
+                                ]
+                            },
+                            "id": "436ab539b7255f43efc5a1b30f5df687",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "ESTANCIA CRISTINA GLEBA C, CASTILHO -",
+                            "area": 13.9,
+                            "cib": "8.000.342-7",
+                            "participants": null,
+                            "id": "1c931da180c5b7a784deffb372d46369",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA PEDAGIO, CASTILHO - SP",
+                            "area": 176.5,
+                            "cib": "7.597.823-7",
+                            "participants": null,
+                            "id": "a41c55367161773a8ec6f4b027af4e0e",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SANTA MONICA, CASTILHO - SP",
+                            "area": 102.4,
+                            "cib": "0.751.854-4",
+                            "participants": null,
+                            "id": "b46da0073250a627f8452a21f0fbafd9",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SAO JOSE, CASTILHO - SP",
+                            "area": 160.5,
+                            "cib": "1.847.986-3",
+                            "participants": null,
+                            "id": "3386c27d69a3334283165096eeb77310",
+                            "page": 8
+                        },
+                        {
+                            "code": 1010,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SANTA ANGELINA, CASTILHO - SP",
+                            "area": 190.9,
+                            "cib": "3.097.141-1",
+                            "participants": null,
+                            "id": "79130235c2d985fb7ced75b7bb4668c5",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA ALVORADA, CASTILHO - SP",
+                            "area": 363.0,
+                            "cib": "4.840.596-5",
+                            "participants": null,
+                            "id": "6eeeabd3b14173b6d471f06a98f263b4",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SANTA RITA DE CASSIA, - SP",
+                            "area": 190.9,
+                            "cib": "1.340.674-4",
+                            "participants": null,
+                            "id": "7bf48ef871372c103aafff229ffb2770",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SAO SEBASTIAO, CASTILHO - SP",
+                            "area": 86.2,
+                            "cib": "0.748.826-2",
+                            "participants": null,
+                            "id": "936a715f280becbecb9ed90c937622b5",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SANTA LUZIA, CASTILHO -SP",
+                            "area": 95.9,
+                            "cib": "0.746.240-9",
+                            "participants": null,
+                            "id": "5e189247a3a4b7bad4abcb8c922d8ac6",
+                            "page": 8
+                        },
+                        {
+                            "code": 10,
+                            "participation": 100.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "SITIO IPE AMARELO, CASTILHO - SP",
+                            "area": 60.5,
+                            "cib": "0.747.490-3",
+                            "participants": null,
+                            "id": "e82bb528e614d7fe1e4c9648d7870c99",
+                            "page": 8
+                        },
+                        {
+                            "code": 12,
+                            "participation": 25.0,
+                            "exploration_condition": 3,
+                            "name_and_location": "FAZENDA MOENDA, PRATA - MINAS GERAIS",
+                            "area": 1.922,
+                            "cib": "1.540.114-6",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "IVAN TOLEDO (766.933.688-91)",
+                                        "foreigner": false,
+                                        "id": "ce47b0f060c1c2e1e142e851383c0c85"
+                                    },
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "dc47482a8f4f4a0882081623ebeb51ed"
+                                    }
+                                ]
+                            },
+                            "id": "2d035b8eedfe2838b2017da340d0bcb8",
+                            "page": 8
+                        },
+                        {
+                            "code": 12,
+                            "participation": 33.3,
+                            "exploration_condition": 2,
+                            "name_and_location": "FAZENDA BOA SORTE, PRATA - MINAS GERAIS",
+                            "area": 224.1,
+                            "cib": "9.422.852-3",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "b0e1b47d6d8a7fb5530b9d63de0583f9"
+                                    },
+                                    {
+                                        "participant_name": "IVAN TOLEDO (766.933.688-91)",
+                                        "foreigner": false,
+                                        "id": "4e243d3898c0f0135daeef57550c5fce"
+                                    }
+                                ]
+                            },
+                            "id": "d500ea508d45b9c2c210ed6b1ac53652",
+                            "page": 8
+                        },
+                        {
+                            "code": 12,
+                            "participation": 33.3,
+                            "exploration_condition": 2,
+                            "name_and_location": "FAZENDA COCAL, PRATA - MINAS GERAIS",
+                            "area": 320.0,
+                            "cib": "3.282.815-2",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "9efd8c77958885cf40d9bfc3f5354445"
+                                    },
+                                    {
+                                        "participant_name": "IVAN TOLEDO (766.933.688-91)",
+                                        "foreigner": false,
+                                        "id": "91e79ac966ef61800b5ac232955d25a1"
+                                    }
+                                ]
+                            },
+                            "id": "5efa0fad0f834a02e619dec3f15f66bb",
+                            "page": 8
+                        },
+                        {
+                            "code": 12,
+                            "participation": 33.3,
+                            "exploration_condition": 2,
+                            "name_and_location": "FAZENDA SUCUPIRA, PRATA - MINAS",
+                            "area": 251.0,
+                            "cib": "2.511.310-0",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "b1271bc4c789eaab23b35ca059be7dc4"
+                                    },
+                                    {
+                                        "participant_name": "IVAN TOLEDO (766.933.688-91)",
+                                        "foreigner": false,
+                                        "id": "74f663c81b4a4fcafb9797b79a175cb8"
+                                    }
+                                ]
+                            },
+                            "id": "c53f546f7eb1c82cdc1b8ba715c034f5",
+                            "page": 8
+                        },
+                        {
+                            "code": 12,
+                            "participation": 50.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA AROEIA, PRATA - MINAS GERAIS",
+                            "area": 395.0,
+                            "cib": "",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "123edec8e55ec71c615a12aefd5576a9"
+                                    }
+                                ]
+                            },
+                            "id": "6cebd2ee3ce13183b664749d4661075c",
+                            "page": 9
+                        },
+                        {
+                            "code": 12,
+                            "participation": 50.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA LOS PAMPAS, PRATA - MINAS GERAIS",
+                            "area": 102.6,
+                            "cib": "7.808.562-4",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "5e1c672e24b859a62260ccf567a05235"
+                                    }
+                                ]
+                            },
+                            "id": "773dee11efba25bf0822d7901db130d3",
+                            "page": 9
+                        },
+                        {
+                            "code": 12,
+                            "participation": 52.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA MONTE MORIÁ, PRATA - MINAS GERAIS",
+                            "area": 110.0,
+                            "cib": "9.314.357-5",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "ba13465e80f70e028fd2e300301712a2"
+                                    }
+                                ]
+                            },
+                            "id": "94ac361551eecc4e49b91aeed4395ac8",
+                            "page": 9
+                        },
+                        {
+                            "code": 12,
+                            "participation": 50.0,
+                            "exploration_condition": 3,
+                            "name_and_location": "FAZENDA RIO DAS PEDRAS, PRATA - MINAS GERAIS",
+                            "area": 1229.4,
+                            "cib": "",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "d677e589099fb5742fde86349fc58e46"
+                                    }
+                                ]
+                            },
+                            "id": "2649939c67d52d58416833cecad363df",
+                            "page": 9
+                        },
+                        {
+                            "code": 12,
+                            "participation": 50.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SÃO JOSÉ, PRATA - MINAS",
+                            "area": 172.7,
+                            "cib": "3.850.191-0",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "839cf877d884348c60a12131e8b923df"
+                                    }
+                                ]
+                            },
+                            "id": "f55927d97e600bcba5a63aab580c516e",
+                            "page": 9
+                        },
+                        {
+                            "code": 12,
+                            "participation": 50.0,
+                            "exploration_condition": 4,
+                            "name_and_location": "FAZENDA SÃO SEBASTIÃO DO RIO DAS PEDRAS, PRATA - MINAS GERAIS",
+                            "area": 217.8,
+                            "cib": "3.916.533-7",
+                            "participants": {
+                                "items": [
+                                    {
+                                        "participant_name": "LEONARDO LEAL LOPES (360.165.858-58)",
+                                        "foreigner": false,
+                                        "id": "f2eae31b134c378ac6f7cfea2cd1c6af"
+                                    }
+                                ]
+                            },
+                            "id": "da70f4016878b94fe8d88d8851c5ec37",
+                            "page": 9
+                        }
+                    ]
+                },
+                "rural_income_and_expenditure_in_brazil": {
+                    "section_name": "Receitas e Despesas - Brasil",
+                    "items": [
+                        {
+                            "month": "Janeiro",
+                            "gross_revenue": 298729.8,
+                            "funding_expenses": 1070412.05,
+                            "id": "65712ebe54435301ca46df54a8ce7bcf",
+                            "page": 10
+                        },
+                        {
+                            "month": "Fevereiro",
+                            "gross_revenue": 347990.68,
+                            "funding_expenses": 668053.02,
+                            "id": "1c42d66b7ba8d97f4a6de77d26f61dc0",
+                            "page": 10
+                        },
+                        {
+                            "month": "Março",
+                            "gross_revenue": 2644269.65,
+                            "funding_expenses": 852459.34,
+                            "id": "966430f585c29c53252ecbcd8a107766",
+                            "page": 10
+                        },
+                        {
+                            "month": "Abril",
+                            "gross_revenue": 1021513.43,
+                            "funding_expenses": 1600290.01,
+                            "id": "4e0cd2556b152548d6c7105e798de85d",
+                            "page": 10
+                        },
+                        {
+                            "month": "Maio",
+                            "gross_revenue": 1944558.11,
+                            "funding_expenses": 1473240.69,
+                            "id": "056a312fb5f64a41af78cc7bf92c7315",
+                            "page": 10
+                        },
+                        {
+                            "month": "Junho",
+                            "gross_revenue": 345711.17,
+                            "funding_expenses": 516957.34,
+                            "id": "f67bbdfecb3cb83bbab7c0ee2e703547",
+                            "page": 10
+                        },
+                        {
+                            "month": "Julho",
+                            "gross_revenue": 3462892.42,
+                            "funding_expenses": 1281284.39,
+                            "id": "cd11cad972baffdc87c721cc9cd8ee76",
+                            "page": 10
+                        },
+                        {
+                            "month": "Agosto",
+                            "gross_revenue": 941657.3,
+                            "funding_expenses": 1145105.79,
+                            "id": "20134af08f44477447488f8b50459006",
+                            "page": 10
+                        },
+                        {
+                            "month": "Setembro",
+                            "gross_revenue": 1358415.68,
+                            "funding_expenses": 1339267.36,
+                            "id": "6427908c60644a8b04b1b3c0a4f7fa7b",
+                            "page": 10
+                        },
+                        {
+                            "month": "Outubro",
+                            "gross_revenue": 2574416.25,
+                            "funding_expenses": 837301.4,
+                            "id": "93614a2bf6c56092d1f270d2bd3d9d2f",
+                            "page": 10
+                        },
+                        {
+                            "month": "Novembro",
+                            "gross_revenue": 672843.15,
+                            "funding_expenses": 716464.09,
+                            "id": "08858ba4a25f913bef5e597bfca20727",
+                            "page": 10
+                        },
+                        {
+                            "month": "Dezembro",
+                            "gross_revenue": 218807.95,
+                            "funding_expenses": 390351.07,
+                            "id": "864d30a4bf7e06f57aeb7bb989d531cd",
+                            "page": 10
+                        }
+                    ],
+                    "total_values": {
+                        "gross_revenue": {
+                            "amount": 15831805.59,
+                            "valid": true
+                        },
+                        "funding_expenses": {
+                            "amount": 11891186.55,
+                            "valid": true
+                        }
+                    }
+                },
+                "calculation_of_rural_results_in_brazil": {
+                    "section_name": "Apuração do Resultado - Brasil",
+                    "subsections": {
+                        "previous_exercise_info": {
+                            "subsection_name": "INFORMAÇÃO DO EXERCÍCIO ANTERIOR",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar de exercício(s) anterior(es)",
+                                    "value": 14689335.93,
+                                    "id": "1c2881dd637d996405ee8b59d5746f33"
+                                }
+                            ],
+                            "page": 10
+                        },
+                        "calculation_of_taxable_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Receita bruta total",
+                                    "value": 15831805.59,
+                                    "id": "b46ee3cbae016f5a1125aa1af5a37758"
+                                },
+                                {
+                                    "description": "Despesa de custeio e investimento total",
+                                    "value": 11891186.55,
+                                    "id": "0260369fa8a0c3ca1ec891bfe708dcf0"
+                                },
+                                {
+                                    "description": "Resultado",
+                                    "value": 3940619.04,
+                                    "id": "78542fb87eec38f2ab1e94a85cee9078"
+                                },
+                                {
+                                    "description": "Limite de 20% sobre a receita bruta total",
+                                    "value": 3166361.11,
+                                    "id": "56493260177bf7db2d6a97879e34545d"
+                                },
+                                {
+                                    "description": "Opção pela forma de apuração do resultado tributável",
+                                    "value": "Pelo resultado",
+                                    "id": "a722f0807e150ad094c5a157121ea8e5"
+                                },
+                                {
+                                    "description": "Compensação de prejuízo(s) de exercício(s) anterior(es)",
+                                    "value": 3940619.04,
+                                    "id": "c33b4c5072aa754e0075889f9f5cc05f"
+                                },
+                                {
+                                    "description": "RESULTADO TRIBUTÁVEL",
+                                    "value": 0.0,
+                                    "id": "be7d1a68915ce1badfe2402252c875e4"
+                                }
+                            ],
+                            "page": 10
+                        },
+                        "next_exercise_info": {
+                            "subsection_name": "INFORMAÇÕES PARA O EXERCÍCIO SEGUINTE",
+                            "items": [
+                                {
+                                    "description": "Saldo de prejuízo(s) a compensar",
+                                    "value": 10748716.89,
+                                    "id": "4bf98480afd4db4b51615302ff177ef5"
+                                }
+                            ],
+                            "page": 10
+                        },
+                        "calculation_of_exempt_result": {
+                            "subsection_name": "APURAÇÃO DO RESULTADO NÃO TRIBUTÁVEL",
+                            "items": [
+                                {
+                                    "description": "Adiantamento(s) recebido(s) em 2023 por conta de venda para entrega futura",
+                                    "value": 0.0,
+                                    "id": "a1a6c9726f14465db1e07dddae9614d8"
+                                },
+                                {
+                                    "description": "Adiantamento(s) recebido(s) até 2022 a ser(em) informado(s) como receita(s) de produto(s) entregue(s) em 2023",
+                                    "value": 0.0,
+                                    "id": "478b120d13bed9717c72110f83800b90"
+                                },
+                                {
+                                    "description": "RESULTADO NÃO TRIBUTÁVEL",
+                                    "value": 3940619.04,
+                                    "id": "14e1edd850a45d901ca2685e324a75ad"
+                                }
+                            ],
+                            "page": 10
+                        }
+                    }
+                },
+                "livestock_movement_in_brazil": null,
+                "rural_activity_assets_in_brazil": {
+                    "section_name": "Bens da Atividade Rural - Brasil",
+                    "items": [
+                        {
+                            "code": "16",
+                            "description": "VEICULO MARCA FIAT MODELO STRADA ENRURANCE CD COR BRANCO BRANCHISTA ADQUIRIDA DE FCA FIAT CRYSLER AUTOMOVEIS BRASIL CFE NF 5208126 DE 25/05/2021 PELO VALOR DE R$ 75.463,09",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 0.0,
+                            "id": "a4bba02d75ef640e460a5dc4b752af9a",
+                            "page": 10
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 0.0,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 0.0,
+                            "valid": true
+                        }
+                    }
+                },
+                "rural_activity_debts_in_brazil": {
+                    "section_name": "Dívidas Vinculadas à Atividade Rural - Brasil",
+                    "items": [
+                        {
+                            "item": 1,
+                            "description": "50% DO EMPRESTIMO RURAL OBTIDO JUNTO A COOP DE CRED POUP E INVESTIMENTOS ALIANCA CNPJ 79.052.122/0001-81 CONFORME CONTRATO C12216861",
+                            "year_before_last_value": 235237.54,
+                            "last_year_value": 0.0,
+                            "paid_value_in_last_year": 235237.54,
+                            "id": "817e617a7f491d61181678c3f101c26b",
+                            "page": 11
+                        },
+                        {
+                            "item": 2,
+                            "description": "50% DO EMPRESTIMO RURAL OBTIDO JUNTO A COOP DE CRED POUP E INVESTIMENTOS ALIANCA CNPJ 79.052.122/0001-81 CONFORME CONTRATO C122311279",
+                            "year_before_last_value": 32179.9,
+                            "last_year_value": 38607.48,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "aedb01e301d6b5b1b91b91b23e412b76",
+                            "page": 11
+                        },
+                        {
+                            "item": 3,
+                            "description": "50% DO EMPRESTIMO RURAL OBTIDO JUNTO A SICOOB COCRED COOPERATIVA DE CREDITO CNPJ 71.328.769/0001-81 CONFORME CONTRATO 1292535",
+                            "year_before_last_value": 470624.37,
+                            "last_year_value": 501086.95,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "3e4a3b2ceb98bf7070f07a8fb218b7ec",
+                            "page": 11
+                        },
+                        {
+                            "item": 4,
+                            "description": "EMPRESTIMO RURAL OBTIDO JUNTO A SICOOB COCRED COOPERATIVA DE CREDITO CNPJ 71.328.769/0001-81 CONFORME CONTRATO 1244748",
+                            "year_before_last_value": 752641.39,
+                            "last_year_value": 754432.98,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "c8836956fe21e245cf8d5281ef4e980e",
+                            "page": 11
+                        },
+                        {
+                            "item": 5,
+                            "description": "50% DO EMPRESTIMO RURAL OBTIDO JUNTO A SICOOB COCRED COOPERATIVA DE CREDITO CNPJ 71.328.769/0001-81 CONFORME CONTRATO 11323279",
+                            "year_before_last_value": 977597.58,
+                            "last_year_value": 1039906.01,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "136d0ce6446fabf078a6d1d910f1055b",
+                            "page": 11
+                        },
+                        {
+                            "item": 6,
+                            "description": "50% DE EMPRÉSTIMO RURAL OBTIDO JUNTO A COOP CRED POUP E INVEST ALIANÇA CNPJ 79.052.122/0001-81 - CONTRATO C 322201051",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 239013.49,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "ae662ed8433b53ecee0dc5006b269e43",
+                            "page": 11
+                        },
+                        {
+                            "item": 7,
+                            "description": "50% DE EMPRÉSTIMO RURAL OBTIDO JUNTO A COOP CRED POUP E INVEST ALIANÇA CNPJ 79.052.122/0001-81 CONTRATO C 322212495",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 507255.64,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "1918712abc5c609143f81bcbce588ab4",
+                            "page": 11
+                        },
+                        {
+                            "item": 8,
+                            "description": "50% EMPRÉSTIMO RURAL OBTIDO JUNTO AO BCO BRADESCO CONF CONTRTO 6050984/0 MODALIDADE FINAME",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 63242.75,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "78e638915efcf82e5ff9cf1893b1528d",
+                            "page": 11
+                        },
+                        {
+                            "item": 9,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL – AGRO RIBEIRÃO PRETO - SP CONTRATO 1402051",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 741843.59,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "322a3a6726303fcb3705d73a48d08ea4",
+                            "page": 11
+                        },
+                        {
+                            "item": 10,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL - AGRO RIBEIRÃO PRETO - SP CONTRATO 1456520",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 716416.37,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "5a7e3797f95b2d27b8aa6e5a4d4edfca",
+                            "page": 11
+                        },
+                        {
+                            "item": 11,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL - AGRO RIBEIRÃO PRETO - SP CONTRATO 1456521",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 32226.35,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "6a03a2f6e5ddb2bb091311534d90f51c",
+                            "page": 11
+                        },
+                        {
+                            "item": 12,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL - AGRO RIBEIRÃO PRETO - SP CONTRATO 1458306",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 2324937.1,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "5f0d118f744c2f30355efcb406f04808",
+                            "page": 11
+                        },
+                        {
+                            "item": 13,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL – AGRO RIBEIRÃO PRETO - SP CONTRATO 1463809",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 921563.49,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "cec5c0ae70be09c5e9307f08e3c3e21c",
+                            "page": 11
+                        },
+                        {
+                            "item": 14,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL - AGRO RIBEIRÃO PRETO - SP CONTRATO 1463836",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 290716.24,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "894ab1a3c5123cfac8b6d89567a3a998",
+                            "page": 11
+                        },
+                        {
+                            "item": 15,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL - AGRO RIBEIRÃO PRETO - SP CONTRATO 1466732",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 1078528.71,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "a036ede7dca4e482a5c22ced8ddbd2c1",
+                            "page": 11
+                        },
+                        {
+                            "item": 1,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL – AGRO RIBEIRÃO PRETO - SP CONTRATO 1484347 -",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 389340.98,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "e1720bb2e00b826f30fcfe1e857fbced",
+                            "page": 12
+                        },
+                        {
+                            "item": 2,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL – AGRO RIBEIRÃO PRETO - SP CONTRATO 1499206",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 718149.8,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "010e37af89b5d43b3488e350c908354b",
+                            "page": 12
+                        },
+                        {
+                            "item": 3,
+                            "description": "50% DO EMPRÉSTIMO RURAL OBTIDO JUNTO A CAIXA ECONOMICA FEDERAL – AGRO RIBEIRÃO PRETO - SP CONTRATO 1557874",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 447795.56,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "28dc343c89ce152540a87e37bb4dab6e",
+                            "page": 12
+                        },
+                        {
+                            "item": 4,
+                            "description": "25% DO EMPRESTIMO JUNTO A CAIXA ECONOMICA FEDERAL CONF CONTRATO 2164268",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 742430.74,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "b2437384652e136cd1e4ac2456fcf0e6",
+                            "page": 12
+                        },
+                        {
+                            "item": 5,
+                            "description": "25% DO EMPRESTIMO JUNTO A CAIXA ECONOMICA FEDERAL CONF CONTRATO 1838676",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 827003.9,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "0df75d4ec8c11e169bbfe80fc69e1c4a",
+                            "page": 12
+                        },
+                        {
+                            "item": 6,
+                            "description": "25% DO EMPRESTIMO JUNTO A CAIXA ECONOMICA FEDERAL CONF CONTRATO 19085557",
+                            "year_before_last_value": 0.0,
+                            "last_year_value": 807886.88,
+                            "paid_value_in_last_year": 0.0,
+                            "id": "c8d4e1d19c15a732a23159cd5b469de4",
+                            "page": 12
+                        }
+                    ],
+                    "total_values": {
+                        "year_before_last_value": {
+                            "amount": 2468280.78,
+                            "valid": true
+                        },
+                        "last_year_value": {
+                            "amount": 13182385.01,
+                            "valid": true
+                        },
+                        "paid_value_in_last_year": {
+                            "amount": 235237.54,
+                            "valid": true
+                        }
+                    }
+                },
+                "exploited_rural_properties_abroad": null,
+                "rural_income_and_expenditure_abroad": null,
+                "calculation_of_rural_results_abroad": null,
+                "rural_activity_assets_abroad": null,
+                "rural_activity_debts_abroad": null,
+                "livestock_movement_abroad": null,
+                "total_pages": 16
+            }
+        },
+        "dcbe_response": null,
+        "csv_export_url": null,
+        "msg_infos": [],
+        "msg_errors": []
+    }
+}
